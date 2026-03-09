@@ -230,7 +230,7 @@ class LayoutImpl {
 
   // --- NCCL specific ---
   void _group_start() const;
-  void _group_end() const;
+  c10::intrusive_ptr<c10d::Work> _group_end() const;
 
   // --- GPU specific ---
   void _sync_device() const;

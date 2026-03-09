@@ -833,7 +833,8 @@ void CubedSphereLayoutImpl::forward(
       }
     }
 
-  _group_end();
+  auto work = _group_end();
+  if (work) work->wait();
 }
 
 void CubedSphereLayoutImpl::_interpolate_to_local(

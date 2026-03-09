@@ -43,14 +43,24 @@ void LayoutImpl::_init_nccl() {
 
 void LayoutImpl::_group_start() const {
   if (options->backend() == "nccl") {
-    std::dynamic_pointer_cast<c10d::ProcessGroupNCCL>(pg)->groupStart();
+    auto nccl = std::dynamic_pointer_cast<c10d::ProcessGroupNCCL>(pg);
+    if (nccl) {
+      std::cout << "start coalescing" << std::endl;
+      nccl->startCoalescing();
+    }
   }
 }
 
-void LayoutImpl::_group_end() const {
+c10::intrusive_ptr<c10d::Work> LayoutImpl::_group_end() const {
   if (options->backend() == "nccl") {
-    std::dynamic_pointer_cast<c10d::ProcessGroupNCCL>(pg)->groupEnd();
+    auto nccl = std::dynamic_pointer_cast<c10d::ProcessGroupNCCL>(pg);
+    if (nccl) {
+      std::cout << "end coalescing" << std::endl;
+      return nccl->endCoalescing();
+    }
   }
+
+  return nullptr;
 }
 
 void LayoutImpl::_sync_device() const {
