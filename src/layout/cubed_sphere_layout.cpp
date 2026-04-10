@@ -860,9 +860,6 @@ void CubedSphereLayoutImpl::exchange_remote(
   int dx_min = opts.dx_min();
   int dx_max = opts.dx_max();
 
-  std::lock_guard<std::mutex> lock(g_cubed_sphere_comm_mutex);
-  comm->group_start();
-
   struct RemoteExchangeOp {
     int remote_process;
     int buffer_id;
@@ -903,6 +900,14 @@ void CubedSphereLayoutImpl::exchange_remote(
         TORCH_CHECK(false, "I should not be here");
       }
     }
+
+  if (remote_ops.empty()) return;
+  TORCH_CHECK(has_process_group(),
+              "[CubedSphereLayout:exchange_remote] remote communication "
+              "requires an initialized process group");
+
+  std::lock_guard<std::mutex> lock(g_cubed_sphere_comm_mutex);
+  comm->group_start();
 
   if (options->backend() == "nccl") {
     std::sort(remote_ops.begin(), remote_ops.end(),

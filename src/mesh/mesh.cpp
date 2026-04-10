@@ -85,8 +85,10 @@ double MeshImpl::initialize(MeshVariables& vars, char const* restart_file) {
     return current_time;
   }
 
-  auto pg = blocks.front()->get_layout()->comm->pg;
-  pg->barrier()->wait();
+  auto layout = blocks.front()->get_layout();
+  if (layout->has_process_group()) {
+    layout->comm->pg->barrier()->wait();
+  }
   SignalHandler::GetInstance();
 
   std::vector<std::future<void>> jobs;
@@ -117,7 +119,10 @@ double MeshImpl::max_time_step(MeshVariables const& vars) {
   std::vector<at::Tensor> dt_reduce = {dt_tensor};
   c10d::AllreduceOptions op;
   op.reduceOp = c10d::ReduceOp::MIN;
-  blocks.front()->get_layout()->comm->pg->allreduce(dt_reduce, op)->wait();
+  auto layout = blocks.front()->get_layout();
+  if (layout->has_process_group()) {
+    layout->comm->pg->allreduce(dt_reduce, op)->wait();
+  }
 
   auto dt = dt_reduce[0].item<double>();
   auto redo = blocks.front()->pintg->current_redo;
@@ -199,7 +204,9 @@ void MeshImpl::print_cycle_info(MeshVariables const& vars, double time,
 
   if (local_sum.defined()) {
     std::vector<at::Tensor> sum = {local_sum};
-    root->get_layout()->comm->pg->reduce(sum, opsum)->wait();
+    if (root->get_layout()->has_process_group()) {
+      root->get_layout()->comm->pg->reduce(sum, opsum)->wait();
+    }
 
     if (compute_mass) {
       auto mass = sum[0][IDN];
@@ -283,9 +290,12 @@ void MeshImpl::finalize(MeshVariables const& vars, double time) {
     block->recv_bufs.shrink_to_fit();
   }
 
-  root->get_layout()->comm->pg->barrier()->wait();
-  if (root->get_layout()->comm->owns_process_group()) {
-    root->get_layout()->comm->pg->shutdown();
+  auto layout = root->get_layout();
+  if (layout->has_process_group()) {
+    layout->comm->pg->barrier()->wait();
+    if (layout->comm->owns_process_group()) {
+      layout->comm->pg->shutdown();
+    }
   }
 }
 

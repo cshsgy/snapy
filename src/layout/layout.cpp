@@ -286,10 +286,15 @@ void LayoutImpl::_launch_cubed_sphere_nccl_remote_ops(
                                exchange_order_index(opts, rhs.peer_offset));
       });
 
-  if (layouts.empty()) return;
+  if (layouts.empty() || remote_ops.empty()) return;
+
+  auto* root_layout = layouts.front();
+  TORCH_CHECK(root_layout->has_process_group(),
+              "[Layout:_launch_cubed_sphere_nccl_remote_ops] remote "
+              "communication requires an initialized process group");
 
   std::lock_guard<std::mutex> lock(g_process_comm_mutex);
-  layouts.front()->comm->group_start();
+  root_layout->comm->group_start();
   for (auto const& op : recv_ops) {
     auto work =
         op.layout->comm->pg->recv(op.layout->owner()->recv_bufs[op.buffer_id],
@@ -306,7 +311,7 @@ void LayoutImpl::_launch_cubed_sphere_nccl_remote_ops(
       works_by_block[op.local_block].push_back(work);
     }
   }
-  layouts.front()->comm->group_end();
+  root_layout->comm->group_end();
 }
 
 LayoutOptionsImpl::LayoutOptionsImpl() {
@@ -693,9 +698,6 @@ void LayoutImpl::exchange_remote(
     dy_sgn = -1;
   }
 
-  std::lock_guard<std::mutex> lock(g_process_comm_mutex);
-  comm->group_start();
-
   std::vector<RemoteExchangeOp> remote_ops;
 
   for (int dy_ = dy_min; dy_ <= dy_max; ++dy_)
@@ -732,6 +734,14 @@ void LayoutImpl::exchange_remote(
           pmb->recv_bufs[r1][n].copy_(pmb->send_bufs[r][n]);
       }
     }
+
+  if (remote_ops.empty()) return;
+  TORCH_CHECK(has_process_group(),
+              "[Layout:exchange_remote] remote communication requires an "
+              "initialized process group");
+
+  std::lock_guard<std::mutex> lock(g_process_comm_mutex);
+  comm->group_start();
 
   if (options->backend() == "nccl") {
     std::sort(remote_ops.begin(), remote_ops.end(),
@@ -928,15 +938,17 @@ void LayoutImpl::finalize(MeshBlockImpl const* pmb, Variables& vars,
   op.device_ids = {options->local_rank()};
   pg->barrier(op)->wait();*/
   {
-    std::lock_guard<std::mutex> lock(g_process_comm_mutex);
-    comm->pg->barrier()->wait();
+    if (has_process_group()) {
+      std::lock_guard<std::mutex> lock(g_process_comm_mutex);
+      comm->pg->barrier()->wait();
+    }
   }
 
   works.clear();
 }
 
 void LayoutImpl::_init_process_group() {
-  if (options->no_backend()) return;
+  if (!use_process_group()) return;
   comm = ProcessGroupContext::create(options);
 }
 

@@ -72,7 +72,7 @@ ProcessGroupContext::ProcessGroupContext(LayoutOptions const& opts)
 }
 
 void ProcessGroupContext::_init() {
-  if (options_->no_backend()) return;
+  if (options_->no_backend() || options_->process_world_size() <= 1) return;
 
   auto external_pg = get_process_group();
   if (external_pg.defined()) {

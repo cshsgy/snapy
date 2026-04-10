@@ -274,7 +274,9 @@ double MeshBlockImpl::initialize(Variables& vars, char const* restart_file) {
   /*c10d::BarrierOptions op;
   op.device_ids = {options->layout()->local_rank()};
   _playout->pg->barrier(op)->wait();*/
-  _playout->comm->pg->barrier()->wait();
+  if (_playout->has_process_group()) {
+    _playout->comm->pg->barrier()->wait();
+  }
 
   //// ------------ (1) Set up a signal handler ------------ ////
   SignalHandler::GetInstance();
@@ -474,7 +476,9 @@ double MeshBlockImpl::max_time_step(Variables const& vars) {
   std::vector<at::Tensor> dt_reduce = {dt_min};
   c10d::AllreduceOptions op;
   op.reduceOp = c10d::ReduceOp::MIN;
-  _playout->comm->pg->allreduce(dt_reduce, op)->wait();
+  if (_playout->has_process_group()) {
+    _playout->comm->pg->allreduce(dt_reduce, op)->wait();
+  }
 
   auto dt = dt_reduce[0].item<double>();
 
@@ -760,7 +764,9 @@ void MeshBlockImpl::print_cycle_info(Variables const& vars, double time,
 
       std::vector<at::Tensor> sum = {
           hydro_u_tol.index(interior).sum({1, 2, 3})};
-      _playout->comm->pg->reduce(sum, opsum)->wait();
+      if (_playout->has_process_group()) {
+        _playout->comm->pg->reduce(sum, opsum)->wait();
+      }
 
       if (compute_mass) {
         auto mass = sum[0][IDN];
@@ -786,7 +792,9 @@ void MeshBlockImpl::print_cycle_info(Variables const& vars, double time,
 
         std::vector<at::Tensor> ke_sum = {
             ke_tol.index(interior).sum({1, 2, 3})};
-        _playout->comm->pg->reduce(ke_sum, opsum)->wait();
+        if (_playout->has_process_group()) {
+          _playout->comm->pg->reduce(ke_sum, opsum)->wait();
+        }
 
         SINFO() << std::scientific << std::setprecision(dt_precision)
                 << " ke=" << ke_sum[0][0].item<double>();
@@ -839,7 +847,9 @@ void MeshBlockImpl::finalize(Variables const& vars, double time) {
   opsum.reduceOp = c10d::ReduceOp::SUM;
   opsum.rootRank = options->layout()->process_root_rank();
 
-  _playout->comm->pg->reduce(cells, opsum)->wait();
+  if (_playout->has_process_group()) {
+    _playout->comm->pg->reduce(cells, opsum)->wait();
+  }
 
   int64_t cellcycles = cells[0].item<int64_t>() * cycle * pintg->stages.size();
   double zc_cpus = static_cast<double>(cellcycles) / cpu_time;
@@ -850,7 +860,9 @@ void MeshBlockImpl::finalize(Variables const& vars, double time) {
   SINFO() << "million cell-updates/second = " << zc_cpus / 1e6 << std::endl;
 
   // ------ shutdown processing group ------
-  _playout->comm->pg->barrier()->wait();
+  if (_playout->has_process_group()) {
+    _playout->comm->pg->barrier()->wait();
+  }
 
   send_bufs.clear();
   send_bufs.shrink_to_fit();
@@ -858,7 +870,7 @@ void MeshBlockImpl::finalize(Variables const& vars, double time) {
   recv_bufs.clear();
   recv_bufs.shrink_to_fit();
 
-  if (_playout->comm->owns_process_group()) {
+  if (_playout->has_process_group() && _playout->comm->owns_process_group()) {
     _playout->comm->pg->shutdown();
   }
 }

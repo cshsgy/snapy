@@ -33,17 +33,12 @@ LayoutOptions make_test_options() {
 
 }  // namespace
 
-TEST(ProcessGroupContext, BorrowsExternallyRegisteredProcessGroup) {
+TEST(ProcessGroupContext, SkipsSingleProcessCommunication) {
   auto opts = make_test_options();
-  auto owned_ctx = ProcessGroupContext::create(opts);
-  ASSERT_TRUE(owned_ctx->owns_process_group());
-
-  set_process_group(owned_ctx->pg);
   auto ctx = ProcessGroupContext::create(opts);
 
-  EXPECT_TRUE(is_process_group_initialized());
   EXPECT_FALSE(ctx->owns_process_group());
-  EXPECT_EQ(ctx->pg.get(), owned_ctx->pg.get());
+  EXPECT_FALSE(ctx->pg.defined());
 
   set_process_group(nullptr);
 }

@@ -185,6 +185,12 @@ class LayoutImpl {
   }
 
   bool is_root() const { return options->rank() == options->root_rank(); }
+  bool use_process_group() const {
+    return !options->no_backend() && options->process_world_size() > 1;
+  }
+  bool has_process_group() const {
+    return comm != nullptr && comm->pg.defined();
+  }
 
   virtual ~LayoutImpl();
 

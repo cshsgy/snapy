@@ -14,7 +14,13 @@ int main(int argc, char** argv) {
   torch::Device device(torch::kCPU);
   if (torch::cuda::is_available() && op->layout()->backend() == "nccl") {
     std::cout << "Running on CUDA" << std::endl;
-    device = block->get_layout()->comm->pg->getBoundDeviceId().value();
+    auto layout = block->get_layout();
+    if (layout->has_process_group() &&
+        layout->comm->pg->getBoundDeviceId().has_value()) {
+      device = layout->comm->pg->getBoundDeviceId().value();
+    } else {
+      device = torch::Device(torch::kCUDA, op->layout()->local_rank());
+    }
   }
 
   block->to(device);

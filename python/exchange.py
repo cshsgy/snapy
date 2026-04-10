@@ -14,15 +14,17 @@ def init_dist(args,
               periodic_x1: bool=False,
               periodic_x2: bool=False,
               periodic_x3: bool=False):
-    if args.device == "cpu":
-        dist.init_process_group(backend="gloo", init_method="env://")
-    else:
-        dist.init_process_group(backend="nccl", init_method="env://")
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    rank = int(os.environ.get("RANK", "0"))
 
-    snapy.distributed.set_process_group(dist_c10d._get_default_group())
-
-    world_size = dist.get_world_size()
-    rank = dist.get_rank()
+    if world_size > 1:
+        if args.device == "cpu":
+            dist.init_process_group(backend="gloo", init_method="env://")
+        else:
+            dist.init_process_group(backend="nccl", init_method="env://")
+        snapy.distributed.set_process_group(dist_c10d._get_default_group())
+        world_size = dist.get_world_size()
+        rank = dist.get_rank()
 
     if args.device == "cuda":
         ngpu = torch.cuda.device_count()
@@ -158,6 +160,13 @@ def slab_exchange(block: snapy.MeshBlock,
                   recv_bufs: List[Optional[torch.Tensor]]):
     ops = []
     serialize_2d(block, block_vars, send_bufs)
+
+    if not dist.is_initialized():
+        for r in range(1, len(ranks)):
+            if send_bufs[r] is not None and ranks[r] == ranks[get_buffer_id(0, 0, 0)]:
+                recv_bufs[r].copy_(send_bufs[r])
+        deserialize_2d(block, block_vars, recv_bufs)
+        return
 
     for r in range(1, len(ranks)):
         if send_bufs[r] is not None:
