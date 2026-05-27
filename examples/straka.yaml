@@ -59,6 +59,14 @@ scalar:
 outputs:
   - type: restart
     dt: 300.
+    # combine: true (default) writes one bundled <basename>.<NNNNN>.restart per
+    # dump via the root rank. Set `combine: false` for file-per-rank dumps
+    # (<basename>.block<rank>.<NNNNN>.restart) with no barrier or serial
+    # bundling -- recommended for large parallel runs on Lustre/GPFS scratch.
+    # Restart from either form with `--restart <file>` (pass any one per-rank
+    # file; each rank loads its own). On Lustre, `lfs setstripe` the run dir so
+    # bundles (combined) or per-rank files (uncombined) spread across OSTs.
+    combine: true
   - type: netcdf
     variables: [prim, uov, scalar_prim]
     dt: 300.

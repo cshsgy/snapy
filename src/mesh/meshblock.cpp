@@ -978,6 +978,10 @@ int MeshBlockImpl::check_redo(Variables& vars) {
 }
 
 double MeshBlockImpl::_init_from_restart(Variables& vars, std::string fname) {
+  // For file-per-rank (uncombined) dumps, resolve the path to this block's own
+  // file. Combined bundles and single dumps are returned unchanged.
+  fname = restart_path_for_rank(fname, options->layout()->rank());
+
   std::filesystem::path restart_path(fname);
   if (!restart_path.is_absolute() && !std::filesystem::exists(restart_path)) {
     restart_path = std::filesystem::path(options->output_dir()) / fname;

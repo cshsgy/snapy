@@ -185,6 +185,21 @@ if (NOT APPLE)
       TIMEOUT 600
       LABELS "restart;examples"
     )
+
+    add_test(
+      NAME test_restart_uncombined
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/run_restart_uncombined.py
+              --build-dir ${CMAKE_BINARY_DIR}
+              --build-type release
+    )
+
+    set_tests_properties(test_restart_uncombined PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+      SKIP_RETURN_CODE 125
+      TIMEOUT 600
+      LABELS "restart;examples"
+    )
 endif()
 
 if (DEFINED FULL_TESTS)

@@ -138,11 +138,23 @@ void RestartOutput::combine_blocks(MeshBlockImpl* pmb, bool final_write) {
       file_list.push_back(std::string(glob_result.gl_pathv[i]));
     }
 
-    remove(outfile.c_str());
     if (file_list.size() == 1) {
+      // std::rename atomically replaces an existing destination on POSIX.
       err = std::rename(file_list.front().c_str(), outfile.c_str());
     } else {
-      err = make_restart_bundle(outfile, file_list);
+      // Bundle into a temp file, then atomically rename over the destination so
+      // a crash mid-bundle leaves the previous ".restart" intact.
+      std::string tmp = outfile + ".tmp";
+      err = make_restart_bundle(tmp, file_list);
+      if (err == 0) {
+        std::error_code rn_ec;
+        std::filesystem::rename(tmp, outfile, rn_ec);
+        if (rn_ec) {
+          std::error_code rm_ec;
+          std::filesystem::remove(tmp, rm_ec);
+          err = -1;
+        }
+      }
     }
 
     if (err) {

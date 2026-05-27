@@ -1,4 +1,5 @@
 // C/C++
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -218,6 +219,33 @@ static Variables load_pt_from_bundle(std::string const& path, int block_rank) {
 
   std::cerr << path << ": no matching block found in restart bundle\n";
   return {};
+}
+
+std::string restart_path_for_rank(std::string const& path, int block_rank) {
+  fs::path p(path);
+  std::string fname = p.filename().string();
+
+  static const std::string tok = ".block";
+  size_t pos = fname.find(tok);
+  if (pos == std::string::npos) return path;
+
+  size_t dstart = pos + tok.size();
+  size_t dend = dstart;
+  while (dend < fname.size() &&
+         std::isdigit(static_cast<unsigned char>(fname[dend]))) {
+    ++dend;
+  }
+
+  // Require at least one digit followed by a '.', e.g. ".block3." — this avoids
+  // rewriting an unrelated basename that merely contains the text "block".
+  if (dend == dstart || dend >= fname.size() || fname[dend] != '.') {
+    return path;
+  }
+
+  std::string rewritten =
+      fname.substr(0, dstart) + std::to_string(block_rank) + fname.substr(dend);
+  p.replace_filename(rewritten);
+  return p.string();
 }
 
 Variables load_restart(std::string const& path, int block_rank) {
