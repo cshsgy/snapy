@@ -79,6 +79,14 @@ target_link_libraries(${namel}_${buildl}
 
 add_library(snapy::snap ALIAS ${namel}_${buildl})
 
+# UCX (tag-matching) backend: provided by the commux package. Linking
+# commux::commux pulls in its public header (<commux/process_group_ucx.hpp>),
+# the UCX include dirs, the UCX libraries, the CUDA path, and the rpath -- all
+# transitively. _init_ucx() in layout/process_group.cpp constructs it.
+if (UCX)
+  target_link_libraries(${namel}_${buildl} PUBLIC ${COMMUX_LIBRARY})
+endif()
+
 # CUDA source codes
 if (CUDAToolkit_FOUND)
   file(GLOB cu_src_files

@@ -6,6 +6,9 @@
 // NCCL
 #define @NCCL_OPTION@
 
+// UCX (USE_C10D_UCX or NOT_USE_C10D_UCX)
+#define @UCX_OPTION@
+
 // NetCDF output (NETCDFOUTPUT or NO_NETCDFOUTPUT)
 #define @NETCDF_OPTION@
 

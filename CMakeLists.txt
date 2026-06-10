@@ -9,6 +9,7 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 option(CUDA "Enable CUDA support" OFF)
 option(NETCDF "Build with netcdf support" ON)
 option(PNETCDF "Build with pnetcdf support" OFF)
+option(UCX "Enable the UCX (tag-matching) c10d backend" OFF)
 
 project(
   snapy
@@ -121,6 +122,11 @@ if (CUDAToolkit_FOUND)
   endif()
 
   set(CMAKE_CUDA_ARCHITECTURES ${_cuda_arch_list})
+endif()
+
+if (UCX)
+  message(STATUS "${Blue}${PROJECT_NAME}-3b. Fetching commux (UCX backend) ...${ColorReset}")
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/commux.cmake)
 endif()
 
 message(STATUS "${Blue}${PROJECT_NAME}-4. Setting up project libraries ...${ColorReset}")

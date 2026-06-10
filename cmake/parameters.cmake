@@ -9,6 +9,14 @@ else()
   set(NCCL_OPTION "USE_C10D_NCCL")
 endif()
 
+# ucx options: the tag-matching backend is provided by the commux package
+# (cmake/commux.cmake), which owns UCX discovery/bundling.
+if(NOT UCX OR NOT DEFINED UCX)
+  set(UCX_OPTION "NOT_USE_C10D_UCX")
+else()
+  set(UCX_OPTION "USE_C10D_UCX")
+endif()
+
 # netcdf options
 if(NOT NETCDF OR NOT DEFINED NETCDF)
   set(NETCDF_OPTION "NO_NETCDFOUTPUT")

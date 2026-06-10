@@ -36,6 +36,7 @@ class ProcessGroupContext {
   void _init();
   void _init_gloo();
   void _init_nccl();
+  void _init_ucx();
   void _init_external(c10::intrusive_ptr<c10d::ProcessGroup> pg);
 
   LayoutOptions options_;

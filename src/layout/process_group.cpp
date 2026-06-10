@@ -20,6 +20,10 @@
 #include "layout.hpp"
 #include "process_group.hpp"
 
+#ifdef USE_C10D_UCX
+#include <commux/process_group_ucx.hpp>
+#endif
+
 namespace snap {
 
 std::mutex ProcessGroupContext::mutex_;
@@ -100,6 +104,8 @@ void ProcessGroupContext::_init() {
   } else if (backend == "nccl") {
     _init_gloo();
     _init_nccl();
+  } else if (backend == "ucx") {
+    _init_ucx();
   } else {
     throw std::runtime_error("Unsupported BACKEND=" + backend);
   }
@@ -158,6 +164,34 @@ void ProcessGroupContext::_init_gloo() {
   pg->setBackend(c10::DeviceType::CPU, c10d::ProcessGroup::BackendType::GLOO,
                  backend_gloo);
 }
+
+#ifdef USE_C10D_UCX
+void ProcessGroupContext::_init_ucx() {
+  if (options_->verbose()) {
+    std::cout << "[Process " << options_->process_rank() << ":"
+              << options_->local_rank()
+              << "] Using UCX backend (tag-matching p2p, CPU+CUDA)\n";
+  }
+
+  auto backend_ucx = c10::static_intrusive_pointer_cast<c10d::Backend>(
+      c10::make_intrusive<commux::ProcessGroupUCX>(
+          store, options_->process_rank(), options_->process_world_size()));
+
+  // One backend instance serves both device types; UCX picks the transport
+  // (host vs cuda_ipc/cuda_copy/gdr_copy) from each tensor's memory type.
+  pg->setDefaultBackend(c10d::ProcessGroup::BackendType::CUSTOM);
+  pg->setBackend(c10::DeviceType::CPU, c10d::ProcessGroup::BackendType::CUSTOM,
+                 backend_ucx);
+  pg->setBackend(c10::DeviceType::CUDA, c10d::ProcessGroup::BackendType::CUSTOM,
+                 backend_ucx);
+}
+#else
+void ProcessGroupContext::_init_ucx() {
+  throw std::runtime_error(
+      "snapy was built without UCX support; reconfigure with -DUCX=ON to use "
+      "BACKEND=ucx");
+}
+#endif
 
 #ifdef NOT_USE_C10D_NCCL
 void ProcessGroupContext::_init_nccl() {}
