@@ -28,6 +28,37 @@ setup_test(test_diffusion)
 setup_test(test_diffusion_moist)
 setup_test(test_forcing)
 setup_parallel_test(test_exchange 2)
+
+if(UCX_FOUND)
+  add_test(
+    NAME test_exchange_ucx
+    COMMAND torchrun
+            --no-python
+            --nproc-per-node=2
+            $<TARGET_FILE:test_exchange.${buildl}>
+  )
+  set_tests_properties(test_exchange_ucx PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    ENVIRONMENT
+      "BACKEND=ucx;DEVICE=cpu;BLOCKS_PER_PROCESS=3;EXPECT_LOCAL_NEIGHBOR=1;EXPECT_REMOTE_NEIGHBOR=1"
+    LABELS "ucx;exchange"
+  )
+
+  add_test(
+    NAME test_exchange_ucx_cuda
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/run_exchange_backend.py
+            --build-dir ${CMAKE_BINARY_DIR}
+            --build-type ${buildl}
+            --backend ucx
+            --device cuda
+  )
+  set_tests_properties(test_exchange_ucx_cuda PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    SKIP_RETURN_CODE 125
+    LABELS "ucx;exchange;gpu"
+  )
+endif()
 #setup_test(test_read_topo)
 #setup_cuda_test(test_thomas_solver)
 #setup_test(test_aneos)
@@ -131,7 +162,8 @@ add_test(
           --build-type release
           --example shock
           --input shock_gpu.yaml
-          --backend nccl
+          --backend ucx
+          --device cuda
 )
 
 set_tests_properties(test_shock_cuda PROPERTIES
@@ -159,6 +191,41 @@ set_tests_properties(test_run_hydro_cpu PROPERTIES
   LABELS "examples;cpu"
 )
 
+if(UCX_FOUND)
+  add_test(
+    NAME test_shock_ucx
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/run_example_mass_check.py
+            --build-dir ${CMAKE_BINARY_DIR}
+            --build-type release
+            --example shock
+            --input shock_cpu.yaml
+            --backend ucx
+  )
+  set_tests_properties(test_shock_ucx PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    TIMEOUT 1200
+    LABELS "examples;cpu;ucx"
+  )
+
+  add_test(
+    NAME test_run_hydro_ucx
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/run_example_mass_check.py
+            --build-dir ${CMAKE_BINARY_DIR}
+            --build-type release
+            --example run_hydro
+            --input jupiter_crm_cpu.yaml
+            --backend ucx
+            --mass-rtol 1.0e-7
+  )
+  set_tests_properties(test_run_hydro_ucx PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    TIMEOUT 1200
+    LABELS "examples;cpu;ucx"
+  )
+endif()
+
 add_test(
   NAME test_run_hydro_cuda
   COMMAND ${Python3_EXECUTABLE}
@@ -167,7 +234,8 @@ add_test(
           --build-type release
           --example run_hydro
           --input jupiter_crm_dry_gpu.yaml
-          --backend nccl
+          --backend ucx
+          --device cuda
           --mass-rtol 1.0e-7
 )
 
@@ -229,23 +297,6 @@ if (DEFINED FULL_TESTS)
   )
 
   add_test(
-    NAME test_straka_nccl_decomp
-    COMMAND ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/run_straka_nccl_decomp.py
-            --build-dir ${CMAKE_BINARY_DIR}
-            --build-type release
-  )
-
-  set_tests_properties(test_straka_nccl_decomp PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-    SKIP_RETURN_CODE 125
-    PROCESSORS 2
-    RUN_SERIAL TRUE
-    TIMEOUT 2400
-    LABELS "gpu;nccl;long"
-  )
-
-  add_test(
     NAME test_shallow_xy_decomp
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/run_shallow_xy_decomp.py
@@ -279,20 +330,21 @@ if (DEFINED FULL_TESTS)
   )
 
   add_test(
-    NAME test_shallow_splash_nccl_decomp
+    NAME test_shallow_splash_ucx_cuda_decomp
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/run_shallow_splash_decomp.py
             --build-dir ${CMAKE_BINARY_DIR}
             --build-type release
-            --backend nccl
+            --backend ucx
+            --device cuda
   )
 
-  set_tests_properties(test_shallow_splash_nccl_decomp PROPERTIES
+  set_tests_properties(test_shallow_splash_ucx_cuda_decomp PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
     SKIP_RETURN_CODE 125
     PROCESSORS 2
     RUN_SERIAL TRUE
     TIMEOUT 2400
-    LABELS "gpu;nccl;long"
+    LABELS "gpu;ucx;long"
   )
 endif()

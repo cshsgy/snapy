@@ -7,7 +7,7 @@
 #include <configure.h>
 
 // torch
-#ifdef USE_C10D_NCCL
+#ifdef USE_CUDA
 #include <c10/cuda/CUDAFunctions.h>
 #endif
 
@@ -65,12 +65,12 @@ int source_side(Layout const& layout, std::tuple<int, int, int> const& iloc,
 
 torch::Device select_device(LayoutOptions const& layout) {
   auto device = torch::Device(torch::kCPU);
-  if (layout->backend() == "nccl") {
+  if (layout->device() == "cuda") {
     TORCH_CHECK(torch::cuda::is_available(),
-                "CUDA is required for backend=nccl");
+                "CUDA is required for device=cuda");
     int device_index = layout->device_id();
     if (device_index < 0) device_index = layout->local_rank();
-#ifdef USE_C10D_NCCL
+#ifdef USE_CUDA
     c10::cuda::set_device(device_index);
 #endif
     device = torch::Device(torch::kCUDA, device_index);

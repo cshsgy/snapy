@@ -3,8 +3,11 @@
 // GLOO
 #define USE_C10D_GLOO
 
-// NCCL
-#define @NCCL_OPTION@
+// UCX
+#define @UCX_OPTION@
+
+// CUDA
+#define @CUDA_OPTION@
 
 // NetCDF output (NETCDFOUTPUT or NO_NETCDFOUTPUT)
 #define @NETCDF_OPTION@

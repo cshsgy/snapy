@@ -5,7 +5,7 @@ This note describes the mixed parallel execution strategy used by ``snapy``
 after the multi-block communication refactor. "Mixed parallel" means that the
 global domain may be split in two dimensions at the same time:
 
-* across multiple processes, using Gloo or NCCL for inter-process exchange
+* across multiple processes, using UCX or Gloo for inter-process exchange
 * across multiple ``MeshBlock`` objects inside a single process
 
 The design goal is to let those two forms of parallelism compose without
@@ -46,10 +46,8 @@ Figure 1: Mixed decomposition model
    - horizontal arrows inside a process are local block-to-block exchange
    - vertical arrows crossing the process boundary are remote exchange
 
-This design matters because transport ordering is not identical across
-backends. Gloo behaves like tagged point-to-point messaging. NCCL does not give
-the same freedom to rely on message tags alone, so mixed local+remote exchange
-must be launched in a deterministic process-wide order.
+UCX and Gloo both provide tagged point-to-point messaging, allowing each block
+to launch remote exchanges independently while matching messages by tag.
 
 Why A Mixed Strategy Is Needed
 ------------------------------
@@ -101,8 +99,8 @@ Figure 2: Ownership stack
                                   |
                                   v
    +--------------------------------------------------------------+
-   | ProcessGroup backend                                         |
-   |  - Gloo / NCCL transport                                     |
+   | Snapy communication facade                                   |
+   |  - native UCX or legacy c10d transport                        |
    +--------------------------------------------------------------+
 
 Core Data Model
@@ -258,38 +256,6 @@ rules, so it is the right layer to decide ordering.
 The design rule is simple: local and remote paths must produce the same receive
 buffers for the same logical exchange.
 
-Backend-Specific Ordering
--------------------------
-
-The mixed strategy becomes subtle when NCCL is involved. Gloo behaves well with
-explicit tags, but NCCL point-to-point operations must be launched in the same
-effective order on matching peers.
-
-That means the implementation cannot assume that per-block remote launch order
-is sufficient when a process owns multiple blocks. Instead, the layout gathers
-all remote operations for the process and launches them in a deterministic
-peer-symmetric order.
-
-Figure 3: Why process-wide launch matters for NCCL
-
-.. code-block:: text
-
-   Wrong mental model
-   ------------------
-   Process 0 launches per block: [B0->P1, B1->P1]
-   Process 1 launches per block: [B3->P0, B4->P0]
-   If block scheduling differs, remote launch order can diverge.
-
-   Correct model
-   -------------
-   Process 0 gathers all remote ops, sorts them, then launches once.
-   Process 1 gathers all remote ops, sorts them the same way, then launches once.
-
-   Result: peer-visible recv/send ordering matches on both sides.
-
-This is why mixed local+remote exchange now lives at the block/layout boundary
-instead of being split between ``Mesh`` and backend-specific ad hoc logic.
-
 Cubed-Sphere LR-State Exchange
 ------------------------------
 
@@ -322,7 +288,7 @@ Any future change to the mixed parallel path should preserve these invariants:
 * ``MeshBlock`` is the only owner of exchange orchestration.
 * ``Layout`` is the only owner of neighbor mapping and remap logic.
 * local-neighbor and remote-neighbor paths produce identical receive buffers.
-* NCCL mixed-process launches are deterministic at process scope.
+* tagged remote exchanges use stable source, destination, and physics tags.
 * cubed-sphere-specific behavior stays in cubed-sphere layout logic, not in
   generic mesh scheduling.
 

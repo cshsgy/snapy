@@ -207,13 +207,13 @@ bool MeshBlockOptionsImpl::is_physical_boundary(int dy, int dx, int dz) const {
 std::string MeshBlockOptionsImpl::device_str() const {
   if (!layout()) return "";
 
-  if (layout()->backend() == "nccl") {
+  if (layout()->device() == "cuda") {
     int device_index = layout()->device_id();
     if (device_index < 0) {
       device_index = layout()->local_rank();
     }
     return "cuda:" + std::to_string(device_index);
-  } else if (layout()->backend() == "gloo") {
+  } else if (layout()->device() == "cpu") {
     return "cpu";
   } else {
     return "";

@@ -5,7 +5,7 @@
 #include <configure.h>
 
 // torch
-#ifdef USE_C10D_NCCL
+#ifdef USE_CUDA
 #include <c10/cuda/CUDAFunctions.h>
 #endif
 
@@ -28,11 +28,11 @@ TEST(Mesh, multi_block_exchange) {
   mesh_opts->blocks_per_process(2);
 
   auto device = torch::Device(torch::kCPU);
-  if (block_opts->layout()->backend() == "nccl") {
+  if (block_opts->layout()->device() == "cuda") {
     ASSERT_TRUE(torch::cuda::is_available());
     int device_index = block_opts->layout()->device_id();
     if (device_index < 0) device_index = block_opts->layout()->local_rank();
-#ifdef USE_C10D_NCCL
+#ifdef USE_CUDA
     c10::cuda::set_device(device_index);
 #endif
     device = torch::Device(torch::kCUDA, device_index);

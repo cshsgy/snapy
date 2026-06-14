@@ -40,6 +40,7 @@ void bind_layout(py::module& m) {
       .ADD_OPTION(bool, snap::LayoutOptionsImpl, periodic_z)
       .ADD_OPTION(bool, snap::LayoutOptionsImpl, verbose)
       .ADD_OPTION(std::string, snap::LayoutOptionsImpl, backend)
+      .ADD_OPTION(std::string, snap::LayoutOptionsImpl, device)
       .ADD_OPTION(std::string, snap::LayoutOptionsImpl, master_addr)
       .ADD_OPTION(int, snap::LayoutOptionsImpl, master_port)
       .ADD_OPTION(int, snap::LayoutOptionsImpl, root_rank)

@@ -68,7 +68,7 @@ torch::Tensor ScalarImpl::forward(double dt, torch::Tensor u,
   Variables send_vars2, send_vars3;
   SyncOptions sync_opts;
   sync_opts.cross_panel_only(true).interpolate(false).type(kScalar);
-  std::vector<c10::intrusive_ptr<c10d::Work>> works;
+  std::vector<CommWorkPtr> works;
 
   if (_flux2.defined()) {
     rtmp2 = precon->forward(r, DIM2);
@@ -91,16 +91,10 @@ torch::Tensor ScalarImpl::forward(double dt, torch::Tensor u,
   if (playout->options->type() == "cubed-sphere") {
     bool exchange_dim2 = _flux2.defined();
     bool exchange_dim3 = _flux3.defined();
-    bool combine_nccl_dims = playout->options->backend() == "nccl" &&
-                             playout->options->blocks_per_process() > 1 &&
-                             exchange_dim2 && exchange_dim3;
-
-    if (combine_nccl_dims) {
-      pmb->launch_exchange(sync_opts.dim(0), works);
-    } else if (exchange_dim2) {
+    if (exchange_dim2) {
       pmb->launch_exchange(sync_opts.dim(DIM2), works);
     }
-    if (!combine_nccl_dims && exchange_dim3) {
+    if (exchange_dim3) {
       pmb->launch_exchange(sync_opts.dim(DIM3), works);
     }
     if (exchange_dim2)

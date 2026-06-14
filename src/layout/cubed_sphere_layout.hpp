@@ -56,9 +56,8 @@ class CubedSphereLayoutImpl : public LayoutImpl {
   void deserialize(MeshBlockImpl const* pmb, Variables& vars,
                    SyncOptions const& opts) const override;
 
-  void exchange_remote(
-      MeshBlockImpl const* pmb, SyncOptions const& opts,
-      std::vector<c10::intrusive_ptr<c10d::Work>>& works) override;
+  void exchange_remote(MeshBlockImpl const* pmb, SyncOptions const& opts,
+                       std::vector<CommWorkPtr>& works) override;
   int num_exchange_buffers() const override { return 9; }
 
  private:

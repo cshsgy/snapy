@@ -109,6 +109,16 @@ class LayoutOptions:
         ...
 
     @overload
+    def device(self) -> str:
+        """Get communication device type."""
+        ...
+
+    @overload
+    def device(self, value: str) -> "LayoutOptions":
+        """Set communication device type."""
+        ...
+
+    @overload
     def master_addr(self) -> str:
         """Get master address."""
         ...

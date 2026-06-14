@@ -23,7 +23,6 @@ include_directories(
   SYSTEM ${TORCH_INCLUDE_DIR}
   SYSTEM ${KINTERA_INCLUDE_DIR}
   SYSTEM ${HARP_INCLUDE_DIR}
-  SYSTEM ${NCCL_INCLUDE_DIR}
   SYSTEM ${CMAKE_SOURCE_DIR}/external/gloo
   )
 
@@ -77,6 +76,11 @@ target_link_libraries(${namel}_${buildl}
     yaml-cpp::yaml-cpp
     )
 
+if(UCX_FOUND)
+  target_link_libraries(${namel}_${buildl}
+    PUBLIC UCX::ucp UCX::uct UCX::ucs UCX::ucm dl rt)
+endif()
+
 add_library(snapy::snap ALIAS ${namel}_${buildl})
 
 # CUDA source codes
@@ -110,7 +114,6 @@ if (CUDAToolkit_FOUND)
       ${KINTERA_CUDA_LIBRARY}
       ${TORCH_CUDA_LIBRARY}
       ${C10_CUDA_LIBRARY}
-      ${NCCL_LIBRARY}
       )
 
   add_library(snapy::snap_cu ALIAS ${namel}_cuda_${buildl})

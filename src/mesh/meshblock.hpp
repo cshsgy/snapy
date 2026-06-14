@@ -164,14 +164,12 @@ class MeshBlockImpl : public torch::nn::Cloneable<MeshBlockImpl> {
   void begin_exchange(Variables& vars, SyncOptions const& opts) const;
 
   //! Launch remote exchange work after begin_exchange prepared the buffers.
-  void launch_exchange(
-      SyncOptions const& opts,
-      std::vector<c10::intrusive_ptr<c10d::Work>>& works) const;
+  void launch_exchange(SyncOptions const& opts,
+                       std::vector<CommWorkPtr>& works) const;
 
   //! Wait on launched work and deserialize results back into the variables.
-  void finalize_exchange(
-      Variables& vars, SyncOptions const& opts,
-      std::vector<c10::intrusive_ptr<c10d::Work>>& works) const;
+  void finalize_exchange(Variables& vars, SyncOptions const& opts,
+                         std::vector<CommWorkPtr>& works) const;
   void exchange_ghost_zones(Variables& vars);
 
   //! make write outputs at the current time

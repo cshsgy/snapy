@@ -56,7 +56,17 @@ include-package-data = false
 script-files = ["api/pd-run", "api/slurm.sbatch"]
 
 [tool.setuptools.package-data]
-"snapy" = ["snap/**/*", "lib/*.so", "lib/*.dylib", "snapy/*.pyi", "py.typed", "api/*"]
+"snapy" = [
+  "snap/**/*",
+  "lib/*.so",
+  "lib/*.so.*",
+  "lib/*.dylib",
+  "lib/ucx/*.so",
+  "lib/ucx/*.so.*",
+  "snapy/*.pyi",
+  "py.typed",
+  "api/*",
+]
 
 [tool.setuptools.exclude-package-data]
 "snapy" = ["csrc/**/*"]

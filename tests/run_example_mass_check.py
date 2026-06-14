@@ -23,7 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-type", required=True)
     parser.add_argument("--example", required=True)
     parser.add_argument("--input", required=True)
-    parser.add_argument("--backend", required=True, choices=("gloo", "nccl"))
+    parser.add_argument("--backend", required=True, choices=("gloo", "ucx"))
+    parser.add_argument("--device", choices=("cpu", "cuda"))
     parser.add_argument("--nproc", type=int, default=1)
     parser.add_argument("--mass-rtol", type=float, default=1.0e-8)
     return parser.parse_args()
@@ -163,7 +164,9 @@ def main() -> int:
 
     env = os.environ.copy()
     env["BACKEND"] = args.backend
-    if args.backend == "nccl":
+    device = args.device or "cpu"
+    env["DEVICE"] = device
+    if device == "cuda":
         ok, msg = ensure_cuda()
         if not ok:
             return skip(msg)

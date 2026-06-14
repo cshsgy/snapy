@@ -288,12 +288,12 @@ void OutputType::loadDiagOutputData(MeshBlockImpl* pmb, Variables const& vars) {
     auto hydro_w_tol = vars.at("hydro_w") * vol;
     std::vector<at::Tensor> sum1 = {hydro_w_tol.sum({1, 2})};
     if (layout->has_process_group()) {
-      layout->comm->pg->reduce(sum1, opsum)->wait();
+      layout->comm->reduce(sum1, opsum.reduceOp, opsum.rootRank);
     }
 
     std::vector<at::Tensor> sum2 = {vol.unsqueeze(0).sum({1, 2})};
     if (layout->has_process_group()) {
-      layout->comm->pg->reduce(sum2, opsum)->wait();
+      layout->comm->reduce(sum2, opsum.reduceOp, opsum.rootRank);
     }
     auto avg_w = sum1[0] / sum2[0];
 

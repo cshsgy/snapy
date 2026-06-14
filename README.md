@@ -59,6 +59,7 @@ Building from source is recommended only for advanced users who need to:
 **Prerequisites:**
 - CMake 3.20+
 - C++17 compatible compiler
+- Autoconf, Automake, Libtool, and pkg-config on Linux (for fetched UCX)
 - PyTorch 2.7.x with C++ libraries
 - NetCDF C library
 - kintera >= 1.1.5
@@ -86,15 +87,9 @@ pip install numpy kintera torch==2.7.1
      brew install netcdf
      ```
 
-4. Install NCCL (if enables GPU)
-  - **Linux (Ubuntu/Debian):**
-    ```bash
-    sudo apt-get install libnccl2 libnccl-dev
-    ```
-  - **Linux (CentOS/RHEL):**
-    ```bash
-    sudo yum install libnccl libnccl-devel libnccl-static
-    ```
+UCX does not need to be installed separately. Linux builds fetch pinned UCX
+sources and install the resulting libraries into ``build/lib``. Use
+``-DUCX=OFF`` only when building a Gloo-only configuration.
 
 4. Configure and build:
 ```bash

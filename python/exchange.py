@@ -17,11 +17,8 @@ def init_dist(args,
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     rank = int(os.environ.get("RANK", "0"))
 
-    if world_size > 1:
-        if args.device == "cpu":
-            dist.init_process_group(backend="gloo", init_method="env://")
-        else:
-            dist.init_process_group(backend="nccl", init_method="env://")
+    if world_size > 1 and args.device == "cpu":
+        dist.init_process_group(backend="gloo", init_method="env://")
         snapy.distributed.set_process_group(dist_c10d._get_default_group())
         world_size = dist.get_world_size()
         rank = dist.get_rank()

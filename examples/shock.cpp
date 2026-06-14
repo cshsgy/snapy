@@ -12,15 +12,11 @@ int main(int argc, char** argv) {
   auto block = MeshBlock(op);
 
   torch::Device device(torch::kCPU);
-  if (torch::cuda::is_available() && op->layout()->backend() == "nccl") {
+  if (torch::cuda::is_available() && op->layout()->device() == "cuda") {
     std::cout << "Running on CUDA" << std::endl;
-    auto layout = block->get_layout();
-    if (layout->has_process_group() &&
-        layout->comm->pg->getBoundDeviceId().has_value()) {
-      device = layout->comm->pg->getBoundDeviceId().value();
-    } else {
-      device = torch::Device(torch::kCUDA, op->layout()->local_rank());
-    }
+    int device_id = op->layout()->device_id();
+    if (device_id < 0) device_id = op->layout()->local_rank();
+    device = torch::Device(torch::kCUDA, device_id);
   }
 
   block->to(device);

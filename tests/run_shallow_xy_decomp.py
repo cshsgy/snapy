@@ -60,10 +60,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-dir", required=True)
     parser.add_argument("--build-type", required=True)
-    parser.add_argument("--backend", default="gloo", choices=("gloo", "nccl"))
+    parser.add_argument("--backend", default="gloo", choices=("gloo", "ucx"))
+    parser.add_argument("--device", default="cpu", choices=("cpu", "cuda"))
     args = parser.parse_args()
 
-    if args.backend == "nccl":
+    if args.backend == "ucx" and args.device == "cuda":
         try:
             import torch
         except Exception as exc:
@@ -110,7 +111,8 @@ def main() -> int:
 
         env = os.environ.copy()
         env["BACKEND"] = args.backend
-        if args.backend == "nccl" and visible_devices:
+        env["DEVICE"] = args.device
+        if args.device == "cuda" and visible_devices:
             env["CUDA_VISIBLE_DEVICES"] = visible_devices
         run(
             [

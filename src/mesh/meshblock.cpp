@@ -511,7 +511,7 @@ double MeshBlockImpl::max_time_step(Variables const &vars) {
   c10d::AllreduceOptions op;
   op.reduceOp = c10d::ReduceOp::MIN;
   if (_playout->has_process_group()) {
-    _playout->comm->pg->allreduce(dt_reduce, op)->wait();
+    _playout->comm->allreduce(dt_reduce, op.reduceOp);
   }
 
   auto dt = dt_reduce[0].item<double>();
@@ -543,7 +543,7 @@ void MeshBlockImpl::forward(Variables &vars, double dt, int stage) {
 }
 
 void MeshBlockImpl::exchange(Variables &vars, SyncOptions const &opts) const {
-  std::vector<c10::intrusive_ptr<c10d::Work>> works;
+  std::vector<CommWorkPtr> works;
   begin_exchange(vars, opts);
   launch_exchange(opts, works);
   finalize_exchange(vars, opts, works);
@@ -554,15 +554,13 @@ void MeshBlockImpl::begin_exchange(Variables &vars,
   _playout->serialize(this, vars, opts);
 }
 
-void MeshBlockImpl::launch_exchange(
-    SyncOptions const &opts,
-    std::vector<c10::intrusive_ptr<c10d::Work>> &works) const {
+void MeshBlockImpl::launch_exchange(SyncOptions const &opts,
+                                    std::vector<CommWorkPtr> &works) const {
   _playout->launch_exchange(this, opts, works);
 }
 
-void MeshBlockImpl::finalize_exchange(
-    Variables &vars, SyncOptions const &opts,
-    std::vector<c10::intrusive_ptr<c10d::Work>> &works) const {
+void MeshBlockImpl::finalize_exchange(Variables &vars, SyncOptions const &opts,
+                                      std::vector<CommWorkPtr> &works) const {
   _playout->finalize(this, vars, opts, works);
 }
 
@@ -853,7 +851,7 @@ void MeshBlockImpl::print_cycle_info(Variables const &vars, double time,
       std::vector<at::Tensor> sum = {
           hydro_u_tol.index(interior).sum({1, 2, 3})};
       if (_playout->has_process_group()) {
-        _playout->comm->pg->reduce(sum, opsum)->wait();
+        _playout->comm->reduce(sum, opsum.reduceOp, opsum.rootRank);
       }
 
       if (compute_mass) {
@@ -881,7 +879,7 @@ void MeshBlockImpl::print_cycle_info(Variables const &vars, double time,
         std::vector<at::Tensor> ke_sum = {
             ke_tol.index(interior).sum({1, 2, 3})};
         if (_playout->has_process_group()) {
-          _playout->comm->pg->reduce(ke_sum, opsum)->wait();
+          _playout->comm->reduce(ke_sum, opsum.reduceOp, opsum.rootRank);
         }
 
         SINFO() << std::scientific << std::setprecision(dt_precision)
@@ -936,7 +934,7 @@ void MeshBlockImpl::finalize(Variables const &vars, double time) {
   opsum.rootRank = options->layout()->process_root_rank();
 
   if (_playout->has_process_group()) {
-    _playout->comm->pg->reduce(cells, opsum)->wait();
+    _playout->comm->reduce(cells, opsum.reduceOp, opsum.rootRank);
   }
 
   int64_t cellcycles = cells[0].item<int64_t>() * cycle * pintg->stages.size();
@@ -959,7 +957,7 @@ void MeshBlockImpl::finalize(Variables const &vars, double time) {
   recv_bufs.shrink_to_fit();
 
   if (_playout->has_process_group() && _playout->comm->owns_process_group()) {
-    _playout->comm->pg->shutdown();
+    _playout->comm->shutdown();
   }
 }
 

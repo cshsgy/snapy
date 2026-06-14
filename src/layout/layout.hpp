@@ -68,6 +68,7 @@ struct LayoutOptionsImpl {
        << "* periodic_y = " << (periodic_y() ? "true" : "false") << "\n"
        << "* periodic_z = " << (periodic_z() ? "true" : "false") << "\n"
        << "* backend = " << backend() << "\n"
+       << "* device = " << device() << "\n"
        << "* master_addr = " << master_addr() << "\n"
        << "* process_rank = " << process_rank() << "\n"
        << "* rank = " << rank() << "\n"
@@ -115,6 +116,7 @@ struct LayoutOptionsImpl {
   ADD_ARG(bool, periodic_z) = false;
 
   ADD_ARG(std::string, backend) = "gloo";
+  ADD_ARG(std::string, device) = "cpu";
   ADD_ARG(std::string, master_addr) = "127.0.0.1";
   ADD_ARG(int, process_rank) = 0;
   ADD_ARG(int, rank) = 0;
@@ -187,7 +189,7 @@ class LayoutImpl {
     return owner() != nullptr && options->process_world_size() > 1;
   }
   bool has_process_group() const {
-    return comm != nullptr && comm->pg.defined();
+    return comm != nullptr && comm->initialized();
   }
 
   virtual ~LayoutImpl();
@@ -236,15 +238,14 @@ class LayoutImpl {
 
   //! Launch only the communication phase after buffers have been serialized.
   void launch_exchange(MeshBlockImpl const* pmb, SyncOptions const& opts,
-                       std::vector<c10::intrusive_ptr<c10d::Work>>& works);
+                       std::vector<CommWorkPtr>& works);
 
-  virtual void exchange_remote(
-      MeshBlockImpl const* pmb, SyncOptions const& opts,
-      std::vector<c10::intrusive_ptr<c10d::Work>>& works);
+  virtual void exchange_remote(MeshBlockImpl const* pmb,
+                               SyncOptions const& opts,
+                               std::vector<CommWorkPtr>& works);
 
   void finalize(MeshBlockImpl const* pmb, Variables& vars,
-                SyncOptions const& opts,
-                std::vector<c10::intrusive_ptr<c10d::Work>>& works);
+                SyncOptions const& opts, std::vector<CommWorkPtr>& works);
 
  protected:
   void _init_process_group();
@@ -253,18 +254,6 @@ class LayoutImpl {
   void _prepare_local_exchange(MeshBlockImpl const* pmb,
                                SyncOptions const& opts);
 
-  //! Return local blocks that actually participate in remote NCCL traffic.
-  std::vector<int> _active_remote_local_indices(SyncOptions const& opts) const;
-
-  //! Build a stable ordering key for remote exchanges owned by one local block.
-  virtual std::vector<std::tuple<int, int, int, int, int, int>>
-  _remote_order_keys(SyncOptions const& opts) const;
-
-  //! Launch cubed-sphere NCCL sends/recvs process-wide to preserve op ordering.
-  void _launch_cubed_sphere_nccl_remote_ops(
-      SyncOptions const& opts,
-      std::map<int, std::vector<c10::intrusive_ptr<c10d::Work>>>&
-          works_by_block) const;
   virtual std::tuple<int, int, int> _remap_exchange_offset(
       std::tuple<int, int, int> iloc, int dy, int dx, int dz = 0) const;
   virtual std::tuple<int, int, int> _peer_exchange_offset(

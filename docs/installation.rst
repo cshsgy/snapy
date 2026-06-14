@@ -58,22 +58,12 @@ Build Steps
 
        brew install netcdf
 
-4. Install NCCL (if enabling GPU):
-
-   * **Linux (Ubuntu/Debian)**::
-
-       sudo apt-get install libnccl2 libnccl-dev
-
-   * **Linux (CentOS/RHEL)**::
-
-       sudo yum install libnccl libnccl-devel libnccl-static
-
-5. Configure and build::
+4. Configure and build::
 
     cmake -B build -DCMAKE_BUILD_TYPE=Release -DNETCDF=ON
     cmake --build build --parallel 3
 
-6. Install the Python package::
+5. Install the Python package::
 
     pip install .
 

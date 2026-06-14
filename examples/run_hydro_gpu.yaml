@@ -28,7 +28,8 @@ geometry:
   cells: {nx1: 16, nx2: 24, nx3: 12, nghost: 3}
 
 distribute:
-  backend: nccl
+  backend: ucx
+  device: cuda
   layout: slab
   nb2: 1
   nb3: 1

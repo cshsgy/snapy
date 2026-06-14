@@ -4,7 +4,8 @@ geometry:
   cells: {nx1: 64, nx2: 256, nx3: 1, nghost: 3}
 
 distribute:
-  backend: nccl
+  backend: ucx
+  device: cuda
   layout: slab
   nb2: 1
   nb3: 1

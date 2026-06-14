@@ -140,7 +140,7 @@ double MeshImpl::max_time_step(MeshVariables const& vars) {
   op.reduceOp = c10d::ReduceOp::MIN;
   auto layout = blocks.front()->get_layout();
   if (layout->has_process_group()) {
-    layout->comm->pg->allreduce(dt_reduce, op)->wait();
+    layout->comm->allreduce(dt_reduce, op.reduceOp);
   }
 
   auto dt = dt_reduce[0].item<double>();
@@ -245,7 +245,7 @@ void MeshImpl::print_cycle_info(MeshVariables const& vars, double time,
   if (local_sum.defined()) {
     std::vector<at::Tensor> sum = {local_sum};
     if (root->get_layout()->has_process_group()) {
-      root->get_layout()->comm->pg->reduce(sum, opsum)->wait();
+      root->get_layout()->comm->reduce(sum, opsum.reduceOp, opsum.rootRank);
     }
 
     if (compute_mass) {
@@ -339,7 +339,7 @@ void MeshImpl::finalize(MeshVariables const& vars, double time) {
   if (layout->has_process_group()) {
     layout->comm->barrier();
     if (layout->comm->owns_process_group()) {
-      layout->comm->pg->shutdown();
+      layout->comm->shutdown();
     }
   }
 }

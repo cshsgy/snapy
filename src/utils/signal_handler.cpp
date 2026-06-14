@@ -77,7 +77,7 @@ int SignalHandler::CheckSignalFlags(MeshBlockImpl const* pmb) {
   op.reduceOp = c10d::ReduceOp::MAX;
   if (pmb != nullptr && pmb->get_layout() != nullptr &&
       pmb->get_layout()->has_process_group()) {
-    pmb->get_layout()->comm->pg->allreduce(ret_reduce, op)->wait();
+    pmb->get_layout()->comm->allreduce(ret_reduce, op.reduceOp);
   } else if (is_process_group_initialized() && get_world_size() > 1) {
     get_process_group()->allreduce(ret_reduce, op)->wait();
   }

@@ -2,11 +2,18 @@
 
 set_if_empty(NMASS 0)
 
-# nccl options
-if(NOT CUDA OR NOT DEFINED CUDA)
-  set(NCCL_OPTION "NOT_USE_C10D_NCCL")
+# cuda options
+if(CUDA)
+  set(CUDA_OPTION "USE_CUDA")
 else()
-  set(NCCL_OPTION "USE_C10D_NCCL")
+  set(CUDA_OPTION "NOT_USE_CUDA")
+endif()
+
+# ucx options
+if(UCX)
+  set(UCX_OPTION "USE_UCX")
+else()
+  set(UCX_OPTION "NOT_USE_UCX")
 endif()
 
 # netcdf options

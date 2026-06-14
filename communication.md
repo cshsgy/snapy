@@ -120,9 +120,10 @@ The layout distinguishes two classes of neighbors.
 
 ### Remote neighbors
 
-For remote neighbors, communication is done through the process group. The
-layout serializes send buffers, launches the collective or point-to-point work,
-then deserializes the received buffers during finalize.
+For remote neighbors, communication is done through the configured transport.
+The layout serializes send buffers, launches tagged point-to-point work, then
+deserializes the received buffers during finalize. Linux builds provide a
+native UCX transport; Gloo remains available for CPU-only and macOS builds.
 
 ### Local neighbors
 
@@ -204,6 +205,8 @@ Any future communication work should preserve these invariants:
    buffers.
 6. Cubed-sphere-specific remapping stays in the cubed-sphere layout, not in
    generic mesh scheduling code.
+7. Callers use the Snapy communication facade rather than accessing a
+   torch.distributed process group directly.
 
 ## Practical debugging guidance
 
