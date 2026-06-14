@@ -20,6 +20,10 @@ as the backend without specifying a communication device:
     distribute:
       backend: ucx
 
+UCX is the default backend on builds configured with UCX, so the ``backend``
+entry may be omitted. Set ``backend: gloo`` or ``BACKEND=gloo`` to opt into
+Gloo.
+
 Communication automatically follows each tensor's device type. For CUDA
 execution, build with ``-DCUDA=ON`` and set ``DEVICE=cuda`` when launching the
 provided examples. ``BACKEND`` overrides the configured transport.

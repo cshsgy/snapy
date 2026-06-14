@@ -32,6 +32,15 @@ LayoutOptions make_test_options() {
 
 }  // namespace
 
+TEST(LayoutOptions, DefaultsToAvailableCommunicationBackend) {
+  auto opts = LayoutOptionsImpl::create();
+#ifdef USE_UCX
+  EXPECT_EQ(opts->backend(), "ucx");
+#else
+  EXPECT_EQ(opts->backend(), "gloo");
+#endif
+}
+
 TEST(ProcessGroupContext, SkipsSingleProcessCommunication) {
   auto opts = make_test_options();
   auto ctx = ProcessGroupContext::create(opts);

@@ -1,12 +1,6 @@
 include(FetchContent)
 include(ExternalProject)
 
-if(APPLE)
-  option(UCX "Build the UCX communication backend" OFF)
-else()
-  option(UCX "Build the UCX communication backend" ON)
-endif()
-
 if(NOT UCX)
   return()
 endif()

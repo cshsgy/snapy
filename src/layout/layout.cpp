@@ -112,6 +112,10 @@ LocalExchangeKey make_local_exchange_key(LayoutImpl const& layout,
 }  // namespace
 
 LayoutOptionsImpl::LayoutOptionsImpl() {
+#ifdef USE_UCX
+  backend("ucx");
+#endif
+
   // These enrionment variables will be set by torch.distributed.launch
   // Override by them if they are present
   auto process_rank_env = get_env("PROCESS_RANK", get_env("RANK", "0"));
@@ -141,7 +145,8 @@ LayoutOptions LayoutOptionsImpl::from_yaml(std::string const& filename,
   op->py(node["nb3"].as<int>(1));
   op->px(node["nb2"].as<int>(1));
   op->pz(node["nb1"].as<int>(1));
-  op->backend() = get_env("BACKEND", node["backend"].as<std::string>("gloo"));
+  op->backend() =
+      get_env("BACKEND", node["backend"].as<std::string>(op->backend()));
   op->device() = get_env("DEVICE", "cpu");
   op->verbose() = node["verbose"].as<bool>(verbose);
 
