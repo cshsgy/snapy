@@ -10,6 +10,11 @@ from pathlib import Path
 SKIP_CODE = 125
 
 
+def skip(msg: str) -> int:
+    print(f"Skipping exchange test: {msg}")
+    return SKIP_CODE
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-dir", required=True)
@@ -20,18 +25,22 @@ def main() -> int:
 
     torchrun = shutil.which("torchrun")
     if torchrun is None:
-        print("Skipping exchange test: torchrun not found")
-        return SKIP_CODE
+        return skip("torchrun not found")
 
     if args.device == "cuda":
-        import torch
+        try:
+            import torch
+        except Exception as exc:
+            return skip(f"torch import failed: {exc}")
 
         if not torch.cuda.is_available():
-            print("Skipping exchange test: CUDA runtime is unavailable")
-            return SKIP_CODE
+            return skip("CUDA runtime is unavailable")
 
     build_dir = Path(args.build_dir).resolve()
     executable = build_dir / "tests" / f"test_exchange.{args.build_type}"
+    if not executable.exists():
+        return skip(f"missing executable {executable}")
+
     env = os.environ.copy()
     env.update(
         {
