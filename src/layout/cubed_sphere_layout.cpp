@@ -719,8 +719,6 @@ void CubedSphereLayoutImpl::serialize(MeshBlockImpl const* pmb, Variables& vars,
             torch::empty_like(pmb->send_bufs[bid].back()));
       }
     }
-
-  // comm->sync_stream();
 }
 
 void CubedSphereLayoutImpl::deserialize(MeshBlockImpl const* pmb,
@@ -729,8 +727,6 @@ void CubedSphereLayoutImpl::deserialize(MeshBlockImpl const* pmb,
   if (options->verbose()) {
     SINFO(CubedSphereLayout) << "deserializing data from receive buffers\n";
   }
-
-  // comm->sync_device();
 
   auto pcoord = pmb->pcoord;
 
@@ -932,7 +928,6 @@ void CubedSphereLayoutImpl::exchange_remote(MeshBlockImpl const* pmb,
               "[CubedSphereLayout:exchange_remote] remote communication "
               "requires an initialized process group");
 
-  comm->sync_stream();
   std::lock_guard<std::mutex> lock(g_cubed_sphere_comm_mutex);
   for (auto const& op : remote_ops) {
     auto send_work = comm->send(pmb->send_bufs[op.buffer_id], op.remote_process,

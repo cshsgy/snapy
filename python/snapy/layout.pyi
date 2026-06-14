@@ -110,12 +110,12 @@ class LayoutOptions:
 
     @overload
     def device(self) -> str:
-        """Get communication device type."""
+        """Get execution device hint."""
         ...
 
     @overload
     def device(self, value: str) -> "LayoutOptions":
-        """Set communication device type."""
+        """Set execution device hint."""
         ...
 
     @overload

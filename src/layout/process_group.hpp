@@ -26,6 +26,8 @@ class CommWork {
 };
 using CommWorkPtr = std::shared_ptr<CommWork>;
 
+void sync_tensor_streams(std::vector<torch::Tensor> const& tensors);
+
 class ProcessGroupContext {
  public:
   class UcxTransport {
@@ -59,8 +61,6 @@ class ProcessGroupContext {
   void reduce(std::vector<torch::Tensor>& tensors, c10d::ReduceOp op,
               int root) const;
   void barrier() const;
-  void sync_stream() const;
-  void sync_device() const;
   void shutdown() const;
 
  private:

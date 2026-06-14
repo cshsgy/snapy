@@ -26,7 +26,6 @@ geometry:
 
 distribute:
   backend: ucx
-  device: cuda
   layout: cubed-sphere
   nb2: 1
   nb3: 1

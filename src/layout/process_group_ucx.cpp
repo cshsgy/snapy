@@ -44,6 +44,8 @@ class UcxWork final : public CommWork {
     std::unique_lock<std::mutex> lock(batch_->mutex);
     batch_->cv.wait(lock, [&]() { return batch_->remaining == 0; });
     check_ucs(batch_->status, "UCX request");
+    lock.unlock();
+    sync_tensor_streams(tensors_);
   }
 
  private:
@@ -92,12 +94,6 @@ class NativeUcxTransport final : public ProcessGroupContext::UcxTransport {
   NativeUcxTransport(LayoutOptions options,
                      at::intrusive_ptr<c10d::Store> store)
       : options_(std::move(options)), store_(std::move(store)) {
-    if (options_->device() == "cuda") {
-      if (options_->device_id() < 0) {
-        options_->device_id(options_->local_rank());
-      }
-    }
-
     ucp_params_t context_params{};
     context_params.field_mask =
         UCP_PARAM_FIELD_FEATURES | UCP_PARAM_FIELD_MT_WORKERS_SHARED;

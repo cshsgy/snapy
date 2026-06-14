@@ -142,9 +142,7 @@ LayoutOptions LayoutOptionsImpl::from_yaml(std::string const& filename,
   op->px(node["nb2"].as<int>(1));
   op->pz(node["nb1"].as<int>(1));
   op->backend() = get_env("BACKEND", node["backend"].as<std::string>("gloo"));
-  auto default_device = "cpu";
-  op->device() =
-      get_env("DEVICE", node["device"].as<std::string>(default_device));
+  op->device() = get_env("DEVICE", "cpu");
   op->verbose() = node["verbose"].as<bool>(verbose);
 
   if (op->verbose()) op->report(SINFO(LayoutOptions));
@@ -372,8 +370,6 @@ void LayoutImpl::serialize(MeshBlockImpl const* pmb, Variables& vars,
           count++;
         }
       }
-
-  // comm->sync_stream();
 }
 
 void LayoutImpl::launch_exchange(MeshBlockImpl const* pmb,
@@ -470,7 +466,6 @@ void LayoutImpl::exchange_remote(MeshBlockImpl const* pmb,
               "[Layout:exchange_remote] remote communication requires an "
               "initialized process group");
 
-  comm->sync_stream();
   std::lock_guard<std::mutex> lock(g_process_comm_mutex);
   for (auto const& op : remote_ops) {
     auto send_work = comm->send(pmb->send_bufs[op.buffer_id], op.remote_process,
@@ -491,8 +486,6 @@ void LayoutImpl::deserialize(MeshBlockImpl const* pmb, Variables& vars,
   if (options->verbose()) {
     SINFO(Layout) << "deserializing data from receive buffers\n";
   }
-
-  // comm->sync_device();
 
   // Get my logical location
   auto iloc = loc_of(options->rank());
@@ -582,8 +575,6 @@ void LayoutImpl::finalize(MeshBlockImpl const* pmb, Variables& vars,
       work->wait();
     }
   }
-  if (has_process_group()) comm->sync_stream();
-
   // Deserialize received data into ghost zones
   deserialize(pmb, vars, opts);
 

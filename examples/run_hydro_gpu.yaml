@@ -29,7 +29,6 @@ geometry:
 
 distribute:
   backend: ucx
-  device: cuda
   layout: slab
   nb2: 1
   nb3: 1

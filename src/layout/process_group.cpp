@@ -42,8 +42,7 @@ std::string process_group_key(LayoutOptions const& opts) {
   std::ostringstream os;
   os << opts->backend() << "|" << opts->master_addr() << "|"
      << opts->master_port() << "|" << opts->process_rank() << "|"
-     << opts->process_world_size() << "|" << opts->local_rank() << "|"
-     << opts->device() << "|" << opts->device_id();
+     << opts->process_world_size() << "|" << opts->local_rank();
   return os.str();
 }
 
@@ -86,11 +85,6 @@ ProcessGroupContext::ProcessGroupContext(LayoutOptions const& opts)
 
 void ProcessGroupContext::_init() {
   if (options_->process_world_size() <= 1) return;
-
-  TORCH_CHECK(options_->device() == "cpu" || options_->device() == "cuda",
-              "Unsupported communication device=", options_->device());
-  TORCH_CHECK(backend != "gloo" || options_->device() == "cpu",
-              "backend=gloo requires device=cpu");
 
   auto external_pg = get_process_group();
   if (backend != "ucx" && external_pg.defined()) {
@@ -141,16 +135,26 @@ bool ProcessGroupContext::initialized() const {
 
 CommWorkPtr ProcessGroupContext::send(std::vector<torch::Tensor>& tensors,
                                       int peer, int tag) const {
+  sync_tensor_streams(tensors);
   if (ucx_) {
     return ucx_->send(tensors, peer, tag);
+  }
+  for (auto const& tensor : tensors) {
+    TORCH_CHECK(tensor.device().is_cpu(),
+                "Gloo communication requires CPU tensors");
   }
   return std::make_shared<C10dWork>(pg->send(tensors, peer, tag));
 }
 
 CommWorkPtr ProcessGroupContext::recv(std::vector<torch::Tensor>& tensors,
                                       int peer, int tag) const {
+  sync_tensor_streams(tensors);
   if (ucx_) {
     return ucx_->recv(tensors, peer, tag);
+  }
+  for (auto const& tensor : tensors) {
+    TORCH_CHECK(tensor.device().is_cpu(),
+                "Gloo communication requires CPU tensors");
   }
   return std::make_shared<C10dWork>(pg->recv(tensors, peer, tag));
 }
@@ -240,8 +244,7 @@ void ProcessGroupContext::shutdown() const {
 }
 
 #ifdef NOT_USE_CUDA
-void ProcessGroupContext::sync_stream() const {}
-void ProcessGroupContext::sync_device() const {}
+void sync_tensor_streams(std::vector<torch::Tensor> const&) {}
 #endif
 
 #ifndef USE_UCX

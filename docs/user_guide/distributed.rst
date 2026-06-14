@@ -12,17 +12,17 @@ Snapy uses domain decomposition to split the computational domain across multipl
 Setup
 -----
 
-Linux builds fetch and build the pinned UCX source automatically. Select the
-transport and memory device independently:
+Linux builds fetch and build the pinned UCX source automatically. Select UCX
+as the backend without specifying a communication device:
 
 .. code-block:: yaml
 
     distribute:
       backend: ucx
-      device: cpu
 
-For CUDA buffers, set ``device: cuda`` and build with ``-DCUDA=ON``. The
-``BACKEND`` and ``DEVICE`` environment variables override these values.
+Communication automatically follows each tensor's device type. For CUDA
+execution, build with ``-DCUDA=ON`` and set ``DEVICE=cuda`` when launching the
+provided examples. ``BACKEND`` overrides the configured transport.
 
 Basic distributed setup using ``torchrun``:
 
