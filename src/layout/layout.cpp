@@ -588,16 +588,8 @@ void LayoutImpl::finalize(MeshBlockImpl const* pmb, Variables& vars,
     fill_corners(pmb, vars);
   }
 
-  /*c10d::BarrierOptions op;
-  op.device_ids = {options->local_rank()};
-  pg->barrier(op)->wait();*/
-  {
-    if (has_process_group()) {
-      std::lock_guard<std::mutex> lock(g_process_comm_mutex);
-      comm->barrier();
-    }
-  }
-
+  // Completed point-to-point work is sufficient; a global barrier would
+  // serialize otherwise independent exchanges.
   works.clear();
 }
 

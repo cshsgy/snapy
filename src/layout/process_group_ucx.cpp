@@ -97,7 +97,7 @@ class NativeUcxTransport final : public ProcessGroupContext::UcxTransport {
     ucp_params_t context_params{};
     context_params.field_mask =
         UCP_PARAM_FIELD_FEATURES | UCP_PARAM_FIELD_MT_WORKERS_SHARED;
-    context_params.features = UCP_FEATURE_TAG;
+    context_params.features = UCP_FEATURE_TAG | UCP_FEATURE_WAKEUP;
     context_params.mt_workers_shared = 1;
 
     ucp_config_t* config = nullptr;
@@ -136,7 +136,13 @@ class NativeUcxTransport final : public ProcessGroupContext::UcxTransport {
 
     progress_thread_ = std::thread([this]() {
       while (!stopping_.load(std::memory_order_acquire)) {
-        if (ucp_worker_progress(worker_) == 0) std::this_thread::yield();
+        while (ucp_worker_progress(worker_) != 0) {
+        }
+        if (stopping_.load(std::memory_order_acquire)) break;
+        auto status = ucp_worker_wait(worker_);
+        if (status != UCS_OK && status != UCS_ERR_BUSY) {
+          std::this_thread::yield();
+        }
       }
       while (ucp_worker_progress(worker_) != 0) {
       }
@@ -204,6 +210,7 @@ class NativeUcxTransport final : public ProcessGroupContext::UcxTransport {
       endpoint = nullptr;
     }
     stopping_.store(true, std::memory_order_release);
+    check_ucs(ucp_worker_signal(worker_), "ucp_worker_signal");
     if (progress_thread_.joinable()) progress_thread_.join();
     if (worker_) ucp_worker_destroy(worker_);
     if (context_) ucp_cleanup(context_);
