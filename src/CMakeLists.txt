@@ -60,6 +60,7 @@ add_library(${namel}_${buildl}
 set_target_properties(${namel}_${buildl}
     PROPERTIES
     COMPILE_FLAGS "${CMAKE_CXX_FLAGS_${buildu}}"
+    BUILD_RPATH_USE_ORIGIN TRUE
     )
 
 target_link_libraries(${namel}_${buildl}
