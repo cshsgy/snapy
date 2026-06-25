@@ -472,6 +472,10 @@ void LayoutImpl::exchange_remote(MeshBlockImpl const* pmb,
               "initialized process group");
 
   std::lock_guard<std::mutex> lock(g_process_comm_mutex);
+  bool coalescing = comm->supports_coalescing();
+  if (coalescing) {
+    comm->start_coalescing();
+  }
   for (auto const& op : remote_ops) {
     auto send_work = comm->send(pmb->send_bufs[op.buffer_id], op.remote_process,
                                 op.send_tag);
@@ -482,6 +486,12 @@ void LayoutImpl::exchange_remote(MeshBlockImpl const* pmb,
                                 op.recv_tag);
     if (recv_work) {
       works.push_back(recv_work);
+    }
+  }
+  if (coalescing) {
+    auto coalesced_work = comm->end_coalescing();
+    if (coalesced_work) {
+      works.push_back(coalesced_work);
     }
   }
 }

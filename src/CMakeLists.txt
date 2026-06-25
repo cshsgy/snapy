@@ -79,7 +79,15 @@ target_link_libraries(${namel}_${buildl}
 
 if(UCX_FOUND)
   target_link_libraries(${namel}_${buildl}
-    PUBLIC UCX::ucp UCX::uct UCX::ucs UCX::ucm dl rt)
+    PUBLIC commux::commux)
+
+  set_property(TARGET ${namel}_${buildl} APPEND PROPERTY
+    BUILD_RPATH "${COMMUX_LIBRARY_DIR};$ORIGIN/../../commux/lib")
+
+  if(COMMUX_CUDA_FOUND)
+    target_compile_definitions(${namel}_${buildl}
+      PRIVATE COMMUX_WITH_CUDA_RUNTIME=1)
+  endif()
 endif()
 
 add_library(snapy::snap ALIAS ${namel}_${buildl})

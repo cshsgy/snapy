@@ -87,8 +87,8 @@ pip install numpy kintera torch==2.7.1
      brew install netcdf
      ```
 
-UCX does not need to be installed separately. Linux builds fetch pinned UCX
-sources and install the resulting libraries into ``build/lib``. Use
+UCX support is provided by the Python package ``commux``. Install snapy's
+Python dependencies in the active environment before configuring; use
 ``-DUCX=OFF`` only when building a Gloo-only configuration.
 
 4. Configure and build:

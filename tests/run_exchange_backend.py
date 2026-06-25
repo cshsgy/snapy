@@ -15,6 +15,26 @@ def skip(msg: str) -> int:
     return SKIP_CODE
 
 
+def commux_has_cuda_support() -> bool:
+    try:
+        import commux
+    except Exception:
+        return False
+
+    lib = Path(commux.__file__).resolve().parent / "lib" / "libcommux.so"
+    if not lib.exists():
+        return False
+
+    result = subprocess.run(
+        ["ldd", str(lib)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    return result.returncode == 0 and "libc10_cuda" in result.stdout
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-dir", required=True)
@@ -35,6 +55,9 @@ def main() -> int:
 
         if not torch.cuda.is_available():
             return skip("CUDA runtime is unavailable")
+
+        if args.backend == "ucx" and not commux_has_cuda_support():
+            return skip("installed commux library was built without CUDA support")
 
     build_dir = Path(args.build_dir).resolve()
     executable = build_dir / "tests" / f"test_exchange.{args.build_type}"

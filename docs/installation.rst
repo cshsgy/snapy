@@ -60,6 +60,7 @@ Build Steps
 
 4. Configure and build::
 
+    # UCX builds require the commux Python package in this environment.
     cmake -B build -DCMAKE_BUILD_TYPE=Release -DNETCDF=ON
     cmake --build build --parallel 3
 

@@ -30,21 +30,6 @@ void sync_tensor_streams(std::vector<torch::Tensor> const& tensors);
 
 class ProcessGroupContext {
  public:
-  class UcxTransport {
-   public:
-    virtual ~UcxTransport() = default;
-    virtual CommWorkPtr send(std::vector<torch::Tensor>& tensors, int peer,
-                             int tag) = 0;
-    virtual CommWorkPtr recv(std::vector<torch::Tensor>& tensors, int peer,
-                             int tag) = 0;
-    virtual void allreduce(std::vector<torch::Tensor>& tensors,
-                           c10d::ReduceOp op) = 0;
-    virtual void reduce(std::vector<torch::Tensor>& tensors, c10d::ReduceOp op,
-                        int root) = 0;
-    virtual void barrier() = 0;
-    virtual void shutdown() = 0;
-  };
-
   static std::shared_ptr<ProcessGroupContext> create(LayoutOptions const& opts);
 
   at::intrusive_ptr<c10d::Store> store;
@@ -62,6 +47,9 @@ class ProcessGroupContext {
               int root) const;
   void barrier() const;
   void shutdown() const;
+  bool supports_coalescing() const;
+  void start_coalescing() const;
+  CommWorkPtr end_coalescing() const;
 
  private:
   explicit ProcessGroupContext(LayoutOptions const& opts);
@@ -73,7 +61,7 @@ class ProcessGroupContext {
   LayoutOptions options_;
   std::string backend;
   bool owns_process_group_ = false;
-  std::shared_ptr<UcxTransport> ucx_;
+  c10::intrusive_ptr<c10d::Backend> ucx_;
 
   static std::mutex mutex_;
 };

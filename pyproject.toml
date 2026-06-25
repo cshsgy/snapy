@@ -5,6 +5,7 @@ requires = [
   "wheel",
   "build",
   "kintera>=2.1.0",
+  "commux>=0.0.2",
   "torch==2.10.0",
   "ninja",
   ]
@@ -24,6 +25,7 @@ dependencies = [
   "numpy",
   "pyyaml",
   "kintera>=2.1.0",
+  "commux>=0.0.2",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",

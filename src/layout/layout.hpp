@@ -253,7 +253,6 @@ class LayoutImpl {
   //! Coordinate local sibling blocks so same-process copies are visible first.
   void _prepare_local_exchange(MeshBlockImpl const* pmb,
                                SyncOptions const& opts);
-
   virtual std::tuple<int, int, int> _remap_exchange_offset(
       std::tuple<int, int, int> iloc, int dy, int dx, int dz = 0) const;
   virtual std::tuple<int, int, int> _peer_exchange_offset(

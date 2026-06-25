@@ -1,6 +1,8 @@
 #pragma once
 
 // C/C++
+#include <functional>
+#include <memory>
 #include <vector>
 
 // torch
@@ -44,11 +46,13 @@ class MeshImpl : public torch::nn::Cloneable<MeshImpl> {
 
   MeshImpl() : options(MeshOptionsImpl::create()) {}
   explicit MeshImpl(MeshOptions const& options_);
+  ~MeshImpl() override;
   void reset() override;
 
   double initialize(MeshVariables& vars, char const* restart_file = nullptr);
   double max_time_step(MeshVariables const& vars);
   void forward(MeshVariables& vars, double dt, int stage);
+  void exchange(MeshVariables& vars, SyncOptions const& opts);
   void exchange_ghost_zones(MeshVariables& vars, int type = kConserved);
   void make_outputs(MeshVariables const& vars, double current_time,
                     bool final_write = false);
@@ -57,6 +61,13 @@ class MeshImpl : public torch::nn::Cloneable<MeshImpl> {
   int check_redo(MeshVariables& vars);
   void set_cycle(int cycle);
   void finalize(MeshVariables const& vars, double time);
+
+ private:
+  class BlockWorkerPool;
+
+  void run_block_jobs(std::function<void(size_t)> func);
+
+  std::shared_ptr<BlockWorkerPool> workers_;
 };
 
 TORCH_MODULE(Mesh);

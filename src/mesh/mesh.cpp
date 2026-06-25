@@ -2,10 +2,14 @@
 #include <c10/core/DeviceGuard.h>
 
 #include <algorithm>
-#include <future>
+#include <condition_variable>
+#include <exception>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <mutex>
+#include <thread>
 
 // yaml
 #include <yaml-cpp/yaml.h>
@@ -28,21 +32,99 @@ MeshBlockOptions clone_block_options(MeshBlockOptions const& src) {
   return dst;
 }
 
-template <typename Func>
-void run_block_jobs(size_t count, torch::Device const& device, Func&& func) {
-  std::vector<std::future<void>> jobs;
-  jobs.reserve(count);
-  for (size_t i = 0; i < count; ++i) {
-    jobs.push_back(std::async(std::launch::async, [&, i, device]() {
-      c10::OptionalDeviceGuard device_guard(device);
-      func(i);
-    }));
-  }
-  for (auto& job : jobs) {
-    job.get();
-  }
-}
 }  // namespace
+
+class MeshImpl::BlockWorkerPool {
+ public:
+  BlockWorkerPool(size_t count, torch::Device device)
+      : device_(std::move(device)), remaining_(count) {
+    workers_.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+      workers_.emplace_back([this, i]() { run(i); });
+    }
+  }
+
+  ~BlockWorkerPool() { stop(); }
+
+  void submit(std::function<void(size_t)> func) {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      TORCH_CHECK(!stopping_, "Mesh block worker pool is stopping");
+      func_ = std::move(func);
+      error_ = nullptr;
+      remaining_ = workers_.size();
+      generation_ += 1;
+    }
+    cv_.notify_all();
+
+    std::unique_lock<std::mutex> lock(mutex_);
+    done_cv_.wait(lock, [&]() { return remaining_ == 0; });
+    if (error_ != nullptr) {
+      auto error = error_;
+      error_ = nullptr;
+      std::rethrow_exception(error);
+    }
+  }
+
+  void stop() {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (stopping_) return;
+      stopping_ = true;
+    }
+    cv_.notify_all();
+    for (auto& worker : workers_) {
+      if (worker.joinable()) {
+        worker.join();
+      }
+    }
+  }
+
+ private:
+  void run(size_t index) {
+    c10::OptionalDeviceGuard device_guard(device_);
+    size_t seen_generation = 0;
+    while (true) {
+      std::function<void(size_t)> func;
+      {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock,
+                 [&]() { return stopping_ || generation_ != seen_generation; });
+        if (stopping_) return;
+        seen_generation = generation_;
+        func = func_;
+      }
+
+      try {
+        func(index);
+      } catch (...) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (error_ == nullptr) {
+          error_ = std::current_exception();
+        }
+      }
+
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        remaining_ -= 1;
+        if (remaining_ == 0) {
+          done_cv_.notify_one();
+        }
+      }
+    }
+  }
+
+  torch::Device device_;
+  std::vector<std::thread> workers_;
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  std::condition_variable done_cv_;
+  std::function<void(size_t)> func_;
+  std::exception_ptr error_;
+  size_t generation_ = 0;
+  size_t remaining_ = 0;
+  bool stopping_ = false;
+};
 
 MeshOptions MeshOptionsImpl::from_yaml(std::string input_file, bool verbose) {
   auto block = MeshBlockOptionsImpl::from_yaml(input_file, verbose);
@@ -57,7 +139,10 @@ MeshOptions MeshOptionsImpl::from_yaml(std::string input_file, bool verbose) {
 
 MeshImpl::MeshImpl(MeshOptions const& options_) : options(options_) { reset(); }
 
+MeshImpl::~MeshImpl() = default;
+
 void MeshImpl::reset() {
+  workers_.reset();
   blocks.clear();
   TORCH_CHECK(options->block() != nullptr, "Mesh requires MeshBlockOptions");
 
@@ -85,6 +170,26 @@ void MeshImpl::reset() {
         register_module("block" + std::to_string(i), MeshBlock(block_opts));
     blocks.push_back(block);
   }
+
+  if (blocks.size() > 1) {
+    workers_ = std::make_shared<BlockWorkerPool>(
+        blocks.size(), torch::Device(blocks.front()->options->device_str()));
+  }
+}
+
+void MeshImpl::run_block_jobs(std::function<void(size_t)> func) {
+  if (blocks.size() <= 1) {
+    if (!blocks.empty()) {
+      c10::OptionalDeviceGuard device_guard(
+          torch::Device(blocks.front()->options->device_str()));
+      func(0);
+    }
+    return;
+  }
+
+  TORCH_CHECK(workers_ != nullptr,
+              "Mesh block worker pool is not initialized for multi-block mesh");
+  workers_->submit(std::move(func));
 }
 
 double MeshImpl::initialize(MeshVariables& vars, char const* restart_file) {
@@ -108,18 +213,7 @@ double MeshImpl::initialize(MeshVariables& vars, char const* restart_file) {
   }
   SignalHandler::GetInstance();
 
-  auto device = torch::Device(blocks.front()->options->device_str());
-  std::vector<std::future<void>> jobs;
-  jobs.reserve(blocks.size());
-  for (int i = 0; i < blocks.size(); ++i) {
-    jobs.push_back(std::async(std::launch::async, [&, i, device]() {
-      c10::OptionalDeviceGuard device_guard(device);
-      blocks[i]->initialize_under_mesh(vars[i]);
-    }));
-  }
-  for (auto& job : jobs) {
-    job.get();
-  }
+  run_block_jobs([&](size_t i) { blocks[i]->initialize_under_mesh(vars[i]); });
 
   return 0.;
 }
@@ -159,31 +253,30 @@ void MeshImpl::forward(MeshVariables& vars, double dt, int stage) {
     return;
   }
 
-  auto device = torch::Device(blocks.front()->options->device_str());
-  run_block_jobs(blocks.size(), device, [&](size_t i) {
-    blocks[i]->advance_local(vars[i], dt, stage);
-  });
-  run_block_jobs(blocks.size(), device,
-                 [&](size_t i) { blocks[i]->exchange_ghost_zones(vars[i]); });
+  run_block_jobs(
+      [&](size_t i) { blocks[i]->advance_local(vars[i], dt, stage); });
+  run_block_jobs([&](size_t i) { blocks[i]->exchange_ghost_zones(vars[i]); });
 }
 
-void MeshImpl::exchange_ghost_zones(MeshVariables& vars, int type) {
+void MeshImpl::exchange(MeshVariables& vars, SyncOptions const& opts) {
   TORCH_CHECK(vars.size() == blocks.size(),
-              "Mesh::exchange_ghost_zones expects one Variables map per local "
-              "MeshBlock");
-  TORCH_CHECK(type == kPrimitive || type == kConserved || type == kScalar,
-              "Mesh::exchange_ghost_zones received invalid variable type");
+              "Mesh::exchange expects one Variables map per local MeshBlock");
 
-  SyncOptions opts;
-  opts.interpolate(true).type(type);
   if (blocks.size() == 1) {
     blocks[0]->exchange(vars[0], opts);
     return;
   }
 
-  auto device = torch::Device(blocks.front()->options->device_str());
-  run_block_jobs(blocks.size(), device,
-                 [&](size_t i) { blocks[i]->exchange(vars[i], opts); });
+  run_block_jobs([&](size_t i) { blocks[i]->exchange(vars[i], opts); });
+}
+
+void MeshImpl::exchange_ghost_zones(MeshVariables& vars, int type) {
+  TORCH_CHECK(type == kPrimitive || type == kConserved || type == kScalar,
+              "Mesh::exchange_ghost_zones received invalid variable type");
+
+  SyncOptions opts;
+  opts.interpolate(true).type(type);
+  exchange(vars, opts);
 }
 
 void MeshImpl::make_outputs(MeshVariables const& vars, double current_time,

@@ -12,8 +12,8 @@ Snapy uses domain decomposition to split the computational domain across multipl
 Setup
 -----
 
-Linux builds fetch and build the pinned UCX source automatically. Select UCX
-as the backend without specifying a communication device:
+Linux builds use the installed ``commux`` package for UCX communication. Select
+UCX as the backend without specifying a communication device:
 
 .. code-block:: yaml
 

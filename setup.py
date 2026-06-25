@@ -3,6 +3,7 @@ import os
 import sys
 import glob
 import torch
+import commux
 import platform
 from pathlib import Path
 from setuptools import setup
@@ -32,6 +33,7 @@ def parse_library_names(libdir):
     return snap_non_cuda + other + snap_cuda
 
 site_dir = sysconfig.get_paths()["purelib"]
+commux_dir = Path(commux.__file__).resolve().parent
 
 current_dir = os.getenv("WORKSPACE", Path().absolute())
 include_dirs = [
@@ -41,10 +43,11 @@ include_dirs = [
     f'{current_dir}/build/_deps/yaml-cpp-src/include',
     f"{site_dir}/kintera",
     f"{site_dir}/pyharp",
+    f"{commux_dir}/include",
 ]
 
 # add homebrew directories if on MacOS
-lib_dirs = [f"{current_dir}/build/lib"]
+lib_dirs = [f"{current_dir}/build/lib", f"{commux_dir}/lib"]
 if platform.system() == 'Darwin':
     lib_dirs.extend(['/opt/homebrew/lib'])
 else:
@@ -61,10 +64,14 @@ if sys.platform == "darwin":
         "-Wl,-rpath,@loader_path/../pydisort/lib",
         "-Wl,-rpath,@loader_path/../pyharp/lib",
         "-Wl,-rpath,@loader_path/../kintera/lib",
+        "-Wl,-rpath,@loader_path/../commux/lib",
     ]
 else:
     cuda_linker = []
     cuda_libraries = [lib for lib in libraries if "cuda" in lib]
+    cuda_runtime_dirs = [
+        Path("/opt/nvidia/hpc_sdk/Linux_x86_64/26.3/cuda/13.1/targets/x86_64-linux/lib")
+    ]
 
     if cuda_libraries:
         for lib in cuda_libraries:
@@ -81,6 +88,10 @@ else:
         "-Wl,-rpath,$ORIGIN/../pydisort/lib",
         "-Wl,-rpath,$ORIGIN/../pyharp/lib",
         "-Wl,-rpath,$ORIGIN/../kintera/lib",
+        "-Wl,-rpath,$ORIGIN/../commux/lib",
+    ]
+    extra_link_args += [
+        f"-Wl,-rpath,{path}" for path in cuda_runtime_dirs if path.exists()
     ]
     extra_link_args += cuda_linker
 

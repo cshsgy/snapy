@@ -54,6 +54,18 @@ std::string external_process_group_key(
      << static_cast<void*>(external_pg.get());
   return os.str();
 }
+
+void check_ucx_tensor_support(std::vector<torch::Tensor> const& tensors) {
+#ifndef COMMUX_WITH_CUDA_RUNTIME
+  for (auto const& tensor : tensors) {
+    TORCH_CHECK(!tensor.is_cuda(),
+                "backend=ucx received a CUDA tensor, but the installed commux "
+                "library was built without CUDA support");
+  }
+#else
+  (void)tensors;
+#endif
+}
 }  // namespace
 
 std::shared_ptr<ProcessGroupContext> ProcessGroupContext::create(
@@ -137,7 +149,8 @@ CommWorkPtr ProcessGroupContext::send(std::vector<torch::Tensor>& tensors,
                                       int peer, int tag) const {
   sync_tensor_streams(tensors);
   if (ucx_) {
-    return ucx_->send(tensors, peer, tag);
+    check_ucx_tensor_support(tensors);
+    return std::make_shared<C10dWork>(ucx_->send(tensors, peer, tag));
   }
   for (auto const& tensor : tensors) {
     TORCH_CHECK(tensor.device().is_cpu(),
@@ -150,7 +163,8 @@ CommWorkPtr ProcessGroupContext::recv(std::vector<torch::Tensor>& tensors,
                                       int peer, int tag) const {
   sync_tensor_streams(tensors);
   if (ucx_) {
-    return ucx_->recv(tensors, peer, tag);
+    check_ucx_tensor_support(tensors);
+    return std::make_shared<C10dWork>(ucx_->recv(tensors, peer, tag));
   }
   for (auto const& tensor : tensors) {
     TORCH_CHECK(tensor.device().is_cpu(),
@@ -162,7 +176,9 @@ CommWorkPtr ProcessGroupContext::recv(std::vector<torch::Tensor>& tensors,
 void ProcessGroupContext::allreduce(std::vector<torch::Tensor>& tensors,
                                     c10d::ReduceOp op) const {
   if (ucx_) {
-    ucx_->allreduce(tensors, op);
+    c10d::AllreduceOptions opts;
+    opts.reduceOp = op;
+    ucx_->allreduce(tensors, opts)->wait();
     return;
   }
   c10d::AllreduceOptions opts;
@@ -173,7 +189,10 @@ void ProcessGroupContext::allreduce(std::vector<torch::Tensor>& tensors,
 void ProcessGroupContext::reduce(std::vector<torch::Tensor>& tensors,
                                  c10d::ReduceOp op, int root) const {
   if (ucx_) {
-    ucx_->reduce(tensors, op, root);
+    c10d::ReduceOptions opts;
+    opts.reduceOp = op;
+    opts.rootRank = root;
+    ucx_->reduce(tensors, opts)->wait();
     return;
   }
   c10d::ReduceOptions opts;
@@ -227,7 +246,7 @@ void ProcessGroupContext::_init_gloo() {
 
 void ProcessGroupContext::barrier() const {
   if (ucx_) {
-    ucx_->barrier();
+    ucx_->barrier()->wait();
     return;
   }
   if (!pg.defined()) return;
@@ -236,11 +255,24 @@ void ProcessGroupContext::barrier() const {
 }
 
 void ProcessGroupContext::shutdown() const {
-  if (ucx_) {
-    ucx_->shutdown();
-  } else if (pg.defined()) {
+  if (pg.defined()) {
     pg->shutdown();
   }
+}
+
+bool ProcessGroupContext::supports_coalescing() const {
+  return ucx_ && ucx_->supportsCoalescing();
+}
+
+void ProcessGroupContext::start_coalescing() const {
+  if (supports_coalescing()) {
+    ucx_->startCoalescing();
+  }
+}
+
+CommWorkPtr ProcessGroupContext::end_coalescing() const {
+  if (!supports_coalescing()) return nullptr;
+  return std::make_shared<C10dWork>(ucx_->endCoalescing());
 }
 
 #ifdef NOT_USE_CUDA

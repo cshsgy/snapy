@@ -1,6 +1,5 @@
 // C/C++
 #include <cstdlib>
-#include <future>
 #include <iostream>
 
 // base
@@ -235,33 +234,19 @@ int main(int argc, char** argv) {
 
   SyncOptions opts;
   opts.interpolate(false).type(kPrimitive);
-  std::vector<std::future<void>> jobs;
-  jobs.reserve(mesh->blocks.size());
+  MeshVariables prim_vars(mesh->blocks.size());
   for (int i = 0; i < mesh->blocks.size(); ++i) {
-    jobs.push_back(std::async(std::launch::async, [&, i]() {
-      Variables sync_vars;
-      sync_vars["hydro_w"] = vars[i].at("hydro_w");
-      mesh->blocks[i]->exchange(sync_vars, opts);
-    }));
+    prim_vars[i]["hydro_w"] = vars[i].at("hydro_w");
   }
-  for (auto& job : jobs) {
-    job.get();
-  }
+  mesh->exchange(prim_vars, opts);
 
   SyncOptions scalar_opts;
   scalar_opts.interpolate(true).type(kScalar);
-  jobs.clear();
-  jobs.reserve(mesh->blocks.size());
+  MeshVariables scalar_vars(mesh->blocks.size());
   for (int i = 0; i < mesh->blocks.size(); ++i) {
-    jobs.push_back(std::async(std::launch::async, [&, i]() {
-      Variables sync_vars;
-      sync_vars["scalar_r"] = vars[i].at("scalar_r");
-      mesh->blocks[i]->exchange(sync_vars, scalar_opts);
-    }));
+    scalar_vars[i]["scalar_r"] = vars[i].at("scalar_r");
   }
-  for (auto& job : jobs) {
-    job.get();
-  }
+  mesh->exchange(scalar_vars, scalar_opts);
   if (mesh->blocks.front()->get_layout()->has_process_group()) {
     mesh->blocks.front()->get_layout()->comm->barrier();
   }
