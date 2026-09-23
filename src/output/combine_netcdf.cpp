@@ -64,6 +64,16 @@ void NetcdfOutput::combine_blocks(MeshBlockImpl* pmb, bool) {
 
   std::stringstream msg;
 
+  // Mirror of the barrier above, in a scope guard: no rank may return before
+  // the combined file exists, and the root's throw below must still release the
+  // others instead of leaving them in a collective it never reaches.
+  struct ReleaseOnExit {
+    Layout mirror;
+    ~ReleaseOnExit() {
+      if (mirror->has_process_group()) mirror->comm->barrier();
+    }
+  } release{layout};
+
   if (layout->options->process_rank() == layout->options->process_root_rank()) {
     std::string infile;
     infile.assign(pmb->options->output_dir());
