@@ -1,4 +1,5 @@
 // C/C++
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -7,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 // base
 #include <configure.h>
@@ -186,12 +188,18 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   int loc[4] = {lx1, lx3, lx2, level};
   int pos[4];
 
-  nc_def_var(ifile, "time", NC_FLOAT, 1, &idt, &ivt);
+  // NC_FLOAT gives a ~1e-7 floor, which is coarser than the
+  // conservation drifts these runs are gated on, and coarser than dt at
+  // t ~ 3e7 s. `double_precision: true` on the output block writes NC_DOUBLE.
+  const bool nc_dbl = options->double_precision();
+  const nc_type nctype = nc_dbl ? NC_DOUBLE : NC_FLOAT;
+
+  nc_def_var(ifile, "time", nctype, 1, &idt, &ivt);
   nc_put_att_text(ifile, ivt, "axis", 1, "T");
   nc_put_att_text(ifile, ivt, "units", 1, "s");
   nc_put_att_text(ifile, ivt, "long_name", 4, "time");
 
-  nc_def_var(ifile, "x1", NC_FLOAT, 1, &idx1, &ivx1);
+  nc_def_var(ifile, "x1", nctype, 1, &idx1, &ivx1);
   nc_put_att_text(ifile, ivx1, "axis", 1, "Z");
   nc_put_att_text(ifile, ivx1, "units", 1, "m");
   nc_put_att_text(ifile, ivx1, "long_name", 27, "Z-coordinate at cell center");
@@ -203,7 +211,7 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   nc_put_att_int(ifile, ivx1, "domain_decomposition", NC_INT, 4, pos);
 
   if (ncells1 > 1) {
-    nc_def_var(ifile, "x1f", NC_FLOAT, 1, &idx1f, &ivx1f);
+    nc_def_var(ifile, "x1f", nctype, 1, &idx1f, &ivx1f);
     nc_put_att_text(ifile, ivx1f, "units", 1, "m");
     nc_put_att_text(ifile, ivx1f, "long_name", 25, "Z-coordinate at cell face");
     pos[0]--;
@@ -211,7 +219,7 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
     nc_put_att_int(ifile, ivx1f, "domain_decomposition", NC_INT, 4, pos);
   }
 
-  nc_def_var(ifile, "x2", NC_FLOAT, 1, &idx2, &ivx2);
+  nc_def_var(ifile, "x2", nctype, 1, &idx2, &ivx2);
   nc_put_att_text(ifile, ivx2, "axis", 1, "X");
   nc_put_att_text(ifile, ivx2, "units", 1, "m");
   nc_put_att_text(ifile, ivx2, "long_name", 27, "X-coordinate at cell center");
@@ -223,7 +231,7 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   nc_put_att_int(ifile, ivx2, "domain_decomposition", NC_INT, 4, pos);
 
   if (ncells2 > 1) {
-    nc_def_var(ifile, "x2f", NC_FLOAT, 1, &idx2f, &ivx2f);
+    nc_def_var(ifile, "x2f", nctype, 1, &idx2f, &ivx2f);
     nc_put_att_text(ifile, ivx2f, "units", 1, "m");
     nc_put_att_text(ifile, ivx2f, "long_name", 25, "Y-coordinate at cell face");
     pos[0]--;
@@ -231,7 +239,7 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
     nc_put_att_int(ifile, ivx2f, "domain_decomposition", NC_INT, 4, pos);
   }
 
-  nc_def_var(ifile, "x3", NC_FLOAT, 1, &idx3, &ivx3);
+  nc_def_var(ifile, "x3", nctype, 1, &idx3, &ivx3);
   nc_put_att_text(ifile, ivx3, "axis", 1, "Y");
   nc_put_att_text(ifile, ivx3, "units", 1, "m");
   nc_put_att_text(ifile, ivx3, "long_name", 27, "Y-coordinate at cell center");
@@ -243,7 +251,7 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   nc_put_att_int(ifile, ivx3, "domain_decomposition", NC_INT, 4, pos);
 
   if (ncells3 > 1) {
-    nc_def_var(ifile, "x3f", NC_FLOAT, 1, &idx3f, &ivx3f);
+    nc_def_var(ifile, "x3f", nctype, 1, &idx3f, &ivx3f);
     nc_put_att_text(ifile, ivx3f, "units", 1, "m");
     nc_put_att_text(ifile, ivx3f, "long_name", 25, "X-coordinate at cell face");
     pos[0]--;
@@ -316,28 +324,28 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
 
       if (grid == "CCF" && ncells1 > 1)
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 4, iaxis1, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 4, iaxis1, ivar));
       else if ((grid == "CFC") && (ncells2 > 1))
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 4, iaxis2, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 4, iaxis2, ivar));
       else if ((grid == "FCC") && (ncells3 > 1))
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 4, iaxis3, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 4, iaxis3, ivar));
       else if (grid == "--C")
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 2, iaxis, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 2, iaxis, ivar));
       else if (grid == "-CC")
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 3, iaxis_23, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 3, iaxis_23, ivar));
       else if (grid == "--F")
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 2, iaxis1, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 2, iaxis1, ivar));
       else if (grid == "---")
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 1, iaxis, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 1, iaxis, ivar));
       else
         SNAP_NETCDF_CHECK(
-            nc_def_var(ifile, name.c_str(), NC_FLOAT, 4, iaxis, ivar));
+            nc_def_var(ifile, name.c_str(), nctype, 4, iaxis, ivar));
 
       // set units
       auto attr = pmeta->GetUnits(raw_name);
@@ -359,7 +367,26 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   SNAP_NETCDF_CHECK(nc_enddef(ifile));
 
   // 4. write variables
-  float *data = new float[nfaces1 * nfaces3 * nfaces2];
+  const size_t nbuf = (size_t)nfaces1 * nfaces3 * nfaces2;
+  // Zero-initialised: as_float() narrows the whole buffer, and most variables
+  // fill only part of it. Without this it would read uninitialised heap on
+  // every float write -- harmless on x86 SSE but UB, and it poisons sanitiser
+  // builds.
+  double *data = new double[nbuf]();
+  // Fill in double always; narrow once at write time when the output is float,
+  // so the fill loops below stay single-versioned.
+  std::vector<float> fbuf(nc_dbl ? 0 : nbuf);
+  auto as_float = [&](double const *buf) {
+    // fbuf is sized 0 when nc_dbl, so every call site must sit in an `else` of
+    // `if (nc_dbl)`. Every one does today; assert it rather than rely on it,
+    // because a future call site outside that guard is a silent heap overflow
+    // of nbuf floats, not a crash.
+    TORCH_CHECK(fbuf.size() == nbuf,
+                "netcdf: as_float() called on the double_precision path; "
+                "its narrowing buffer is not allocated there.");
+    std::copy(buf, buf + nbuf, fbuf.begin());
+    return fbuf.data();
+  };
   size_t start[4] = {0, 0, 0, 0};
   size_t count[4] = {1, (size_t)ncells1, (size_t)ncells3, (size_t)ncells2};
   size_t count1[4] = {1, (size_t)nfaces1, (size_t)ncells3, (size_t)ncells2};
@@ -367,8 +394,12 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   size_t count3[4] = {1, (size_t)ncells1, (size_t)ncells3, (size_t)nfaces2};
   size_t count_23[3] = {1, (size_t)ncells3, (size_t)ncells2};
 
-  float timef = current_time;
-  nc_put_vara_float(ifile, ivt, start, count, &timef);
+  double timed = current_time;
+  float timef = (float)current_time;
+  if (nc_dbl)
+    nc_put_vara_double(ifile, ivt, start, count, &timed);
+  else
+    nc_put_vara_float(ifile, ivt, start, count, &timef);
 
   int coord_is = options->x1_slice() ? islice : out_is;
   int coord_ie = options->x1_slice() ? islice : out_ie;
@@ -378,41 +409,59 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   int coord_ke = options->x3_slice() ? kslice : out_ke;
 
   for (int i = coord_is; i <= coord_ie; ++i)
-    data[i - coord_is] = pmb->pcoord->x1v[i].item<float>();
-  nc_put_var_float(ifile, ivx1, data);
+    data[i - coord_is] = pmb->pcoord->x1v[i].item<double>();
+  if (nc_dbl)
+    nc_put_var_double(ifile, ivx1, data);
+  else
+    nc_put_var_float(ifile, ivx1, as_float(data));
 
   if (ncells1 > 1) {
     for (int i = coord_is; i <= coord_ie + 1; ++i)
-      data[i - coord_is] = pmb->pcoord->x1f[i].item<float>();
-    nc_put_var_float(ifile, ivx1f, data);
+      data[i - coord_is] = pmb->pcoord->x1f[i].item<double>();
+    if (nc_dbl)
+      nc_put_var_double(ifile, ivx1f, data);
+    else
+      nc_put_var_float(ifile, ivx1f, as_float(data));
   }
 
   for (int j = coord_js; j <= coord_je; ++j) {
     data[j - coord_js] =
-        pmb->pcoord->x2v[j].item<float>() + (face % 3) * M_PI / 2.;
+        pmb->pcoord->x2v[j].item<double>() + (face % 3) * M_PI / 2.;
   }
-  nc_put_var_float(ifile, ivx2, data);
+  if (nc_dbl)
+    nc_put_var_double(ifile, ivx2, data);
+  else
+    nc_put_var_float(ifile, ivx2, as_float(data));
 
   if (ncells2 > 1) {
     for (int j = coord_js; j <= coord_je + 1; ++j) {
       data[j - coord_js] =
-          pmb->pcoord->x2f[j].item<float>() + (face % 3) * M_PI / 2.;
+          pmb->pcoord->x2f[j].item<double>() + (face % 3) * M_PI / 2.;
     }
-    nc_put_var_float(ifile, ivx2f, data);
+    if (nc_dbl)
+      nc_put_var_double(ifile, ivx2f, data);
+    else
+      nc_put_var_float(ifile, ivx2f, as_float(data));
   }
 
   for (int k = coord_ks; k <= coord_ke; ++k) {
     data[k - coord_ks] =
-        pmb->pcoord->x3v[k].item<float>() + (face / 3) * M_PI / 2.;
+        pmb->pcoord->x3v[k].item<double>() + (face / 3) * M_PI / 2.;
   }
-  nc_put_var_float(ifile, ivx3, data);
+  if (nc_dbl)
+    nc_put_var_double(ifile, ivx3, data);
+  else
+    nc_put_var_float(ifile, ivx3, as_float(data));
 
   if (ncells3 > 1) {
     for (int k = coord_ks; k <= coord_ke + 1; ++k) {
       data[k - coord_ks] =
-          pmb->pcoord->x3f[k].item<float>() + (face / 3) * M_PI / 2.;
+          pmb->pcoord->x3f[k].item<double>() + (face / 3) * M_PI / 2.;
     }
-    nc_put_var_float(ifile, ivx3f, data);
+    if (nc_dbl)
+      nc_put_var_double(ifile, ivx3f, data);
+    else
+      nc_put_var_float(ifile, ivx3f, as_float(data));
   }
 
   ivar = var_ids;
@@ -424,64 +473,96 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
 
     if (grid == "CCF" && ncells1 > 1) {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie + 1; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je; ++j)
               *it++ = pdata->data(n, k, j, i);
-        nc_put_vara_float(ifile, *ivar++, start, count1, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count1, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count1, as_float(data));
+        ++ivar;
       }
     } else if ((grid == "CFC") && (ncells2 > 1)) {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je + 1; ++j)
               *it++ = pdata->data(n, k, j, i);
-        nc_put_vara_float(ifile, *ivar++, start, count2, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count2, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count2, as_float(data));
+        ++ivar;
       }
     } else if ((grid == "FCC") && (ncells3 > 1)) {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke + 1; ++k)
             for (int j = out_js; j <= out_je; ++j)
               *it++ = pdata->data(n, k, j, i);
-        nc_put_vara_float(ifile, *ivar++, start, count3, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count3, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count3, as_float(data));
+        ++ivar;
       }
     } else if (grid == "--C") {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie; ++i) *it++ = pdata->data(n, i);
-        nc_put_vara_float(ifile, *ivar++, start, count, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+        ++ivar;
       }
     } else if (grid == "-CC") {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int k = out_ks; k <= out_ke; ++k)
           for (int j = out_js; j <= out_je; ++j) *it++ = pdata->data(n, k, j);
-        nc_put_vara_float(ifile, *ivar++, start, count_23, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count_23, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count_23, as_float(data));
+        ++ivar;
       }
     } else if (grid == "--F") {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie + 1; ++i) *it++ = pdata->data(n, i);
-        nc_put_vara_float(ifile, *ivar++, start, count1, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count1, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count1, as_float(data));
+        ++ivar;
       }
     } else if (grid == "---") {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         *it++ = pdata->data(n);
-        nc_put_vara_float(ifile, *ivar++, start, count, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+        ++ivar;
       }
     } else {
       for (int n = 0; n < nvar; n++) {
-        float *it = data;
+        double *it = data;
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je; ++j)
               *it++ = pdata->data(n, k, j, i);
-        nc_put_vara_float(ifile, *ivar++, start, count, data);
+        if (nc_dbl)
+          nc_put_vara_double(ifile, *ivar, start, count, data);
+        else
+          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+        ++ivar;
       }
     }
 

@@ -41,6 +41,7 @@ OutputOptions OutputOptionsImpl::from_yaml(YAML::Node const &node, int fid) {
 
   options->include_ghost_zones() = node["include_ghost_zones"].as<bool>(false);
   options->cartesian_vector() = node["cartesian_vector"].as<bool>(false);
+  options->double_precision() = node["double_precision"].as<bool>(false);
 
   if (node["x1_slice"]) options->x1_slice() = node["x1_slice"].as<double>();
   if (node["x2_slice"]) options->x2_slice() = node["x2_slice"].as<double>();

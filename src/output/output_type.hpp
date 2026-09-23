@@ -78,6 +78,12 @@ struct OutputOptionsImpl {
   ADD_ARG(std::string, data_format);
   ADD_ARG(std::vector<std::string>, variables);
 
+  //! write netcdf variables as NC_DOUBLE instead of NC_FLOAT. Off by default:
+  //! float halves the file size and is fine for plots. Turn it ON to measure
+  //! conservation from output files -- at NC_FLOAT the floor is ~1e-7, which
+  //! is larger than the drifts these runs are gated on.
+  ADD_ARG(bool, double_precision) = false;
+
   ADD_ARG(bool, combine) = true;
   ADD_ARG(bool, verbose) = false;
   ADD_ARG(bool, super_resolution) = false;

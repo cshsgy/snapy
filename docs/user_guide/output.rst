@@ -135,6 +135,23 @@ coordinates may be specified to produce line or point output. A slice
 coordinate must lie inside the global mesh and cannot be combined with a sum
 along the same axis.
 
+Double-Precision Output
+~~~~~~~~~~~~~~~~~~~~~~~
+
+NetCDF output is single precision by default. Set ``double_precision`` on an
+output block to write ``NC_DOUBLE`` instead:
+
+.. code-block:: yaml
+
+    outputs:
+      - type: netcdf
+        variables: [prim]
+        double_precision: true
+        dt: 300.
+
+Only the ``netcdf`` writer implements it; a ``pnetcdf`` block with
+``double_precision: true`` is refused at construction.
+
 Tracer Species
 ~~~~~~~~~~~~~~
 

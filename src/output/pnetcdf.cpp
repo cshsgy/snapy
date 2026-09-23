@@ -46,12 +46,29 @@ void put_vara_float(int ncid, int varid, const PINC_Offset* start,
 }  // namespace
 
 PNetcdfOutput::PNetcdfOutput(OutputOptions const& options_)
-    : OutputType(options_) {}
+    : OutputType(options_) {
+  // This writer is float-only (every nc*_def_var below is
+  // NC_FLOAT). Reject at CONSTRUCTION, which MeshBlock does at setup
+  // (meshblock.cpp, beside the validate_slice calls), not at the first
+  // write: the write-time check let a 384-rank job start and run to the first
+  // output time -- potentially hours -- before aborting.
+  TORCH_CHECK(!options->double_precision(),
+              "PNetcdfOutput: double_precision is not implemented for the "
+              "parallel-netcdf writer; it would silently write NC_FLOAT. Use "
+              "file_type: netcdf for double-precision output.");
+}
 
 void PNetcdfOutput::write_output_file(MeshBlockImpl* pmb_in,
                                       Variables const& vars,
                                       double current_time, bool final_write) {
   if (final_write) return;
+
+  // Belt and braces: the real rejection is in the constructor above, which
+  // fires at setup. This one catches a double_precision() mutated afterwards.
+  TORCH_CHECK(!options->double_precision(),
+              "PNetcdfOutput: double_precision is not implemented for the "
+              "parallel-netcdf writer; it would silently write NC_FLOAT. Use "
+              "file_type: netcdf for double-precision output.");
 
   auto pmb = LoadOutputData(pmb_in, vars);
   auto layout = pmb->get_layout();
