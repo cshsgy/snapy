@@ -395,12 +395,69 @@ TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
 
   int varid;
   ASSERT_EQ(nc_inq_varid(ncid, "x1", &varid), NC_NOERR);
+  nc_type type;
+  ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
+  EXPECT_EQ(type, NC_FLOAT) << "double_precision is off by default";
   float coordinate;
   ASSERT_EQ(nc_get_var_float(ncid, varid, &coordinate), NC_NOERR);
   EXPECT_FLOAT_EQ(coordinate, 2.5F);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
   std::remove(file.c_str());
   std::remove(dir.c_str());
+}
+
+// double_precision: true writes NC_DOUBLE, and what reads back is the
+// in-memory field bit for bit: steps of 1/3, which a float cannot hold
+TEST(OutputPrecision, netcdf_double_precision_reads_back_exactly) {
+  auto block = make_3d_block();
+  auto dir = std::filesystem::temp_directory_path() /
+             ("snapy_double_" +
+              std::to_string(reinterpret_cast<std::uintptr_t>(block.get())));
+  block->options->output_dir(dir.string());
+  block->options->basename("double");
+
+  NetcdfOutput output(OutputOptionsImpl::from_yaml(
+      YAML::Load("{type: netcdf, variables: [d], double_precision: true, "
+                 "combine: false}")));
+
+  int nc1 = block->pcoord->options->nc1();
+  int nc2 = block->pcoord->options->nc2();
+  int nc3 = block->pcoord->options->nc3();
+  int ng = block->pcoord->options->nghost();
+  Variables vars;
+  vars["hydro_w"] = torch::zeros({block->phydro->peos->nvar(), nc3, nc2, nc1},
+                                 torch::kFloat64);
+  vars["hydro_u"] = torch::zeros_like(vars["hydro_w"]);
+  vars["hydro_w"][IDN].copy_(
+      1. +
+      torch::arange(nc1 * nc2 * nc3, torch::kFloat64).reshape({nc3, nc2, nc1}) /
+          3.);
+  output.write_output_file(block.get(), vars, 1. / 3., false);
+
+  int ncid, varid;
+  nc_type type;
+  auto file = dir / "double.block0.out0.00000.nc";
+  ASSERT_EQ(nc_open(file.c_str(), NC_NOWRITE, &ncid), NC_NOERR);
+  ASSERT_EQ(nc_inq_varid(ncid, "rho", &varid), NC_NOERR);
+  ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
+  EXPECT_EQ(type, NC_DOUBLE);
+  // the writer stores (x1, x3, x2), x1 slowest
+  auto in = vars["hydro_w"][IDN]
+                .slice(0, ng, nc3 - ng)
+                .slice(1, ng, nc2 - ng)
+                .slice(2, ng, nc1 - ng)
+                .permute({2, 0, 1})
+                .contiguous();
+  auto out = torch::empty_like(in);
+  ASSERT_EQ(nc_get_var_double(ncid, varid, out.data_ptr<double>()), NC_NOERR);
+  EXPECT_TRUE(torch::equal(out, in))
+      << "max |out - in| = " << (out - in).abs().max();
+  double time;
+  ASSERT_EQ(nc_inq_varid(ncid, "time", &varid), NC_NOERR);
+  ASSERT_EQ(nc_get_var_double(ncid, varid, &time), NC_NOERR);
+  EXPECT_EQ(time, 1. / 3.);
+  EXPECT_EQ(nc_close(ncid), NC_NOERR);
+  std::filesystem::remove_all(dir);
 }
 #endif
 
