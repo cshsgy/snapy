@@ -28,7 +28,7 @@
 // External library headers
 #include <netcdf.h>
 
-#endif  // NETCDFOUTPUT
+#endif // NETCDFOUTPUT
 
 namespace snap {
 NetcdfOutput::NetcdfOutput(OutputOptions const &options_)
@@ -38,16 +38,17 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
                                      Variables const &vars, double current_time,
                                      bool final_write) {
   // skip final write if specified
-  if (final_write) return;
+  if (final_write)
+    return;
 
 #ifdef NETCDFOUTPUT
-#define SNAP_NETCDF_CHECK(call)                                      \
-  do {                                                               \
-    int status__ = (call);                                           \
-    if (status__ != NC_NOERR) {                                      \
-      throw std::runtime_error(std::string(#call) +                  \
-                               " failed: " + nc_strerror(status__)); \
-    }                                                                \
+#define SNAP_NETCDF_CHECK(call)                                                \
+  do {                                                                         \
+    int status__ = (call);                                                     \
+    if (status__ != NC_NOERR) {                                                \
+      throw std::runtime_error(std::string(#call) +                            \
+                               " failed: " + nc_strerror(status__));           \
+    }                                                                          \
   } while (false)
 
   auto pmb = LoadOutputData(pmb_in, vars);
@@ -90,8 +91,10 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
 
   if (!TransformOutputData(pmb)) {
     ClearOutputData();
-    if (options->combine()) combine_blocks(pmb, final_write);
-    if (pmb != pmb_in) delete pmb;
+    if (options->combine())
+      combine_blocks(pmb, final_write);
+    if (pmb != pmb_in)
+      delete pmb;
     return;
   }
 
@@ -132,11 +135,14 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   int ncells3 = out_ke - out_ks + 1;
 
   int nfaces1 = ncells1;
-  if (ncells1 > 1) nfaces1++;
+  if (ncells1 > 1)
+    nfaces1++;
   int nfaces2 = ncells2;
-  if (ncells2 > 1) nfaces2++;
+  if (ncells2 > 1)
+    nfaces2++;
   int nfaces3 = ncells3;
-  if (ncells3 > 1) nfaces3++;
+  if (ncells3 > 1)
+    nfaces3++;
 
   // 2. define coordinate
   int idt, idx1, idx2, idx3, idx1f, idx2f, idx3f, iray;
@@ -144,13 +150,16 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   nc_def_dim(ifile, "time", NC_UNLIMITED, &idt);
 
   nc_def_dim(ifile, "x1", ncells1, &idx1);
-  if (ncells1 > 1) nc_def_dim(ifile, "x1f", nfaces1, &idx1f);
+  if (ncells1 > 1)
+    nc_def_dim(ifile, "x1f", nfaces1, &idx1f);
 
   nc_def_dim(ifile, "x2", ncells2, &idx2);
-  if (ncells2 > 1) nc_def_dim(ifile, "x2f", nfaces2, &idx2f);
+  if (ncells2 > 1)
+    nc_def_dim(ifile, "x2f", nfaces2, &idx2f);
 
   nc_def_dim(ifile, "x3", ncells3, &idx3);
-  if (ncells3 > 1) nc_def_dim(ifile, "x3f", nfaces3, &idx3f);
+  if (ncells3 > 1)
+    nc_def_dim(ifile, "x3f", nfaces3, &idx3f);
 
   // 3. define variables
   auto layout = pmb->get_layout();
@@ -298,17 +307,17 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
     } else {
       for (int n = 0; n < nvar; ++n) {
         size_t pos = pdata->name.find('?');
-        if (nvar == 1) {                     // SCALARS
-          if (pos < pdata->name.length()) {  // find '?'
+        if (nvar == 1) {                    // SCALARS
+          if (pos < pdata->name.length()) { // find '?'
             varnames.push_back(pdata->name.substr(0, pos) +
                                pdata->name.substr(pos + 1));
           } else {
             varnames.push_back(pdata->name);
           }
-        } else {  // VECTORS
+        } else { // VECTORS
           char c[16];
           snprintf(c, sizeof(c), "%d", n + 1);
-          if (pos < pdata->name.length()) {  // find '?'
+          if (pos < pdata->name.length()) { // find '?'
             varnames.push_back(pdata->name.substr(0, pos) + c +
                                pdata->name.substr(pos + 1));
           } else {
@@ -368,25 +377,48 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
 
   // 4. write variables
   const size_t nbuf = (size_t)nfaces1 * nfaces3 * nfaces2;
-  // Zero-initialised: as_float() narrows the whole buffer, and most variables
-  // fill only part of it. Without this it would read uninitialised heap on
-  // every float write -- harmless on x86 SSE but UB, and it poisons sanitiser
-  // builds.
-  double *data = new double[nbuf]();
-  // Fill in double always; narrow once at write time when the output is float,
-  // so the fill loops below stay single-versioned.
-  std::vector<float> fbuf(nc_dbl ? 0 : nbuf);
-  auto as_float = [&](double const *buf) {
-    // fbuf is sized 0 when nc_dbl, so every call site must sit in an `else` of
-    // `if (nc_dbl)`. Every one does today; assert it rather than rely on it,
-    // because a future call site outside that guard is a silent heap overflow
-    // of nbuf floats, not a crash.
-    TORCH_CHECK(fbuf.size() == nbuf,
-                "netcdf: as_float() called on the double_precision path; "
-                "its narrowing buffer is not allocated there.");
-    std::copy(buf, buf + nbuf, fbuf.begin());
-    return fbuf.data();
-  };
+  // One buffer of the selected type. Each computed double is assigned once.
+  // The default path casts to float here, so an overflow stays +inf. NetCDF
+  // is not asked to narrow, because that stores the float fill value.
+  struct SelBuf {
+    bool dbl;
+    double *d = nullptr;
+    float *f = nullptr;
+    size_t n = 0;
+    SelBuf(bool dbl, size_t nbuf) : dbl(dbl) {
+      if (dbl)
+        d = new double[nbuf]();
+      else
+        f = new float[nbuf]();
+    }
+    ~SelBuf() {
+      delete[] d;
+      delete[] f;
+    }
+    SelBuf(const SelBuf &) = delete;
+    SelBuf &operator=(const SelBuf &) = delete;
+    void reset() { n = 0; }
+    void set(size_t i, double v) {
+      if (dbl)
+        d[i] = v;
+      else
+        f[i] = static_cast<float>(v);
+    }
+    void push(double v) { set(n++, v); }
+    void put_var(int ncid, int varid) const {
+      if (dbl)
+        nc_put_var_double(ncid, varid, d);
+      else
+        nc_put_var_float(ncid, varid, f);
+    }
+    void put_vara(int ncid, int varid, const size_t *start,
+                  const size_t *count) const {
+      if (dbl)
+        nc_put_vara_double(ncid, varid, start, count, d);
+      else
+        nc_put_vara_float(ncid, varid, start, count, f);
+    }
+  } buf(nc_dbl, nbuf);
   size_t start[4] = {0, 0, 0, 0};
   size_t count[4] = {1, (size_t)ncells1, (size_t)ncells3, (size_t)ncells2};
   size_t count1[4] = {1, (size_t)nfaces1, (size_t)ncells3, (size_t)ncells2};
@@ -409,59 +441,41 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   int coord_ke = options->x3_slice() ? kslice : out_ke;
 
   for (int i = coord_is; i <= coord_ie; ++i)
-    data[i - coord_is] = pmb->pcoord->x1v[i].item<double>();
-  if (nc_dbl)
-    nc_put_var_double(ifile, ivx1, data);
-  else
-    nc_put_var_float(ifile, ivx1, as_float(data));
+    buf.set(i - coord_is, pmb->pcoord->x1v[i].item<double>());
+  buf.put_var(ifile, ivx1);
 
   if (ncells1 > 1) {
     for (int i = coord_is; i <= coord_ie + 1; ++i)
-      data[i - coord_is] = pmb->pcoord->x1f[i].item<double>();
-    if (nc_dbl)
-      nc_put_var_double(ifile, ivx1f, data);
-    else
-      nc_put_var_float(ifile, ivx1f, as_float(data));
+      buf.set(i - coord_is, pmb->pcoord->x1f[i].item<double>());
+    buf.put_var(ifile, ivx1f);
   }
 
   for (int j = coord_js; j <= coord_je; ++j) {
-    data[j - coord_js] =
-        pmb->pcoord->x2v[j].item<double>() + (face % 3) * M_PI / 2.;
+    buf.set(j - coord_js,
+            pmb->pcoord->x2v[j].item<double>() + (face % 3) * M_PI / 2.);
   }
-  if (nc_dbl)
-    nc_put_var_double(ifile, ivx2, data);
-  else
-    nc_put_var_float(ifile, ivx2, as_float(data));
+  buf.put_var(ifile, ivx2);
 
   if (ncells2 > 1) {
     for (int j = coord_js; j <= coord_je + 1; ++j) {
-      data[j - coord_js] =
-          pmb->pcoord->x2f[j].item<double>() + (face % 3) * M_PI / 2.;
+      buf.set(j - coord_js,
+              pmb->pcoord->x2f[j].item<double>() + (face % 3) * M_PI / 2.);
     }
-    if (nc_dbl)
-      nc_put_var_double(ifile, ivx2f, data);
-    else
-      nc_put_var_float(ifile, ivx2f, as_float(data));
+    buf.put_var(ifile, ivx2f);
   }
 
   for (int k = coord_ks; k <= coord_ke; ++k) {
-    data[k - coord_ks] =
-        pmb->pcoord->x3v[k].item<double>() + (face / 3) * M_PI / 2.;
+    buf.set(k - coord_ks,
+            pmb->pcoord->x3v[k].item<double>() + (face / 3) * M_PI / 2.);
   }
-  if (nc_dbl)
-    nc_put_var_double(ifile, ivx3, data);
-  else
-    nc_put_var_float(ifile, ivx3, as_float(data));
+  buf.put_var(ifile, ivx3);
 
   if (ncells3 > 1) {
     for (int k = coord_ks; k <= coord_ke + 1; ++k) {
-      data[k - coord_ks] =
-          pmb->pcoord->x3f[k].item<double>() + (face / 3) * M_PI / 2.;
+      buf.set(k - coord_ks,
+              pmb->pcoord->x3f[k].item<double>() + (face / 3) * M_PI / 2.);
     }
-    if (nc_dbl)
-      nc_put_var_double(ifile, ivx3f, data);
-    else
-      nc_put_var_float(ifile, ivx3f, as_float(data));
+    buf.put_var(ifile, ivx3f);
   }
 
   ivar = var_ids;
@@ -473,95 +487,74 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
 
     if (grid == "CCF" && ncells1 > 1) {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
+        buf.reset();
         for (int i = out_is; i <= out_ie + 1; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je; ++j)
-              *it++ = pdata->data(n, k, j, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count1, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count1, as_float(data));
+              buf.push(pdata->data(n, k, j, i));
+        buf.put_vara(ifile, *ivar, start, count1);
         ++ivar;
       }
     } else if ((grid == "CFC") && (ncells2 > 1)) {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
+        buf.reset();
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je + 1; ++j)
-              *it++ = pdata->data(n, k, j, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count2, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count2, as_float(data));
+              buf.push(pdata->data(n, k, j, i));
+        buf.put_vara(ifile, *ivar, start, count2);
         ++ivar;
       }
     } else if ((grid == "FCC") && (ncells3 > 1)) {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
+        buf.reset();
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke + 1; ++k)
             for (int j = out_js; j <= out_je; ++j)
-              *it++ = pdata->data(n, k, j, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count3, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count3, as_float(data));
+              buf.push(pdata->data(n, k, j, i));
+        buf.put_vara(ifile, *ivar, start, count3);
         ++ivar;
       }
     } else if (grid == "--C") {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
-        for (int i = out_is; i <= out_ie; ++i) *it++ = pdata->data(n, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+        buf.reset();
+        for (int i = out_is; i <= out_ie; ++i)
+          buf.push(pdata->data(n, i));
+        buf.put_vara(ifile, *ivar, start, count);
         ++ivar;
       }
     } else if (grid == "-CC") {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
+        buf.reset();
         for (int k = out_ks; k <= out_ke; ++k)
-          for (int j = out_js; j <= out_je; ++j) *it++ = pdata->data(n, k, j);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count_23, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count_23, as_float(data));
+          for (int j = out_js; j <= out_je; ++j)
+            buf.push(pdata->data(n, k, j));
+        buf.put_vara(ifile, *ivar, start, count_23);
         ++ivar;
       }
     } else if (grid == "--F") {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
-        for (int i = out_is; i <= out_ie + 1; ++i) *it++ = pdata->data(n, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count1, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count1, as_float(data));
+        buf.reset();
+        for (int i = out_is; i <= out_ie + 1; ++i)
+          buf.push(pdata->data(n, i));
+        buf.put_vara(ifile, *ivar, start, count1);
         ++ivar;
       }
     } else if (grid == "---") {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
-        *it++ = pdata->data(n);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+        buf.reset();
+        buf.push(pdata->data(n));
+        buf.put_vara(ifile, *ivar, start, count);
         ++ivar;
       }
     } else {
       for (int n = 0; n < nvar; n++) {
-        double *it = data;
+        buf.reset();
         for (int i = out_is; i <= out_ie; ++i)
           for (int k = out_ks; k <= out_ke; ++k)
             for (int j = out_js; j <= out_je; ++j)
-              *it++ = pdata->data(n, k, j, i);
-        if (nc_dbl)
-          nc_put_vara_double(ifile, *ivar, start, count, data);
-        else
-          nc_put_vara_float(ifile, *ivar, start, count, as_float(data));
+              buf.push(pdata->data(n, k, j, i));
+        buf.put_vara(ifile, *ivar, start, count);
         ++ivar;
       }
     }
@@ -575,15 +568,15 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   // 5. close nc file
   SNAP_NETCDF_CHECK(nc_close(ifile));
 
-  ClearOutputData();  // required when LoadOutputData() is used.
-  delete[] data;
+  ClearOutputData(); // required when LoadOutputData() is used.
   delete[] var_ids;
 
   if (options->combine()) {
     combine_blocks(pmb, final_write);
   }
 
-  if (pmb != pmb_in) delete pmb;
-#endif  // NETCDFOUTPUT
+  if (pmb != pmb_in)
+    delete pmb;
+#endif // NETCDFOUTPUT
 }
-}  // namespace snap
+} // namespace snap
