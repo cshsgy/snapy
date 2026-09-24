@@ -421,7 +421,7 @@ TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
   std::remove(dir.c_str());
 }
 
-TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
+TEST(OutputPrecision, netcdf_float_output_keeps_nonfinite) {
   auto block = make_3d_block();
   auto dir = std::filesystem::temp_directory_path() /
              ("snapy_float_" +
@@ -460,21 +460,34 @@ TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
   nc_type type;
   ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
   EXPECT_EQ(type, NC_FLOAT);
-  std::vector<float> got(static_cast<size_t>(idn.numel()));
-  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
-  int ninf = 0, nnan = 0, nthird = 0;
-  float third = static_cast<float>(1.0 / 3.0);
-  for (float v : got) {
-    if (std::isinf(v) && v > 0.f)
-      ++ninf;
-    else if (std::isnan(v))
-      ++nnan;
-    else if (v == third)
-      ++nthird;
+  int ndims;
+  ASSERT_EQ(nc_inq_varndims(ncid, varid, &ndims), NC_NOERR);
+  std::vector<int> dimids(ndims);
+  ASSERT_EQ(nc_inq_vardimid(ncid, varid, dimids.data()), NC_NOERR);
+  size_t nval = 1;
+  for (int d = 0; d < ndims; ++d) {
+    size_t len = 0;
+    ASSERT_EQ(nc_inq_dimlen(ncid, dimids[d], &len), NC_NOERR);
+    nval *= len;
   }
-  EXPECT_GE(ninf, 1);
-  EXPECT_GE(nnan, 1);
-  EXPECT_GE(nthird, 1);
+  ASSERT_EQ(nval, 72u);
+  std::vector<float> got(nval);
+  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
+  // rho(time, x1, x3, x2). +inf at x1=3, x2=2; NaN at x1=2, x2=2; x3=0,1,2.
+  auto at = [](int x1, int x3, int x2) { return (x1 * 3 + x3) * 4 + x2; };
+  float third = static_cast<float>(1.0 / 3.0);
+  int nspecial = 0;
+  for (int x3 = 0; x3 < 3; ++x3) {
+    EXPECT_TRUE(std::isinf(got[at(3, x3, 2)]) && got[at(3, x3, 2)] > 0.f);
+    EXPECT_TRUE(std::isnan(got[at(2, x3, 2)]));
+  }
+  for (float v : got) {
+    if (std::isinf(v) || std::isnan(v))
+      ++nspecial;
+    else
+      EXPECT_EQ(v, third);
+  }
+  EXPECT_EQ(nspecial, 6);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
   std::remove(file.c_str());
   std::remove(dir.c_str());
