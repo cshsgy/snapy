@@ -33,6 +33,7 @@ setup_test(test_condensate_conservation)
 setup_test(test_wall_saturation)
 setup_test(test_forcing)
 setup_parallel_test(test_exchange 2)
+setup_parallel_test(test_output_barrier 2)
 
 if(UCX_FOUND)
   add_test(
