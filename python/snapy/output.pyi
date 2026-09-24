@@ -90,6 +90,16 @@ class OutputOptions:
         ...
 
     @overload
+    def double_precision(self) -> bool:
+        """Get NC_DOUBLE netcdf output flag."""
+        ...
+
+    @overload
+    def double_precision(self, value: bool) -> "OutputOptions":
+        """Set NC_DOUBLE netcdf output flag (netcdf writer only)."""
+        ...
+
+    @overload
     def x1_slice(self) -> Optional[float]:
         """Get x1 slice position."""
         ...

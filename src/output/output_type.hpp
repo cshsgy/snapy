@@ -47,6 +47,7 @@ struct OutputOptionsImpl {
        << "* output_sumx3 = " << output_sumx3() << "\n"
        << "* include_ghost_zones = " << include_ghost_zones() << "\n"
        << "* cartesian_vector = " << cartesian_vector() << "\n"
+       << "* double_precision = " << double_precision() << "\n"
        << "* x1_slice = " << (x1_slice() ? std::to_string(*x1_slice()) : "none")
        << "\n"
        << "* x2_slice = " << (x2_slice() ? std::to_string(*x2_slice()) : "none")
@@ -79,9 +80,9 @@ struct OutputOptionsImpl {
   ADD_ARG(std::vector<std::string>, variables);
 
   //! write netcdf variables as NC_DOUBLE instead of NC_FLOAT. Off by default:
-  //! float halves the file size and is fine for plots. Turn it ON to measure
-  //! conservation from output files -- at NC_FLOAT the floor is ~1e-7, which
-  //! is larger than the drifts these runs are gated on.
+  //! float halves the file size and is fine for plots. Turn it on to resolve
+  //! relative differences below ~1e-7 (e.g. conservation checks) from the
+  //! output files. Only the netcdf writer implements it.
   ADD_ARG(bool, double_precision) = false;
 
   ADD_ARG(bool, combine) = true;

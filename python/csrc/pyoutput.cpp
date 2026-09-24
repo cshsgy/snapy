@@ -31,6 +31,7 @@ void bind_output(py::module &m) {
       .ADD_OPTION(bool, snap::OutputOptionsImpl, output_sumx3)
       .ADD_OPTION(bool, snap::OutputOptionsImpl, include_ghost_zones)
       .ADD_OPTION(bool, snap::OutputOptionsImpl, cartesian_vector)
+      .ADD_OPTION(bool, snap::OutputOptionsImpl, double_precision)
       .ADD_OPTION(std::optional<double>, snap::OutputOptionsImpl, x1_slice)
       .ADD_OPTION(std::optional<double>, snap::OutputOptionsImpl, x2_slice)
       .ADD_OPTION(std::optional<double>, snap::OutputOptionsImpl, x3_slice)

@@ -188,9 +188,9 @@ void NetcdfOutput::write_output_file(MeshBlockImpl *pmb_in,
   int loc[4] = {lx1, lx3, lx2, level};
   int pos[4];
 
-  // NC_FLOAT gives a ~1e-7 floor, which is coarser than the
-  // conservation drifts these runs are gated on, and coarser than dt at
-  // t ~ 3e7 s. `double_precision: true` on the output block writes NC_DOUBLE.
+  // NC_FLOAT keeps ~7 significant digits: a relative change below ~1e-7 in a
+  // field, or a time step below ~1e-7 * t, does not show in the file.
+  // `double_precision: true` on the output block writes NC_DOUBLE.
   const bool nc_dbl = options->double_precision();
   const nc_type nctype = nc_dbl ? NC_DOUBLE : NC_FLOAT;
 

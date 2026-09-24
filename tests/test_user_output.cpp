@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <future>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 // torch
@@ -354,6 +355,19 @@ TEST(OutputSlice, yaml_coordinate_presence_activates_slice_and_rejects_sum) {
       OutputOptionsImpl::from_yaml(YAML::Load("{type: netcdf, x1_slice: 1.25, "
                                               "output_sumx1: true}")),
       std::invalid_argument);
+}
+
+TEST(OutputPrecision, yaml_double_precision_defaults_off_and_is_reported) {
+  auto off = OutputOptionsImpl::from_yaml(YAML::Load("{type: netcdf}"));
+  EXPECT_FALSE(off->double_precision());
+  auto on = OutputOptionsImpl::from_yaml(
+      YAML::Load("{type: netcdf, double_precision: true}"));
+  EXPECT_TRUE(on->double_precision());
+
+  std::stringstream ss;
+  on->report(ss);
+  EXPECT_NE(ss.str().find("* double_precision = 1"), std::string::npos)
+      << ss.str();
 }
 
 #ifdef NETCDFOUTPUT
