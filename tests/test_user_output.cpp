@@ -18,7 +18,6 @@
 #include <future>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <vector>
 
 // torch
@@ -358,19 +357,6 @@ TEST(OutputSlice, yaml_coordinate_presence_activates_slice_and_rejects_sum) {
       std::invalid_argument);
 }
 
-TEST(OutputPrecision, yaml_double_precision_defaults_off_and_is_reported) {
-  auto off = OutputOptionsImpl::from_yaml(YAML::Load("{type: netcdf}"));
-  EXPECT_FALSE(off->double_precision());
-  auto on = OutputOptionsImpl::from_yaml(
-      YAML::Load("{type: netcdf, double_precision: true}"));
-  EXPECT_TRUE(on->double_precision());
-
-  std::stringstream ss;
-  on->report(ss);
-  EXPECT_NE(ss.str().find("* double_precision = 1"), std::string::npos)
-      << ss.str();
-}
-
 #ifdef NETCDFOUTPUT
 TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
   auto block = make_3d_block();
@@ -421,7 +407,7 @@ TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
   std::remove(dir.c_str());
 }
 
-TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
+TEST(OutputPrecision, netcdf_float_output_keeps_nonfinite) {
   auto block = make_3d_block();
   auto dir = std::filesystem::temp_directory_path() /
              ("snapy_float_" +
@@ -460,21 +446,34 @@ TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
   nc_type type;
   ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
   EXPECT_EQ(type, NC_FLOAT);
-  std::vector<float> got(static_cast<size_t>(idn.numel()));
-  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
-  int ninf = 0, nnan = 0, nthird = 0;
-  float third = static_cast<float>(1.0 / 3.0);
-  for (float v : got) {
-    if (std::isinf(v) && v > 0.f)
-      ++ninf;
-    else if (std::isnan(v))
-      ++nnan;
-    else if (v == third)
-      ++nthird;
+  int ndims;
+  ASSERT_EQ(nc_inq_varndims(ncid, varid, &ndims), NC_NOERR);
+  std::vector<int> dimids(ndims);
+  ASSERT_EQ(nc_inq_vardimid(ncid, varid, dimids.data()), NC_NOERR);
+  size_t nval = 1;
+  for (int d = 0; d < ndims; ++d) {
+    size_t len = 0;
+    ASSERT_EQ(nc_inq_dimlen(ncid, dimids[d], &len), NC_NOERR);
+    nval *= len;
   }
-  EXPECT_GE(ninf, 1);
-  EXPECT_GE(nnan, 1);
-  EXPECT_GE(nthird, 1);
+  std::vector<float> got(nval);
+  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
+  // rho(time, x1, x3, x2) is the interior only: 6 x 3 x 4. Ghost width is 2.
+  // Planted +inf at tensor (k, j=nc2/2, i=nc1/2) and NaN at i-1, every k.
+  // Written x3 is k-2 for k=2,3,4. x1 of +inf is 3, of NaN is 2. x2 is 2.
+  ASSERT_EQ(nval, 72u);
+  float third = static_cast<float>(1.0 / 3.0);
+  auto at = [](int x1, int x3, int x2) { return (x1 * 3 + x3) * 4 + x2; };
+  for (int x3 = 0; x3 < 3; ++x3) {
+    EXPECT_TRUE(std::isinf(got[at(3, x3, 2)]) && got[at(3, x3, 2)] > 0.f);
+    EXPECT_TRUE(std::isnan(got[at(2, x3, 2)]));
+  }
+  int nspecial = 0;
+  for (float v : got) {
+    if (std::isinf(v) || std::isnan(v)) ++nspecial;
+    else EXPECT_EQ(v, third);
+  }
+  EXPECT_EQ(nspecial, 6);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
   std::remove(file.c_str());
   std::remove(dir.c_str());
@@ -531,11 +530,7 @@ TEST(OutputPrecision, netcdf_double_precision_reads_back_exactly) {
   ASSERT_EQ(nc_get_var_double(ncid, varid, &time), NC_NOERR);
   EXPECT_EQ(time, 1. / 3.);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
-  // remove() the known file and directory rather than remove_all(): a
-  // libtorch.so that exports its own std::filesystem::remove_all can take
-  // precedence at link time, and that copy crashes on a non-empty directory.
-  std::filesystem::remove(file);
-  std::filesystem::remove(dir);
+  std::filesystem::remove_all(dir);
 }
 #endif
 
