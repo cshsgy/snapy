@@ -457,7 +457,11 @@ TEST(OutputPrecision, netcdf_double_precision_reads_back_exactly) {
   ASSERT_EQ(nc_get_var_double(ncid, varid, &time), NC_NOERR);
   EXPECT_EQ(time, 1. / 3.);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
-  std::filesystem::remove_all(dir);
+  // remove() the known file and directory rather than remove_all(): a
+  // libtorch.so that exports its own std::filesystem::remove_all can take
+  // precedence at link time, and that copy crashes on a non-empty directory.
+  std::filesystem::remove(file);
+  std::filesystem::remove(dir);
 }
 #endif
 

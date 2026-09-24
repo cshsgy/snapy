@@ -37,8 +37,15 @@ TEST(Mesh, combined_output_is_complete_when_every_rank_returns) {
   auto layout = mesh->blocks.front()->get_layout();
   ASSERT_TRUE(layout->has_process_group()) << "one process: nothing to gate";
   int rank = layout->options->process_rank();
-  if (rank == layout->options->process_root_rank())
-    fs::remove_all("output_barrier");
+  // remove() each entry rather than remove_all(): a libtorch.so that exports
+  // its own std::filesystem::remove_all can take precedence at link time, and
+  // that copy crashes on a non-empty directory (i.e. on every rerun).
+  if (rank == layout->options->process_root_rank() &&
+      fs::exists("output_barrier")) {
+    for (auto const& e : fs::directory_iterator("output_barrier"))
+      fs::remove(e.path());
+    fs::remove("output_barrier");
+  }
 
   MeshVariables vars(mesh->blocks.size());
   for (int i = 0; i < mesh->blocks.size(); ++i) {
