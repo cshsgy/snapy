@@ -37,36 +37,36 @@ using namespace snap;
 namespace {
 
 class TestOutputType : public OutputType {
- public:
-  explicit TestOutputType(OutputOptions const& options) : OutputType(options) {}
+public:
+  explicit TestOutputType(OutputOptions const &options) : OutputType(options) {}
 
-  void load_hydro(MeshBlockImpl* pmb, Variables const& vars) {
+  void load_hydro(MeshBlockImpl *pmb, Variables const &vars) {
     loadHydroOutputData(pmb, vars);
   }
 
-  void load_scalar(MeshBlockImpl* pmb, Variables const& vars) {
+  void load_scalar(MeshBlockImpl *pmb, Variables const &vars) {
     loadScalarOutputData(pmb, vars);
   }
 
-  void load_diag(MeshBlockImpl* pmb, Variables const& vars) {
+  void load_diag(MeshBlockImpl *pmb, Variables const &vars) {
     loadDiagOutputData(pmb, vars);
   }
 
-  void load_user_output(MeshBlockImpl* pmb, Variables const& vars) {
+  void load_user_output(MeshBlockImpl *pmb, Variables const &vars) {
     loadUserOutputData(pmb, vars);
   }
 
-  void append(std::string name, torch::Tensor const& tensor) {
+  void append(std::string name, torch::Tensor const &tensor) {
     appendTensorSliceOutput("SCALARS", std::move(name), tensor, 4, 0,
                             tensor.size(0));
   }
 
-  void append_reduced(std::string name, torch::Tensor const& tensor) {
+  void append_reduced(std::string name, torch::Tensor const &tensor) {
     appendTensorOutput("SCALARS", std::move(name), tensor);
   }
 
-  std::vector<int> output_shape(std::string const& name) const {
-    for (auto* pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
+  std::vector<int> output_shape(std::string const &name) const {
+    for (auto *pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
       if (pdata->name == name) {
         return {pdata->data.GetDim4(), pdata->data.GetDim3(),
                 pdata->data.GetDim2(), pdata->data.GetDim1()};
@@ -75,24 +75,25 @@ class TestOutputType : public OutputType {
     throw std::runtime_error("missing output variable: " + name);
   }
 
-  double output_value(std::string const& name, int n, int k, int j,
+  double output_value(std::string const &name, int n, int k, int j,
                       int i) const {
-    for (auto* pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
-      if (pdata->name == name) return pdata->data(n, k, j, i);
+    for (auto *pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
+      if (pdata->name == name)
+        return pdata->data(n, k, j, i);
     }
     throw std::runtime_error("missing output variable: " + name);
   }
 
   std::vector<std::string> output_names() const {
     std::vector<std::string> names;
-    for (auto* pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
+    for (auto *pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
       names.push_back(pdata->name);
     }
     return names;
   }
 
-  double output_value(std::string const& name) const {
-    for (auto* pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
+  double output_value(std::string const &name) const {
+    for (auto *pdata = pfirst_data_; pdata != nullptr; pdata = pdata->pnext) {
       if (pdata->name == name) {
         return pdata->data(0, 0, 0, 0);
       }
@@ -101,15 +102,15 @@ class TestOutputType : public OutputType {
   }
 };
 
-std::shared_ptr<MeshBlockImpl> make_block(
-    std::string eos_type, std::vector<std::string> scalars = {}) {
+std::shared_ptr<MeshBlockImpl>
+make_block(std::string eos_type, std::vector<std::string> scalars = {}) {
   std::vector<std::filesystem::path> candidates = {
       "test_coordinate.yaml",
       std::filesystem::path("tests") / "test_coordinate.yaml",
       std::filesystem::path("build") / "tests" / "test_coordinate.yaml",
   };
   auto it = std::find_if(candidates.begin(), candidates.end(),
-                         [](std::filesystem::path const& path) {
+                         [](std::filesystem::path const &path) {
                            return std::filesystem::exists(path);
                          });
   if (it == candidates.end()) {
@@ -129,11 +130,11 @@ std::shared_ptr<MeshBlockImpl> make_3d_block() {
   return std::make_shared<MeshBlockImpl>(options);
 }
 
-bool contains(std::vector<std::string> const& names, std::string const& name) {
+bool contains(std::vector<std::string> const &names, std::string const &name) {
   return std::find(names.begin(), names.end(), name) != names.end();
 }
 
-std::filesystem::path save_stage_forcing(std::string const& name,
+std::filesystem::path save_stage_forcing(std::string const &name,
                                          double density_increment,
                                          bool unsupported = false,
                                          bool scalar = false) {
@@ -164,7 +165,7 @@ std::filesystem::path save_stage_forcing(std::string const& name,
   return path;
 }
 
-}  // namespace
+} // namespace
 
 TEST(UserOutput, missing_callback_reports_meaningful_error) {
   auto options = OutputOptionsImpl::create();
@@ -178,7 +179,7 @@ TEST(UserOutput, missing_callback_reports_meaningful_error) {
   try {
     output.load_user_output(&block, vars);
     FAIL() << "Expected missing user output callback to throw";
-  } catch (std::exception const& exc) {
+  } catch (std::exception const &exc) {
     auto msg = std::string(exc.what());
     EXPECT_NE(msg.find("set_user_output_func"), std::string::npos);
     EXPECT_NE(msg.find("uov"), std::string::npos);
@@ -191,7 +192,7 @@ TEST(UserOutput, registered_callback_allows_uov_output) {
   TestOutputType output(options);
 
   MeshBlockImpl block;
-  block.user_output_callback = [](Variables const&) {
+  block.user_output_callback = [](Variables const &) {
     Variables out;
     out["my_uov"] = torch::ones({1, 1, 1});
     return out;
@@ -421,7 +422,7 @@ TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
   std::remove(dir.c_str());
 }
 
-TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
+TEST(OutputPrecision, netcdf_float_output_keeps_nonfinite) {
   auto block = make_3d_block();
   auto dir = std::filesystem::temp_directory_path() /
              ("snapy_float_" +
@@ -460,21 +461,34 @@ TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
   nc_type type;
   ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
   EXPECT_EQ(type, NC_FLOAT);
-  std::vector<float> got(static_cast<size_t>(idn.numel()));
-  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
-  int ninf = 0, nnan = 0, nthird = 0;
-  float third = static_cast<float>(1.0 / 3.0);
-  for (float v : got) {
-    if (std::isinf(v) && v > 0.f)
-      ++ninf;
-    else if (std::isnan(v))
-      ++nnan;
-    else if (v == third)
-      ++nthird;
+  int ndims;
+  ASSERT_EQ(nc_inq_varndims(ncid, varid, &ndims), NC_NOERR);
+  std::vector<int> dimids(ndims);
+  ASSERT_EQ(nc_inq_vardimid(ncid, varid, dimids.data()), NC_NOERR);
+  size_t nval = 1;
+  for (int d = 0; d < ndims; ++d) {
+    size_t len = 0;
+    ASSERT_EQ(nc_inq_dimlen(ncid, dimids[d], &len), NC_NOERR);
+    nval *= len;
   }
-  EXPECT_GE(ninf, 1);
-  EXPECT_GE(nnan, 1);
-  EXPECT_GE(nthird, 1);
+  ASSERT_EQ(nval, 72u);
+  std::vector<float> got(nval);
+  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
+  // rho(time, x1, x3, x2). +inf at x1=3, x2=2; NaN at x1=2, x2=2; x3=0,1,2.
+  auto at = [](int x1, int x3, int x2) { return (x1 * 3 + x3) * 4 + x2; };
+  float third = static_cast<float>(1.0 / 3.0);
+  int nspecial = 0;
+  for (int x3 = 0; x3 < 3; ++x3) {
+    EXPECT_TRUE(std::isinf(got[at(3, x3, 2)]) && got[at(3, x3, 2)] > 0.f);
+    EXPECT_TRUE(std::isnan(got[at(2, x3, 2)]));
+  }
+  for (float v : got) {
+    if (std::isinf(v) || std::isnan(v))
+      ++nspecial;
+    else
+      EXPECT_EQ(v, third);
+  }
+  EXPECT_EQ(nspecial, 6);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
   std::remove(file.c_str());
   std::remove(dir.c_str());
@@ -582,7 +596,7 @@ TEST(UserForcing, scripted_module_is_shared_across_parallel_blocks) {
   ASSERT_EQ(first_block->user_stage_forcings[0].get(),
             second_block->user_stage_forcings[0].get());
 
-  auto advance = [](std::shared_ptr<MeshBlockImpl> const& block) {
+  auto advance = [](std::shared_ptr<MeshBlockImpl> const &block) {
     int nc1 = block->pcoord->options->nc1();
     int nc2 = block->pcoord->options->nc2();
     int nc3 = block->pcoord->options->nc3();
@@ -959,7 +973,7 @@ TEST(OutputStatistics, scalar_statistics_are_time_weighted_and_reset) {
   EXPECT_DOUBLE_EQ(output.output_value("r_tracer_a_std"), 0.0);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
