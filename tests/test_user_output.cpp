@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <future>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -415,6 +416,65 @@ TEST(OutputSlice, netcdf_writes_selected_coordinate_and_collapsed_dimension) {
   float coordinate;
   ASSERT_EQ(nc_get_var_float(ncid, varid, &coordinate), NC_NOERR);
   EXPECT_FLOAT_EQ(coordinate, 2.5F);
+  EXPECT_EQ(nc_close(ncid), NC_NOERR);
+  std::remove(file.c_str());
+  std::remove(dir.c_str());
+}
+
+TEST(OutputPrecision, netcdf_float_narrows_once_and_keeps_nonfinite) {
+  auto block = make_3d_block();
+  auto dir = std::filesystem::temp_directory_path() /
+             ("snapy_float_" +
+              std::to_string(reinterpret_cast<std::uintptr_t>(block.get())));
+  block->options->output_dir(dir.string());
+  block->options->basename("flt");
+
+  auto opts = OutputOptionsImpl::create();
+  opts->file_type("netcdf");
+  opts->variables({"d"});
+  opts->combine(false);
+  NetcdfOutput output(opts);
+
+  int nc1 = block->pcoord->options->nc1();
+  int nc2 = block->pcoord->options->nc2();
+  int nc3 = block->pcoord->options->nc3();
+  int nvar = block->phydro->peos->nvar();
+  Variables vars;
+  vars["hydro_w"] = torch::zeros({nvar, nc3, nc2, nc1}, torch::kFloat64);
+  vars["hydro_u"] = torch::zeros_like(vars["hydro_w"]);
+  auto idn = vars["hydro_w"][IDN];
+  idn.fill_(1.0 / 3.0);
+  // Ghosts are not written. Centre of the horizontal plane, every k.
+  int ic = nc1 / 2;
+  int jc = nc2 / 2;
+  for (int k = 0; k < nc3; ++k) {
+    idn[k][jc][ic] = std::numeric_limits<double>::infinity();
+    idn[k][jc][ic - 1] = std::numeric_limits<double>::quiet_NaN();
+  }
+
+  output.write_output_file(block.get(), vars, 0.0, false);
+  auto file = dir / "flt.block0.out0.00000.nc";
+  int ncid, varid;
+  ASSERT_EQ(nc_open(file.c_str(), NC_NOWRITE, &ncid), NC_NOERR);
+  ASSERT_EQ(nc_inq_varid(ncid, "rho", &varid), NC_NOERR);
+  nc_type type;
+  ASSERT_EQ(nc_inq_vartype(ncid, varid, &type), NC_NOERR);
+  EXPECT_EQ(type, NC_FLOAT);
+  std::vector<float> got(static_cast<size_t>(idn.numel()));
+  ASSERT_EQ(nc_get_var_float(ncid, varid, got.data()), NC_NOERR);
+  int ninf = 0, nnan = 0, nthird = 0;
+  float third = static_cast<float>(1.0 / 3.0);
+  for (float v : got) {
+    if (std::isinf(v) && v > 0.f)
+      ++ninf;
+    else if (std::isnan(v))
+      ++nnan;
+    else if (v == third)
+      ++nthird;
+  }
+  EXPECT_GE(ninf, 1);
+  EXPECT_GE(nnan, 1);
+  EXPECT_GE(nthird, 1);
   EXPECT_EQ(nc_close(ncid), NC_NOERR);
   std::remove(file.c_str());
   std::remove(dir.c_str());
