@@ -29,7 +29,7 @@ torch::Tensor background(MeshBlock b) {
                         b->pcoord->x1v.options());
   w[IDN].fill_(1.);
   w[IPR].fill_(100000.);
-  if (w.size(0) > 5) w[ICY].fill_(0.1);
+  if (w.size(0) > ICY) w[ICY].fill_(0.1);
   return w;
 }
 BoundaryFuncOptions context(MeshBlock b, torch::Tensor ref) {

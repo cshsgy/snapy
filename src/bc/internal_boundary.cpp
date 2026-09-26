@@ -49,7 +49,7 @@ void InternalBoundaryImpl::mark_prim_solid_(torch::Tensor w,
   w[IPR].masked_fill_(solid, options->solid_pressure());
   w.narrow(0, IVX, 3).masked_fill_(solid, 0.);
 
-  int ny = w.size(0) - 5;
+  int ny = w.size(0) - ICY;
   if (ny > 0) {
     w.narrow(0, ICY, ny)
         .masked_fill_(solid.unsqueeze(0).expand_as(w.narrow(0, ICY, ny)), 0.);

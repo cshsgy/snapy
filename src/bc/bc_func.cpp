@@ -96,7 +96,7 @@ void check_background(torch::Tensor const& w, EquationOfStateImpl* eos) {
       (w[IDN] >= eos->options->density_floor()).all().item<bool>() &&
           (w[IPR] >= eos->options->pressure_floor()).all().item<bool>(),
       "outflow: invalid background density/pressure; initialize ghosts");
-  int ny = w.size(0) - 5;
+  int ny = w.size(0) - ICY;
   if (ny) {
     auto q = w.narrow(0, ICY, ny);
     TORCH_CHECK(
@@ -179,7 +179,7 @@ void radiating(torch::Tensor const& var, int dim, BoundaryFuncOptions op,
   };
   lower(bg[IDN], d[IDN], op.eos->options->density_floor());
   lower(bg[IPR], d[IPR], op.eos->options->pressure_floor());
-  int ny = var.size(0) - 5;
+  int ny = var.size(0) - ICY;
   for (int n = 0; n < ny; ++n) lower(bg[ICY + n], d[ICY + n], 0.);
   if (ny)
     lower(1. - bg.narrow(0, ICY, ny).sum(0), -d.narrow(0, ICY, ny).sum(0), 0.);

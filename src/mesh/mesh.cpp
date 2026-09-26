@@ -426,7 +426,7 @@ void MeshImpl::print_cycle_info(MeshVariables const& vars, double time,
       SINFO() << std::scientific << std::setprecision(dt_precision)
               << " mass0=" << mass.item<double>();
 
-      int ny = local_sum.size(0) - 5;
+      int ny = local_sum.size(0) - ICY;
       if (ny > 0) {
         for (int n = 0; n < ny; ++n) {
           mass += sum[0][ICY + n];

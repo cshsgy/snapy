@@ -8,6 +8,7 @@ from kintera import (
         ThermoOptions,
         ThermoX
         )
+from snapy import kICY
 
 def save_tensors(tensor_map: dict[str, torch.Tensor], filename: str):
     class TensorModule(torch.nn.Module):
@@ -58,7 +59,7 @@ def read_hydro(ymlfile, inpfile):
     w[4, ...] = torch.from_numpy(pres[-1]).permute(2, 1, 0)
 
     for i, s in enumerate(op.species()[1:]):
-        w[5 + i, ...] = torch.from_numpy(xfrac[i][-1]).permute(2, 1, 0)
+        w[kICY + i, ...] = torch.from_numpy(xfrac[i][-1]).permute(2, 1, 0)
 
     return w
 

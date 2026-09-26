@@ -140,7 +140,7 @@ torch::Tensor ReconstructImpl::forward(torch::Tensor w, int dim, bool floor) {
     result.select(1, IPR).clamp_min_(eos->pressure_floor());
   }
 
-  int ny = nvar - 5;
+  int ny = nvar - ICY;
   if (ny <= 0) return result;
 
   // others

@@ -162,7 +162,7 @@ Logged logged_state(double rho_dry, double rho_vapor, double rho_cloud,
   block->pintg->options->ncycle_out(1);
 
   auto u = vars.at("hydro_u");
-  EXPECT_EQ(u.size(0) - 5, 2) << "the fixture must carry condensate rows";
+  EXPECT_EQ(u.size(0) - ICY, 2) << "the fixture must carry condensate rows";
   u.zero_();
   u[IDN].fill_(rho_dry);
   u[ICY].fill_(rho_vapor);

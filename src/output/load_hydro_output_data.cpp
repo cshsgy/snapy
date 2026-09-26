@@ -36,7 +36,7 @@ void OutputType::loadHydroOutputData(MeshBlockImpl* pmb,
   auto const& w = vars.at("hydro_w");
   auto const& u = vars.at("hydro_u");
   int nhydro = peos->nvar();
-  int ncomp = nhydro - 5;
+  int ncomp = nhydro - ICY;
 
   if (OutputsPrimStat()) {
     auto mean = PrimStatMean(w);

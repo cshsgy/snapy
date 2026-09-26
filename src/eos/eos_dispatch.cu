@@ -35,7 +35,7 @@ void ideal_gas_cons2prim_cuda(at::TensorIterator& iter, double gammad) {
   AT_DISPATCH_FLOATING_TYPES(iter.common_dtype(), "call_ideal_moist_cuda", [&]() {
     auto stride = at::native::ensure_nonempty_stride(iter.output(), 0);
     auto nhydro = at::native::ensure_nonempty_size(iter.output(), 0);
-    auto nmass = nhydro - 5;
+    auto nmass = nhydro - ICY;
 
     native::gpu_kernel<scalar_t, 5>(
         iter, [=] GPU_LAMBDA(char* const data[5], unsigned int strides[5]) {

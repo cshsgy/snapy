@@ -55,7 +55,7 @@ void call_lmars_mps(at::TensorIterator& iter, int dim) {
   auto gammal = glr[ILT];
   auto gammar = glr[IRT];
 
-  int ny = wl.size(0) - 5;
+  int ny = wl.size(0) - ICY;
 
   // dim, ivx
   // 3, IVX

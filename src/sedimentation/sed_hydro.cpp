@@ -31,8 +31,8 @@ torch::Tensor sedimentation_flux_tensor(SedHydroImpl& sed, torch::Tensor wr,
   // seal bottom
   sed.vsed.slice(-1, 0, il + 1).fill_(0.);
 
-  // 5 is number of hydro variables
-  auto en = peos->compute("W->E", {wr}).index_select(0, sed.hydro_ids - 5);
+  // rows before ICY are the hydro variables
+  auto en = peos->compute("W->E", {wr}).index_select(0, sed.hydro_ids - ICY);
 
   auto rhos = wr[IDN] * wr.index_select(0, sed.hydro_ids);
   auto rhos_vsed = rhos * sed.vsed;

@@ -47,6 +47,10 @@ enum {
 
 #endif  // index scheme
 
+// Species rows start on the row after pressure. NMASS>0 (ICY == 1) fails this.
+static_assert(ICY == IPR + 1,
+              "species rows must start on the row after pressure");
+
 //! \brief Variable type enumeration
 //!
 //! Defines different types of variables used in the simulation.

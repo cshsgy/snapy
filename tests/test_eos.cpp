@@ -206,7 +206,7 @@ TEST_P(DeviceTest, ideal_gas_internal_energy_offset_is_zero) {
 /*TEST_P(DeviceTest, cons2prim_hydro_ideal_ncloud5) {
   int32_t NHYDRO = 14;
   int32_t ncloud = 5;
-  int32_t nvapor = NHYDRO - 5 - ncloud;
+  int32_t nvapor = NHYDRO - ICY - ncloud;
 
   auto cons =
       torch::randn({NHYDRO, 1, 200, 200}, torch::device(device).dtype(dtype));
@@ -243,7 +243,7 @@ TEST_P(DeviceTest, ideal_gas_internal_energy_offset_is_zero) {
 TEST_P(DeviceTest, prim2cons_hydro_ideal_ncloud5) {
   int32_t NHYDRO = 14;
   int32_t ncloud = 5;
-  int32_t nvapor = NHYDRO - 5 - ncloud;
+  int32_t nvapor = NHYDRO - ICY - ncloud;
 
   auto prim =
       torch::randn({NHYDRO, 1, 5, 5}, torch::device(device).dtype(dtype));

@@ -743,7 +743,7 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
       phydro->options->eos()->thermo()->reactions().size() > 0) {
     phydro->peos->apply_conserved_limiter_(hydro_u);
 
-    int ny = hydro_u.size(0) - 5;  // number of species
+    int ny = hydro_u.size(0) - ICY;  // number of species
 
     auto ke = phydro->peos->compute("U->K", {hydro_u});
     auto rho = hydro_u[IDN] + hydro_u.narrow(0, ICY, ny).sum(0);
@@ -858,7 +858,7 @@ void MeshBlockImpl::print_cycle_info(Variables const &vars, double time,
         SINFO() << std::scientific << std::setprecision(dt_precision)
                 << " mass0=" << mass.item<double>();
 
-        int ny = hydro_u_tol.size(0) - 5;  // number of species
+        int ny = hydro_u_tol.size(0) - ICY;  // number of species
         if (ny > 0) {
           for (int n = 0; n < ny; ++n) {
             mass += sum[0][ICY + n];
@@ -872,7 +872,7 @@ void MeshBlockImpl::print_cycle_info(Variables const &vars, double time,
       torch::Tensor rho_tot;
       if (compute_ke) {
         auto u = vars.at("hydro_u");
-        int nyk = u.size(0) - 5;
+        int nyk = u.size(0) - ICY;
         rho_tot = u[IDN].unsqueeze(0).clone();
         for (int n = 0; n < nyk; ++n) rho_tot += u[ICY + n].unsqueeze(0);
 
