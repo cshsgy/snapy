@@ -135,14 +135,17 @@ def run_arm(yaml_file: str, limiter: bool, device: str):
     return {"drift": drift, "min": smin, "hits": hits, "moved": moved}
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--device", default="cpu", choices=("cpu", "cuda"))
     ap.add_argument(
         "--yaml",
         default=str(Path(__file__).resolve().parent / "test_flux_positivity_cubedsphere.yaml"),
     )
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+    if args.device == "cuda" and not torch.cuda.is_available():
+        print("SKIP: cuda requested but not available")
+        return 125
 
     base = run_arm(args.yaml, limiter=False, device=args.device)
     lim = run_arm(args.yaml, limiter=True, device=args.device)
@@ -169,7 +172,8 @@ def main():
     if failures:
         sys.exit(1)
     print("### flux positivity cubed-sphere moist seam test passed. ###")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
