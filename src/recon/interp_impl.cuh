@@ -213,6 +213,83 @@ __device__ void interp_weno5_impl(T *out, T *inp, T *coeff, int nvar,
   }
 };
 
+// Coeff counts of the matrices in weno3.cpp / weno5.cpp. Polynomial
+// reconstruction uses Stencil coefficients, so it does not need one.
+constexpr int kWeno3Stencil = 3;
+constexpr int kWeno3Coeff = 12;
+constexpr int kWeno5Stencil = 5;
+constexpr int kWeno5Coeff = 45;
+
+struct Weno3Op {
+  template <typename T>
+  __device__ static T eval(T const *line, T const *coeff, int v, int start,
+                           int axis, bool scale) {
+    return interp_shared_weno3_coeff_impl(line, coeff, v, start, axis, scale);
+  }
+};
+
+struct Weno5Op {
+  template <typename T>
+  __device__ static T eval(T const *line, T const *coeff, int v, int start,
+                           int axis, bool scale) {
+    return interp_shared_weno5_coeff_impl(line, coeff, v, start, axis, scale);
+  }
+};
+
+template <int N>
+struct PolyOp {
+  template <typename T>
+  __device__ static T eval(T const *line, T const *coeff, int v, int start,
+                           int axis, bool /*scale*/) {
+    return interp_shared_poly_coeff_impl<T, N>(line, coeff, v, start, axis);
+  }
+};
+
+// One CUDA block cannot hold a line longer than 1024 threads. Walk that
+// line in tiles of blockDim.x outputs. A tile loads blockDim.x + Stencil - 1
+// inputs (the overhang) and calls the same shared-memory weights as the
+// one-thread-per-cell kernel.
+template <typename T, int Stencil, int NCoeff, typename Op>
+__device__ void interp_line_tiled(T *out, T *inp, T *coeff, int nvar,
+                                  int stride_in1, int stride_in2,
+                                  int stride_out1, int stride_out2, bool scale,
+                                  int nline, T *smem) {
+  int id = threadIdx.x;
+  int nt = blockDim.x;
+  int overhang = Stencil - 1;
+  int window_max = nt + overhang;
+  int nout = nline - overhang;
+
+  T *scoeff = smem + window_max * nvar;
+  for (int i = id; i < NCoeff; i += nt) {
+    scoeff[i] = coeff[i];
+  }
+
+  for (int start = 0; start < nout; start += nt) {
+    int n_out = nout - start;
+    if (n_out > nt) n_out = nt;
+    int window = n_out + overhang;
+
+    T *sinp = smem;
+    for (int j = 0; j < nvar; ++j) {
+      for (int i = id; i < window; i += nt) {
+        sinp[j * window + i] = INP(j, start + i);
+      }
+    }
+
+    __syncthreads();
+
+    if (id < n_out) {
+      for (int j = 0; j < nvar; ++j) {
+        OUT(j, start + id) =
+            Op::template eval<T>(sinp, scoeff, j, id, window, scale);
+      }
+    }
+
+    __syncthreads();
+  }
+}
+
 } // namespace snap
 
 #undef SQR
