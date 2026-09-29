@@ -78,6 +78,14 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
       auto [psf_lo, pref, dsf, dref] = _hydro_ref_x1(w);
       auto pressure = w[IPR].clone();
       auto density = w[IDN].clone();
+      // smooth5 keeps the production dref/dsf. Any other form replaces only
+      // those two tensors; the pressure reference and the arithmetic below
+      // stay on the production path.
+      if (options->rho_ref() != "smooth5") {
+        auto replaced = _density_ref_x1(w, psf_lo, options->rho_ref());
+        dref = replaced.first;
+        dsf = replaced.second;
+      }
 
       w[IPR] -= pref;
       w[IDN] -= dref;

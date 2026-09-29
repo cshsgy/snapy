@@ -1,0 +1,44 @@
+reference-state:
+  Tref: 1.
+  Pref: 1.
+
+species:
+  - name: dry
+    composition: {O: 0.42, N: 1.56, Ar: 0.01}
+    cv_R: 2.5
+
+geometry:
+  type: cartesian
+  bounds: {x1min: 0., x1max: 4., x2min: 0., x2max: 6.283185307179586, x3min: 0., x3max: 1.}
+  cells: {nx1: 16, nx2: 64, nx3: 1, nghost: 3}
+
+dynamics:
+  equation-of-state:
+    type: ideal-gas
+    gammad: 1.4
+    weight: 8.31446
+    density-floor: 1.e-30
+    pressure-floor: 1.e-30
+    limiter: false
+  reconstruct:
+    vertical: {type: weno5, scale: false, shock: false}
+    horizontal: {type: weno5, scale: false, shock: false}
+  riemann-solver:
+    type: lmars
+
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+    x2-inner: periodic
+    x2-outer: periodic
+
+integration:
+  type: rk3
+  cfl: 0.4
+  implicit-scheme: 0
+
+forcing:
+  const-gravity:
+    grav1: -1.
+    non-hydrostatic: 1.

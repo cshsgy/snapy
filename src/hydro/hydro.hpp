@@ -5,6 +5,8 @@
 #include <torch/nn/module.h>
 #include <torch/nn/modules/common.h>
 
+#include <string>
+#include <utility>
 #include <vector>
 
 // snap
@@ -37,7 +39,8 @@ struct HydroOptionsImpl {
     os << "* verbose = " << verbose() << "\n"
        << "* disable_flux_x1 = " << disable_flux_x1() << "\n"
        << "* disable_flux_x2 = " << disable_flux_x2() << "\n"
-       << "* disable_flux_x3 = " << disable_flux_x3() << "\n";
+       << "* disable_flux_x3 = " << disable_flux_x3() << "\n"
+       << "* rho_ref = " << rho_ref() << "\n";
   }
 
   //! verbose
@@ -49,6 +52,11 @@ struct HydroOptionsImpl {
 
   //! Keep the well-balanced x1 reference's stencils off the wall ghosts
   ADD_ARG(bool, wb_wall_clamp) = true;
+
+  //! Density reference used by the well-balanced x1 reconstruction.
+  //! smooth5 is the production reference and must stay bit-identical.
+  //! isentrope, none, and local_polytrope replace only dref and dsf.
+  ADD_ARG(std::string, rho_ref) = "smooth5";
 
   //! forcing options
   ADD_ARG(ConstGravityOptions, grav) = nullptr;
@@ -169,6 +177,12 @@ class HydroImpl : public torch::nn::Cloneable<HydroImpl> {
   // call.
   std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
   _hydro_ref_x1(torch::Tensor const& w) const;
+
+  //! Cell and face density references for a non-production rho_ref.
+  //! Pressure reference is not touched. Index i is the lower face of cell i.
+  std::pair<torch::Tensor, torch::Tensor> _density_ref_x1(
+      torch::Tensor const& w, torch::Tensor const& psf_lo,
+      std::string const& form) const;
   torch::Tensor _apply_implicit_correction(torch::Tensor& du,
                                            torch::Tensor const& w, double dt,
                                            Variables const& other);

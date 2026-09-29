@@ -151,6 +151,7 @@ HydroOptions HydroOptionsImpl::clone() const {
   op->disable_flux_x1() = disable_flux_x1();
   op->disable_flux_x2() = disable_flux_x2();
   op->disable_flux_x3() = disable_flux_x3();
+  op->rho_ref() = rho_ref();
   if (grav()) op->grav() = grav()->clone();
   if (coriolis()) op->coriolis() = coriolis()->clone();
   if (diffusion()) op->diffusion() = diffusion()->clone();
