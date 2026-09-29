@@ -5,6 +5,8 @@
 #include <torch/nn/module.h>
 #include <torch/nn/modules/common.h>
 
+#include <string>
+#include <utility>
 #include <vector>
 
 // snap
@@ -127,6 +129,14 @@ class HydroImpl : public torch::nn::Cloneable<HydroImpl> {
   //! Advance the conserved variables by one time step.
   torch::Tensor forward(double dt, torch::Tensor hydro_u,
                         Variables const& other);
+
+  //! Left and right x1 face densities from the production well-balanced
+  //! reconstruction. `form` is smooth5 (production dref/dsf), none, isentrope,
+  //! or local_polytrope. Only the density reference changes. Pressure
+  //! reference, wall-ghost fill, WENO and the positivity fallback are the
+  //! production path. Index i is the lower face of cell i. Does not modify w.
+  std::pair<torch::Tensor, torch::Tensor> face_density_x1(
+      torch::Tensor const& w, std::string const& form);
 
   torch::Tensor flux1() const { return _flux1; }
   torch::Tensor flux2() const { return _flux2; }
