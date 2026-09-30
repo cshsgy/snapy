@@ -129,8 +129,8 @@ torch::Tensor ReconstructImpl::forward(torch::Tensor w, int dim, bool floor) {
   auto eos =
       phydro ? phydro->options->eos() : EquationOfStateOptionsImpl::create();
 
-  // density
-  _apply_inplace(dim, il, iu, w.narrow(0, IDN, 1), pinterp1,
+  // density: same interpolant as pressure. shock false is Center5, not WENO5.
+  _apply_inplace(dim, il, iu, w.narrow(0, IDN, 1), pinterp2,
                  result.narrow(1, IDN, 1));
   if (eos->limiter() && floor) {
     result.select(1, IDN).clamp_min_(eos->density_floor());
