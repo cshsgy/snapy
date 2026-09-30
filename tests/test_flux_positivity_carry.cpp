@@ -27,7 +27,7 @@ using namespace snap;
 
 namespace {
 //! the one card this binary loads: kintera's species table is process-global
-constexpr char const *kCard = "test_flux_positivity_carry.yaml";
+constexpr char const* kCard = "test_flux_positivity_carry.yaml";
 
 struct Arm {
   std::shared_ptr<MeshBlockImpl> block;
@@ -37,9 +37,9 @@ struct Arm {
 
 //! one hydro forward (dt = 1) of a uniform column, limiter on or off;
 //! shape, if given, then edits the primitive state (and gets il)
-Arm forward_once(bool limiter, std::function<void(YAML::Node &)> const &edit,
+Arm forward_once(bool limiter, std::function<void(YAML::Node&)> const& edit,
                  double vx, double vy, double vz = 0.,
-                 std::function<void(torch::Tensor &, int)> const &shape = {},
+                 std::function<void(torch::Tensor&, int)> const& shape = {},
                  torch::Device device = torch::kCPU) {
   auto card = YAML::LoadFile(kCard);
   card["dynamics"]["equation-of-state"]["limiter"] = limiter;
@@ -80,8 +80,8 @@ Arm forward_once(bool limiter, std::function<void(YAML::Node &)> const &edit,
 //! If up/down are given, they count the limited faces with an upward/downward
 //! species flux at which the non-donor neighbour would carry a different
 //! energy or momentum, i.e. the faces that tell the donor apart.
-void expect_carried(Arm const &off, Arm const &on, int dim = 1,
-                    int *up = nullptr, int *down = nullptr) {
+void expect_carried(Arm const& off, Arm const& on, int dim = 1,
+                    int* up = nullptr, int* down = nullptr) {
   ASSERT_TRUE(torch::equal(off.vars.at("hydro_u"), on.vars.at("hydro_u")));
   auto peos = off.block->phydro->peos;
   auto pcoord = off.block->pcoord;
@@ -89,7 +89,7 @@ void expect_carried(Arm const &off, Arm const &on, int dim = 1,
   int iu = dim == 1 ? pcoord->iu() : pcoord->ju();
   int across = dim == 1 ? pcoord->jl() : pcoord->il();
   // row c of a (var, x3, x2, x1) tensor at position n along dim
-  auto at = [&](torch::Tensor const &t, int c, int n) {
+  auto at = [&](torch::Tensor const& t, int c, int n) {
     return (dim == 1 ? t[c][0][across][n] : t[c][0][n][across]).item<double>();
   };
   auto w = off.vars.at("hydro_w");
@@ -104,7 +104,7 @@ void expect_carried(Arm const &off, Arm const &on, int dim = 1,
   int limited = 0;
   for (int i = il; i <= iu + 1; ++i) {
     // what the withheld mass carries if cell d(n) is species n's donor
-    auto carried = [&](std::function<int(double)> const &cell, double *dM) {
+    auto carried = [&](std::function<int(double)> const& cell, double* dM) {
       double dE = 0.;
       for (int n = 0; n < 2; ++n) {
         double f0 = at(F0, ICY + n, i);
@@ -149,7 +149,7 @@ void expect_carried(Arm const &off, Arm const &on, int dim = 1,
           << "momentum flux " << k << ", face " << i;
       apart = apart || std::abs(xM[k] - dM[k]) > 1.e3 * tol;
     }
-    int *count = at(F0, ICY, i) > 0. ? up : down;
+    int* count = at(F0, ICY, i) > 0. ? up : down;
     if (lim && apart && count) ++*count;
   }
   EXPECT_GT(limited, 0) << "the limiter never withheld a species flux";
@@ -172,7 +172,7 @@ void expect_carried(Arm const &off, Arm const &on, int dim = 1,
 TEST(flux_positivity, withheld_advected_mass_keeps_its_energy_and_momentum) {
   for (std::string rs : {"lmars", "hllc"}) {
     SCOPED_TRACE(rs);
-    auto edit = [&](YAML::Node &card) {
+    auto edit = [&](YAML::Node& card) {
       card["dynamics"]["riemann-solver"]["type"] = rs;
     };
     auto off = forward_once(false, edit, 2., 3.);
@@ -185,7 +185,7 @@ TEST(flux_positivity, withheld_advected_mass_keeps_its_energy_and_momentum) {
 // drains the cell above it of twice its cloud, theta = 1/2, and the withheld
 // settling flux keeps its energy (no pressure share) and its x2 momentum.
 TEST(flux_positivity, withheld_settling_mass_keeps_its_energy_and_momentum) {
-  auto edit = [](YAML::Node &card) {
+  auto edit = [](YAML::Node& card) {
     card["sedimentation"] =
         YAML::Load("{radius: {}, density: {}, const-vsed: {cloud: -2.}}");
   };
@@ -198,7 +198,7 @@ TEST(flux_positivity, withheld_settling_mass_keeps_its_energy_and_momentum) {
 // at 2 m/s along x2 (3 m/s along x3), so the limited faces are x2 faces and
 // the carry runs on the x2 flux.
 TEST(flux_positivity, withheld_mass_keeps_its_energy_and_momentum_along_x2) {
-  auto edit = [](YAML::Node &card) {
+  auto edit = [](YAML::Node& card) {
     card["geometry"]["bounds"]["x2max"] = 6.;
     card["geometry"]["cells"]["nx2"] = 6;
     card["boundary-condition"]["external"]["x2-inner"] = "reflecting";
@@ -217,7 +217,7 @@ TEST(flux_positivity, withheld_mass_keeps_its_energy_and_momentum_along_x2) {
 // c4, c5), each by theta = 1/2.2 or 1/2; a swapped donor index would carry
 // the other neighbour's energy and momentum.
 void withheld_mass_keeps_its_donors_energy_and_momentum(torch::Device device) {
-  auto shape = [](torch::Tensor &w, int il) {
+  auto shape = [](torch::Tensor& w, int il) {
     double rho[6] = {1.00, 1.15, 0.90, 1.05, 0.85, 1.20};
     double vx[6] = {2.0, 2.4, 1.6, -1.6, -2.4, -2.0};
     double vy[6] = {3.0, 3.5, 2.5, 4.0, 2.0, 3.2};
@@ -229,7 +229,7 @@ void withheld_mass_keeps_its_donors_energy_and_momentum(torch::Device device) {
       w[IVZ].select(-1, il + c).fill_(vz[c]);
     }
   };
-  auto keep = [](YAML::Node &) {};
+  auto keep = [](YAML::Node&) {};
   auto off = forward_once(false, keep, 0., 0., 0., shape, device);
   auto on = forward_once(true, keep, 0., 0., 0., shape, device);
   int up = 0, down = 0;
@@ -256,7 +256,7 @@ TEST(flux_positivity, withheld_mass_keeps_its_donors_energy_and_momentum_cuda) {
 // each part carries its own donor's energy and momentum.
 void withheld_mixed_flux_keeps_each_parts_energy_and_momentum(
     torch::Device device) {
-  auto shape = [](torch::Tensor &w, int il) {
+  auto shape = [](torch::Tensor& w, int il) {
     double rho[6] = {1.00, 1.15, 0.90, 1.05, 0.85, 1.20};
     double vx[6] = {3.0, 3.4, 2.6, 3.2, 2.8, 3.1};
     double vy[6] = {3.0, 3.5, 2.5, 4.0, 2.0, 3.2};
@@ -268,8 +268,8 @@ void withheld_mixed_flux_keeps_each_parts_energy_and_momentum(
       w[IVZ].select(-1, il + c).fill_(vz[c]);
     }
   };
-  auto keep = [](YAML::Node &) {};
-  auto settle = [](YAML::Node &card) {
+  auto keep = [](YAML::Node&) {};
+  auto settle = [](YAML::Node& card) {
     card["sedimentation"] =
         YAML::Load("{radius: {}, density: {}, const-vsed: {cloud: -1.}}");
   };
@@ -280,7 +280,7 @@ void withheld_mixed_flux_keeps_each_parts_energy_and_momentum(
 
   auto peos = off.block->phydro->peos;
   int il = off.block->pcoord->il(), iu = off.block->pcoord->iu();
-  auto cpu = [](torch::Tensor const &t) { return t.cpu(); };
+  auto cpu = [](torch::Tensor const& t) { return t.cpu(); };
   auto w = cpu(off.vars.at("hydro_w"));
   auto u = cpu(off.vars.at("hydro_u"));
   auto temp = cpu(peos->compute("W->T", {off.vars.at("hydro_w")}));
@@ -289,7 +289,7 @@ void withheld_mixed_flux_keeps_each_parts_energy_and_momentum(
   auto Fb = cpu(bare.block->phydro->flux1());
   auto F0 = cpu(off.block->phydro->flux1());
   auto F1 = cpu(on.block->phydro->flux1());
-  auto at = [](torch::Tensor const &t, int c, int i) {
+  auto at = [](torch::Tensor const& t, int c, int i) {
     return t[c][0][0][i].item<double>();
   };
 
@@ -351,7 +351,7 @@ TEST(flux_positivity,
 // keeps its energy and momentum as on ideal-moist.
 TEST(flux_positivity,
      moist_mixture_withheld_mass_keeps_its_energy_and_momentum) {
-  auto edit = [](YAML::Node &card) {
+  auto edit = [](YAML::Node& card) {
     card["dynamics"]["equation-of-state"]["type"] = "moist-mixture";
   };
   auto off = forward_once(false, edit, 2., 3.);
@@ -365,7 +365,7 @@ TEST(flux_positivity,
 // conserved energy plus the pressure.
 TEST(flux_positivity,
      moist_mixture_nasa9_h2_enthalpy_matches_internal_plus_pressure) {
-  auto edit = [](YAML::Node &card) {
+  auto edit = [](YAML::Node& card) {
     card["dynamics"]["equation-of-state"]["type"] = "moist-mixture";
   };
   auto arm = forward_once(false, edit, 2., 3.);
@@ -395,8 +395,8 @@ TEST(flux_positivity,
 
   std::array<double, 9> coeff{};
   coeff[2] = 3.5;
-  for (auto &row : thermo->nasa9_low()) row = coeff;
-  for (auto &row : thermo->nasa9_high()) row = coeff;
+  for (auto& row : thermo->nasa9_low()) row = coeff;
+  for (auto& row : thermo->nasa9_high()) row = coeff;
   thermo->use_nasa9_cp(true);
   ASSERT_GT(thermo->names().size(), 1u);
   thermo->names()[1] = "H2";
@@ -429,6 +429,8 @@ TEST(flux_positivity,
   auto T = torch::tensor({Tc}, torch::kFloat64);
   auto uR = kintera::eval_intEng_R(T, conc, thermo);
   auto z = kintera::eval_czh(T, conc.narrow(-1, 0, ngas), thermo);
+  // czh stays 1 because kintera's func2 table is empty (2.5.13 and 2.5.15).
+  // This checks that tripwire, not snapy's use of a czh other than 1.
   EXPECT_NEAR(z[0][0].item<double>(), 1., 0.);
   double ke = 0.5 * (2. * 2. + 3. * 3.);
   double h_dry =
@@ -436,6 +438,8 @@ TEST(flux_positivity,
       z[0][0].item<double>() * kintera::constants::Rgas / mu_dry * Tc + ke;
   double lhs = carried + rho_dry * h_dry;
   double rhs = cons[IPR][0][j][i].item<double>() + pres;
-  EXPECT_NEAR(lhs, rhs, 1e-6 * std::abs(rhs));
+  // Measured residual on this column is ~1e-16. 1e-9 is below the old 1e-6
+  // and still far under the ~1e-6 miss from dropping kinetic energy.
+  EXPECT_NEAR(lhs, rhs, 1e-9 * std::abs(rhs));
   (void)restore;
 }
