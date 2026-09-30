@@ -48,7 +48,7 @@ torch::Tensor MoistMixtureImpl::specific_heat_cv(torch::Tensor prim,
 }
 
 torch::Tensor MoistMixtureImpl::compute(
-    std::string ab, std::vector<torch::Tensor> const& args) {
+    std::string ab, std::vector<torch::Tensor> const &args) {
   if (ab == "W->U") {
     auto w = args[0];
     auto u = args.size() > 1 ? args[1] : torch::empty_like(w);
@@ -90,7 +90,7 @@ torch::Tensor MoistMixtureImpl::compute(
   }
 }
 
-void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor& cons) {
+void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor &cons) {
   auto pcoord = phydro->pmb->pcoord;
 
   apply_primitive_limiter_(prim);
@@ -121,7 +121,7 @@ void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor& cons) {
   apply_conserved_limiter_(cons);
 }
 
-void MoistMixtureImpl::_cons2prim(torch::Tensor cons, torch::Tensor& prim) {
+void MoistMixtureImpl::_cons2prim(torch::Tensor cons, torch::Tensor &prim) {
   auto pcoord = phydro->pmb->pcoord;
   apply_conserved_limiter_(cons);
 
@@ -193,6 +193,30 @@ torch::Tensor MoistMixtureImpl::_prim2speciesEng(torch::Tensor prim) {
   return ie.narrow(-1, 1, ny).permute({3, 0, 1, 2}) + ke * rhoc;
 }
 
+torch::Tensor MoistMixtureImpl::species_enthalpy(torch::Tensor prim) {
+  auto pcoord = phydro->pmb->pcoord;
+  int ngas = pthermo->options->vapor_ids().size();
+  int ny = ngas + pthermo->options->cloud_ids().size() - 1;
+
+  _ensure_cache(prim);
+  auto conc = ivol * pthermo->inv_mu;
+
+  // the per-species split of the flux enthalpy U + p + rho*KE, with the U of
+  // "VT->U" and the p of "VT->P" (p = R T sum_gas c_n z_n): u_n + KE, plus
+  // z_n R_n T for a vapour (a cloud has no pressure share)
+  auto h = kintera::eval_intEng_R(temp, conc, pthermo->options);
+  h.narrow(-1, 0, ngas) +=
+      kintera::eval_czh(temp, conc.narrow(-1, 0, ngas), pthermo->options) *
+      temp.unsqueeze(-1);
+  h *= kintera::constants::Rgas * pthermo->inv_mu;
+
+  auto vel = prim.narrow(0, IVX, 3).clone();
+  coord_vec_lower_(vel, pcoord->cosine_cell_kj);
+  auto ke = 0.5 * (prim.narrow(0, IVX, 3) * vel).sum(0);
+
+  return h.narrow(-1, 1, ny).permute({3, 0, 1, 2}) + ke;
+}
+
 torch::Tensor MoistMixtureImpl::_cons2ke(torch::Tensor cons) {
   auto pcoord = phydro->pmb->pcoord;
 
@@ -247,17 +271,17 @@ torch::Tensor MoistMixtureImpl::_isothermal_sound_speed(torch::Tensor V,
   return ct;
 }
 
-bool MoistMixtureImpl::_cache_matches(torch::Tensor const& prim) const {
+bool MoistMixtureImpl::_cache_matches(torch::Tensor const &prim) const {
   return cached_prim_.defined() && cached_prim_.is_same(prim) &&
          cached_prim_version_ == prim._version();
 }
 
-void MoistMixtureImpl::_mark_cache(torch::Tensor const& prim) {
+void MoistMixtureImpl::_mark_cache(torch::Tensor const &prim) {
   cached_prim_ = prim;
   cached_prim_version_ = prim._version();
 }
 
-void MoistMixtureImpl::_ensure_cache(torch::Tensor const& prim) {
+void MoistMixtureImpl::_ensure_cache(torch::Tensor const &prim) {
   if (_cache_matches(prim)) return;
 
   int ny = pthermo->options->vapor_ids().size() +

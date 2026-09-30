@@ -16,8 +16,8 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
 
   // Constructor to initialize the layers
   MoistMixtureImpl() = default;
-  explicit MoistMixtureImpl(EquationOfStateOptions const& options_,
-                            torch::nn::Module* p = nullptr)
+  explicit MoistMixtureImpl(EquationOfStateOptions const &options_,
+                            torch::nn::Module *p = nullptr)
       : EquationOfStateImpl(options_, p) {
     reset();
   }
@@ -33,6 +33,7 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
   double species_cv_ref(int n = 0) const override;
   torch::Tensor specific_heat_cv(torch::Tensor prim,
                                  torch::Tensor temp) override;
+  torch::Tensor species_enthalpy(torch::Tensor prim) override;
 
   /*torch::Tensor get_buffer(std::string var) const override {
     return named_buffers()[var];
@@ -52,7 +53,7 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
    * Any steps in between these calls may invalidate the cache.
    */
   torch::Tensor compute(std::string ab,
-                        std::vector<torch::Tensor> const& args) override;
+                        std::vector<torch::Tensor> const &args) override;
 
  private:
   //! \brief Convert primitive variables to conserved variables.
@@ -60,14 +61,14 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
    * \param[in] prim  primitive variables
    * \param[out] out  conserved variables
    */
-  void _prim2cons(torch::Tensor prim, torch::Tensor& out);
+  void _prim2cons(torch::Tensor prim, torch::Tensor &out);
 
   //! \brief Convert conserved variables to primitive variables.
   /*
    * \param[in] cons  conserved variables
    * \param[ou] out   primitive variables
    */
-  void _cons2prim(torch::Tensor cons, torch::Tensor& out);
+  void _cons2prim(torch::Tensor cons, torch::Tensor &out);
 
   //! \brief calculate internal energy
   /*
@@ -124,9 +125,9 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
                                         torch::Tensor dens);
 
   //! \brief Check/update cached thermodynamics for a primitive tensor.
-  bool _cache_matches(torch::Tensor const& prim) const;
-  void _mark_cache(torch::Tensor const& prim);
-  void _ensure_cache(torch::Tensor const& prim);
+  bool _cache_matches(torch::Tensor const &prim) const;
+  void _mark_cache(torch::Tensor const &prim);
+  void _ensure_cache(torch::Tensor const &prim);
 
   // A shallow tensor reference plus its ATen mutation version replaces the
   // former full-field cache copy and device reduction.
