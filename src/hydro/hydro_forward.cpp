@@ -13,7 +13,7 @@
 namespace snap {
 
 torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
-                                 Variables const &other) {
+                                 Variables const& other) {
   enum { DIM1 = 3, DIM2 = 2, DIM3 = 1 };
   bool has_solid = other.count("solid");
   auto start = std::chrono::high_resolution_clock::now();
@@ -21,7 +21,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   auto playout = pmb->get_layout();
 
   //// ------------ (1) Calculate Primitives ------------ ////
-  auto const &w = other.at("hydro_w");
+  auto const& w = other.at("hydro_w");
 
   peos->forward(u, w);
   if (options->verbose()) {
@@ -212,7 +212,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
           return torch::cat({f, _face_pressure1.select(-1, face).unsqueeze(0)},
                             0);
         };
-        auto unpack = [&](int face, torch::Tensor const &avg) {
+        auto unpack = [&](int face, torch::Tensor const& avg) {
           _flux1.select(-1, face).copy_(avg.narrow(0, 0, nv));
           if (has_fp) _face_pressure1.select(-1, face).copy_(avg[nv]);
         };
@@ -239,7 +239,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
           playout->comm->recv(theirs, below, kSeamFluxUpTag)->wait();
           unpack(il, 0.5 * (dn_mine[0] + theirs[0]));
         }
-        for (auto &sw : seam_sends) sw->wait();
+        for (auto& sw : seam_sends) sw->wait();
       }
     }
   }
@@ -408,7 +408,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   // only a block carrying tracers needs the forcings' dry-density increment
   bool track_dry = pmb->pscalar && pmb->pscalar->nvar() > 0;
   auto dry_before = track_dry ? du[IDN].clone() : torch::Tensor();
-  for (auto &f : forcings) f.forward(du, w, temp, dt);
+  for (auto& f : forcings) f.forward(du, w, temp, dt);
   _forcing_dry = track_dry ? du[IDN] - dry_before : torch::Tensor();
 
   // Preserve the original cell-centred gravity work through the implicit

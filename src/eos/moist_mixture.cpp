@@ -48,7 +48,7 @@ torch::Tensor MoistMixtureImpl::specific_heat_cv(torch::Tensor prim,
 }
 
 torch::Tensor MoistMixtureImpl::compute(
-    std::string ab, std::vector<torch::Tensor> const &args) {
+    std::string ab, std::vector<torch::Tensor> const& args) {
   if (ab == "W->U") {
     auto w = args[0];
     auto u = args.size() > 1 ? args[1] : torch::empty_like(w);
@@ -90,7 +90,7 @@ torch::Tensor MoistMixtureImpl::compute(
   }
 }
 
-void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor &cons) {
+void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor& cons) {
   auto pcoord = phydro->pmb->pcoord;
 
   apply_primitive_limiter_(prim);
@@ -121,7 +121,7 @@ void MoistMixtureImpl::_prim2cons(torch::Tensor prim, torch::Tensor &cons) {
   apply_conserved_limiter_(cons);
 }
 
-void MoistMixtureImpl::_cons2prim(torch::Tensor cons, torch::Tensor &prim) {
+void MoistMixtureImpl::_cons2prim(torch::Tensor cons, torch::Tensor& prim) {
   auto pcoord = phydro->pmb->pcoord;
   apply_conserved_limiter_(cons);
 
@@ -271,17 +271,17 @@ torch::Tensor MoistMixtureImpl::_isothermal_sound_speed(torch::Tensor V,
   return ct;
 }
 
-bool MoistMixtureImpl::_cache_matches(torch::Tensor const &prim) const {
+bool MoistMixtureImpl::_cache_matches(torch::Tensor const& prim) const {
   return cached_prim_.defined() && cached_prim_.is_same(prim) &&
          cached_prim_version_ == prim._version();
 }
 
-void MoistMixtureImpl::_mark_cache(torch::Tensor const &prim) {
+void MoistMixtureImpl::_mark_cache(torch::Tensor const& prim) {
   cached_prim_ = prim;
   cached_prim_version_ = prim._version();
 }
 
-void MoistMixtureImpl::_ensure_cache(torch::Tensor const &prim) {
+void MoistMixtureImpl::_ensure_cache(torch::Tensor const& prim) {
   if (_cache_matches(prim)) return;
 
   int ny = pthermo->options->vapor_ids().size() +
