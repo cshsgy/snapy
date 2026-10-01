@@ -34,6 +34,11 @@ static bool d1_terms(int cycle) {
   return env != nullptr && env[0] == '1' && cycle == 1;
 }
 
+static bool d1_skip_sat() {
+  char const *env = std::getenv("SNAPY_D1_SKIP_SAT");
+  return env != nullptr && env[0] == '1';
+}
+
 static D1Cell d1_cell(MeshBlockImpl const *pmb) {
   auto pc = pmb->pcoord;
   int i = pc->il();
@@ -821,14 +826,18 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
   }
 
   // -------- (6) saturation adjustment --------
+  // SNAPY_D1_SKIP_SAT=1 leaves this block out. Unset, the adjustment is
+  // unchanged.
+  bool skip_sat = d1_skip_sat();
   bool d1_sat_stage = stage == pintg->stages.size() - 1 && d1_terms(cycle);
-  bool d1_sat_on = d1_sat_stage && phydro->options->eos()->thermo() &&
-                   phydro->options->eos()->thermo()->reactions().size() > 0;
-  if (d1_sat_stage && !d1_sat_on) {
+  bool have_sat = phydro->options->eos()->thermo() &&
+                  phydro->options->eos()->thermo()->reactions().size() > 0;
+  bool d1_sat_on = d1_sat_stage && have_sat && !skip_sat;
+  if (stage == pintg->stages.size() - 1 && cycle == 1 &&
+      (skip_sat || (d1_sat_stage && !have_sat))) {
     std::cout << "D1SAT skipped=1" << std::endl;
   }
-  if (stage == pintg->stages.size() - 1 && phydro->options->eos()->thermo() &&
-      phydro->options->eos()->thermo()->reactions().size() > 0) {
+  if (!skip_sat && stage == pintg->stages.size() - 1 && have_sat) {
     torch::Tensor d1_pre_lim2;
     if (d1_sat_on) d1_pre_lim2 = hydro_u.clone();
     phydro->peos->apply_conserved_limiter_(hydro_u, /*whole_column=*/true);
