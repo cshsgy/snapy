@@ -272,7 +272,7 @@ MachSample mach_sample(MeshBlock block, torch::Tensor const& prim) {
   return s;
 }
 
-void project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
+double project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
   auto pcoord = block->pcoord;
   auto op = pcoord->options;
   TORCH_CHECK(op->nx1() == op->global_nx1(),
@@ -298,6 +298,7 @@ void project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
   std::cout << std::scientific << std::setprecision(16)
             << "D1BALANCE sweeps=" << sweeps << " residual=" << err
             << " rtol=" << kBalanceRtol << std::endl;
+  return err;
 }
 
 // Dry-run of the update's ThermoY call at the z=6500 m cell. Does not write
@@ -370,7 +371,7 @@ void probe_sat(MeshBlock block, torch::Tensor w, char const* where) {
 
 // Same saturation the last RK stage runs: ThermoY::forward at fixed density
 // and internal energy, species write-back only. Ghosts are left untouched.
-void saturate_ic(MeshBlock block, torch::Tensor w) {
+double saturate_ic(MeshBlock block, torch::Tensor w) {
   auto peos = block->phydro->peos;
   auto modules = block->named_modules();
   auto thermo_y = std::dynamic_pointer_cast<kintera::ThermoYImpl>(
@@ -441,6 +442,7 @@ void saturate_ic(MeshBlock block, torch::Tensor w) {
             << " p0=" << p_before << " p1=" << at(w, IPR)
             << " max_abs_qv=" << max_qv << " max_abs_ql=" << max_ql
             << std::endl;
+  return std::max(max_qv, max_ql);
 }
 
 void initialize_block(MeshBlock block, Variables& vars,
@@ -550,11 +552,36 @@ void initialize_block(MeshBlock block, Variables& vars,
   }
 
   bool probe = config["problem"]["probe-sat"].as<bool>(false);
+  bool joint = config["problem"]["joint-balance"].as<bool>(false);
   if (probe) probe_sat(block, w, "pre");
   if (config["problem"]["saturate-ic"].as<bool>(false)) {
     saturate_ic(block, w);
   }
-  if (config["problem"]["discrete-balance"].as<bool>(false)) {
+  if (joint) {
+    constexpr double kSatMove = 1.e-13;
+    constexpr int kOuterMax = 40;
+    int done = 0;
+    double last_bal = 0.;
+    double last_move = 0.;
+    bool converged = false;
+    for (int n = 0; n < kOuterMax; ++n) {
+      last_bal = project_discrete_balance(block, w, grav);
+      last_move = saturate_ic(block, w);
+      done = n + 1;
+      std::cout << std::scientific << std::setprecision(16)
+                << "D1JOINT iter=" << done << " balance=" << last_bal
+                << " sat_move=" << last_move << std::endl;
+      if (last_bal < kBalanceRtol && last_move < kSatMove) {
+        converged = true;
+        break;
+      }
+    }
+    std::cout << std::scientific << std::setprecision(16)
+              << "D1JOINT done iters=" << done << " balance=" << last_bal
+              << " sat_move=" << last_move
+              << " converged=" << (converged ? 1 : 0) << " sat_tol=" << kSatMove
+              << std::endl;
+  } else if (config["problem"]["discrete-balance"].as<bool>(false)) {
     project_discrete_balance(block, w, grav);
   }
   if (probe) probe_sat(block, w, "post");
