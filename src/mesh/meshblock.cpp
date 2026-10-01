@@ -1,5 +1,6 @@
 // C/C++
 #include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
@@ -20,6 +21,54 @@
 namespace snap {
 
 static std::mutex meshblock_mutex;
+
+namespace {
+
+struct D1Cell {
+  int k, j, i;
+  double z, x;
+};
+
+static bool d1_terms(int cycle) {
+  char const *env = std::getenv("SNAPY_D1_TERMS");
+  return env != nullptr && env[0] == '1' && cycle == 1;
+}
+
+static D1Cell d1_cell(MeshBlockImpl const *pmb) {
+  auto pc = pmb->pcoord;
+  int i = pc->il();
+  double best = std::numeric_limits<double>::infinity();
+  for (int n = pc->il(); n <= pc->iu(); ++n) {
+    double dz = std::abs(pc->x1v[n].item<double>() - 6500.);
+    if (dz < best) {
+      best = dz;
+      i = n;
+    }
+  }
+  int j = (pc->jl() + pc->ju()) / 2;
+  return {pc->kl(), j, i, pc->x1v[i].item<double>(), pc->x2v[j].item<double>()};
+}
+
+static double d1_at(torch::Tensor const &field, int iv, D1Cell const &c) {
+  if (!field.defined() || iv < 0 || iv >= field.size(0)) return 0.;
+  return field[iv][c.k][c.j][c.i].item<double>();
+}
+
+static void d1_print_delta(char const *tag, torch::Tensor const &delta,
+                           D1Cell const &c) {
+  auto interior_max = [&](int iv) {
+    if (iv < 0 || iv >= delta.size(0)) return 0.;
+    return delta[iv].abs().max().item<double>();
+  };
+  std::cout << std::scientific << std::setprecision(16) << tag << " z=" << c.z
+            << " dry=" << d1_at(delta, IDN, c) << " vx=" << d1_at(delta, IVX, c)
+            << " e=" << d1_at(delta, IPR, c) << " qv=" << d1_at(delta, ICY, c)
+            << " ql=" << d1_at(delta, ICY + 1, c)
+            << " max_abs_qv=" << interior_max(ICY)
+            << " max_abs_ql=" << interior_max(ICY + 1) << std::endl;
+}
+
+}  // namespace
 
 static void set_scalar_primitive(Variables &vars, torch::Tensor const &scalar_s,
                                  torch::Tensor const &hydro_u) {
@@ -727,7 +776,12 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
 
   // -------- (4) multi-stage averaging --------
   hydro_u.set_(pintg->forward(stage, _hydro_u0, hydro_u, fut_hydro_du));
+  torch::Tensor d1_pre_lim;
+  if (d1_terms(cycle)) d1_pre_lim = hydro_u.clone();
   phydro->peos->apply_conserved_limiter_(hydro_u, /*whole_column=*/true);
+  if (d1_pre_lim.defined()) {
+    d1_print_delta("D1LIM", hydro_u - d1_pre_lim, d1_cell(this));
+  }
 
   if (options->verbose()) {
     auto end = std::chrono::high_resolution_clock::now();
@@ -767,9 +821,20 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
   }
 
   // -------- (6) saturation adjustment --------
+  bool d1_sat_stage = stage == pintg->stages.size() - 1 && d1_terms(cycle);
+  bool d1_sat_on = d1_sat_stage && phydro->options->eos()->thermo() &&
+                   phydro->options->eos()->thermo()->reactions().size() > 0;
+  if (d1_sat_stage && !d1_sat_on) {
+    std::cout << "D1SAT skipped=1" << std::endl;
+  }
   if (stage == pintg->stages.size() - 1 && phydro->options->eos()->thermo() &&
       phydro->options->eos()->thermo()->reactions().size() > 0) {
+    torch::Tensor d1_pre_lim2;
+    if (d1_sat_on) d1_pre_lim2 = hydro_u.clone();
     phydro->peos->apply_conserved_limiter_(hydro_u, /*whole_column=*/true);
+    if (d1_pre_lim2.defined()) {
+      d1_print_delta("D1LIM2", hydro_u - d1_pre_lim2, d1_cell(this));
+    }
 
     int ny = hydro_u.size(0) - ICY;  // number of species
 
@@ -784,10 +849,15 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
 
     auto sub = part({0, 0, 0}, PartOptions().exterior(false));
     auto sub3 = part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
+    torch::Tensor d1_pre_sat;
+    if (d1_sat_on) d1_pre_sat = hydro_u.clone();
     pthermo->forward(rho.index(sub3), ie.index(sub3), yfrac.index(sub),
                      /*warm_start=*/true);
 
     hydro_u.narrow(0, ICY, ny) = yfrac * rho;
+    if (d1_pre_sat.defined()) {
+      d1_print_delta("D1SAT", hydro_u - d1_pre_sat, d1_cell(this));
+    }
     if (options->verbose()) {
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;

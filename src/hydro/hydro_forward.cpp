@@ -1,5 +1,9 @@
 // C/C++
 #include <chrono>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <limits>
 
 // snap
 #include <snap/snap.h>
@@ -11,6 +15,39 @@
 #include "hydro.hpp"
 
 namespace snap {
+namespace {
+
+struct D1Cell {
+  int k, j, i;
+  double z, x;
+};
+
+static bool d1_terms(int cycle) {
+  char const* env = std::getenv("SNAPY_D1_TERMS");
+  return env != nullptr && env[0] == '1' && cycle == 1;
+}
+
+static D1Cell d1_cell(MeshBlockImpl const* pmb) {
+  auto pc = pmb->pcoord;
+  int i = pc->il();
+  double best = std::numeric_limits<double>::infinity();
+  for (int n = pc->il(); n <= pc->iu(); ++n) {
+    double dz = std::abs(pc->x1v[n].item<double>() - 6500.);
+    if (dz < best) {
+      best = dz;
+      i = n;
+    }
+  }
+  int j = (pc->jl() + pc->ju()) / 2;
+  return {pc->kl(), j, i, pc->x1v[i].item<double>(), pc->x2v[j].item<double>()};
+}
+
+static double d1_at(torch::Tensor const& field, int iv, D1Cell const& c) {
+  if (!field.defined() || iv < 0 || iv >= field.size(0)) return 0.;
+  return field[iv][c.k][c.j][c.i].item<double>();
+}
+
+}  // namespace
 
 torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
                                  Variables const& other) {
@@ -405,12 +442,17 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   auto interior = pmb->part({0, 0, 0}, PartOptions().exterior(false));
   du.index(interior) = -dt * _div.index(interior);
 
+  bool d1 = d1_terms(pmb->cycle);
+  torch::Tensor d1_flux, d1_after_forc, d1_after_hse, d1_before_ecorr;
+  if (d1) d1_flux = du.clone();
+
   auto temp = peos->compute("W->T", {w});
   // only a block carrying tracers needs the forcings' dry-density increment
   bool track_dry = pmb->pscalar && pmb->pscalar->nvar() > 0;
   auto dry_before = track_dry ? du[IDN].clone() : torch::Tensor();
   for (auto& f : forcings) f.forward(du, w, temp, dt);
   _forcing_dry = track_dry ? du[IDN] - dry_before : torch::Tensor();
+  if (d1) d1_after_forc = du.clone();
 
   // Preserve the original cell-centred gravity work through the implicit
   // solve: the VIC matrix assumes that energy-momentum coupling is present in
@@ -494,6 +536,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
     du[IPR] +=
         dt * w[IVX] * rho_grav * (1. - options->grav()->non_hydrostatic());
   }
+  if (d1) d1_after_hse = du.clone();
 
   if (options->verbose()) {
     auto end = std::chrono::high_resolution_clock::now();
@@ -542,10 +585,47 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
     }
   }
 
+  if (d1) d1_before_ecorr = du.clone();
   if (gravity_energy_correction.defined()) {
     int is = pmb->pcoord->il();
     int ie = pmb->pcoord->iu() + 1;
     du[IPR].slice(-1, is, ie) += gravity_energy_correction;
+  }
+
+  if (d1) {
+    auto c = d1_cell(pmb);
+    auto part_at = [&](torch::Tensor const& part, char const* name) {
+      std::cout << std::scientific << std::setprecision(16) << " " << name
+                << "_dry=" << d1_at(part, IDN, c) << " " << name
+                << "_vx=" << d1_at(part, IVX, c) << " " << name
+                << "_e=" << d1_at(part, IPR, c) << " " << name
+                << "_qv=" << d1_at(part, ICY, c) << " " << name
+                << "_ql=" << d1_at(part, ICY + 1, c);
+    };
+    auto forc = d1_after_forc - d1_flux;
+    auto hse = d1_after_hse.defined() ? d1_after_hse - d1_after_forc
+                                      : torch::zeros_like(du);
+    auto vic = d1_before_ecorr.defined()
+                   ? d1_before_ecorr -
+                         (d1_after_hse.defined() ? d1_after_hse : d1_after_forc)
+                   : torch::zeros_like(du);
+    auto ecorr = du - d1_before_ecorr;
+    if (rk_stage == 0) {
+      std::cout << std::scientific << std::setprecision(16)
+                << "D1STATE z=" << c.z << " x=" << c.x << " i=" << c.i
+                << " j=" << c.j << " rho=" << d1_at(w, IDN, c)
+                << " p=" << d1_at(w, IPR, c) << " vx=" << d1_at(w, IVX, c)
+                << " qv=" << d1_at(w, ICY, c) << " ql=" << d1_at(w, ICY + 1, c)
+                << " T=" << temp[c.k][c.j][c.i].item<double>() << std::endl;
+    }
+    std::cout << std::scientific << std::setprecision(16)
+              << "D1TERM stage=" << rk_stage << " dt=" << dt << " z=" << c.z;
+    part_at(d1_flux, "flux");
+    part_at(forc, "forc");
+    part_at(hse, "hse");
+    part_at(vic, "vic");
+    part_at(ecorr, "ecorr");
+    std::cout << std::endl;
   }
 
   return du;
