@@ -300,6 +300,74 @@ void project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
             << " rtol=" << kBalanceRtol << std::endl;
 }
 
+// Dry-run of the update's ThermoY call at the z=6500 m cell. Does not write
+// back.
+void probe_sat(MeshBlock block, torch::Tensor w, char const* where) {
+  auto peos = block->phydro->peos;
+  auto modules = block->named_modules();
+  auto thermo_y = std::dynamic_pointer_cast<kintera::ThermoYImpl>(
+      modules["hydro.eos.thermo"]);
+  TORCH_CHECK(thermo_y, "probe-sat needs hydro.eos.thermo");
+  auto const& species = thermo_y->options->species();
+  int iv = species_offset(species, "H2O");
+  int iliq = species_offset(species, "H2O(l)");
+
+  auto pcoord = block->pcoord;
+  int i = pcoord->il();
+  double best = std::numeric_limits<double>::infinity();
+  for (int n = pcoord->il(); n <= pcoord->iu(); ++n) {
+    double dz = std::abs(pcoord->x1v[n].item<double>() - 6500.);
+    if (dz < best) {
+      best = dz;
+      i = n;
+    }
+  }
+  int j = (pcoord->jl() + pcoord->ju()) / 2;
+  int k = pcoord->kl();
+
+  auto u = peos->compute("W->U", {w.clone()});
+  int ny = static_cast<int>(u.size(0)) - ICY;
+  auto ke = peos->compute("U->K", {u});
+  auto rho = u[IDN] + u.narrow(0, ICY, ny).sum(0);
+  auto ie = u[IPR] - ke;
+  auto yfrac = u.narrow(0, ICY, ny) / rho;
+
+  auto rho1 =
+      rho.slice(0, k, k + 1).slice(1, j, j + 1).slice(2, i, i + 1).contiguous();
+  auto ie1 =
+      ie.slice(0, k, k + 1).slice(1, j, j + 1).slice(2, i, i + 1).contiguous();
+  auto y1 = yfrac.slice(1, k, k + 1)
+                .slice(2, j, j + 1)
+                .slice(3, i, i + 1)
+                .contiguous();
+  auto y_in = y1.clone();
+
+  kintera::ThermoY probe(thermo_y->options);
+  probe->to(w.device());
+  auto ivol = probe->compute("DY->V", {rho1, y1});
+  auto temp = probe->compute("VU->T", {ivol, ie1});
+  auto pres = probe->compute("VT->P", {ivol, temp});
+  probe->forward(rho1, ie1, y1, /*warm_start=*/false);
+
+  auto one = [](torch::Tensor const& t) {
+    return t.reshape({-1})[0].item<double>();
+  };
+  double dqv = iv >= 0 ? (one(y1[iv]) - one(y_in[iv])) * one(rho1) : 0.;
+  double dql = iliq >= 0 ? (one(y1[iliq]) - one(y_in[iliq])) * one(rho1) : 0.;
+  auto tprim = peos->compute("W->T", {w});
+
+  std::cout << std::scientific << std::setprecision(16)
+            << "D1PROBE where=" << where
+            << " z=" << pcoord->x1v[i].item<double>()
+            << " x=" << pcoord->x2v[j].item<double>() << " rho=" << one(rho1)
+            << " ie=" << one(ie1) << " Tprim=" << tprim[k][j][i].item<double>()
+            << " Tvu=" << one(temp)
+            << " pprim=" << w[IPR][k][j][i].item<double>()
+            << " pvu=" << one(pres) << " qv=" << (iv >= 0 ? one(y_in[iv]) : 0.)
+            << " ql=" << (iliq >= 0 ? one(y_in[iliq]) : 0.) << " dqv=" << dqv
+            << " dql=" << dql << std::endl;
+}
+
 // Same saturation the last RK stage runs: ThermoY::forward at fixed density
 // and internal energy, species write-back only. Ghosts are left untouched.
 void saturate_ic(MeshBlock block, torch::Tensor w) {
@@ -481,12 +549,15 @@ void initialize_block(MeshBlock block, Variables& vars,
         .copy_(thermo_x->compute("X->Y", std::vector<torch::Tensor>{xfrac_i}));
   }
 
+  bool probe = config["problem"]["probe-sat"].as<bool>(false);
+  if (probe) probe_sat(block, w, "pre");
   if (config["problem"]["saturate-ic"].as<bool>(false)) {
     saturate_ic(block, w);
   }
   if (config["problem"]["discrete-balance"].as<bool>(false)) {
     project_discrete_balance(block, w, grav);
   }
+  if (probe) probe_sat(block, w, "post");
 
   vars["hydro_w"] = w;
 }

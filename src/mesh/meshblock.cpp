@@ -859,7 +859,40 @@ void MeshBlockImpl::advance_local(Variables &vars, double dt, int stage) {
     auto sub = part({0, 0, 0}, PartOptions().exterior(false));
     auto sub3 = part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
     torch::Tensor d1_pre_sat;
-    if (d1_sat_on) d1_pre_sat = hydro_u.clone();
+    if (d1_sat_on) {
+      d1_pre_sat = hydro_u.clone();
+      auto c = d1_cell(this);
+      auto species = pthermo->options->species();
+      int iv = 0;
+      int iliq = 1;
+      for (int n = 1; n < static_cast<int>(species.size()); ++n) {
+        if (species[n] == "H2O") iv = n - 1;
+        if (species[n] == "H2O(l)") iliq = n - 1;
+      }
+      auto rho1 = rho.slice(0, c.k, c.k + 1)
+                      .slice(1, c.j, c.j + 1)
+                      .slice(2, c.i, c.i + 1)
+                      .contiguous();
+      auto ie1 = ie.slice(0, c.k, c.k + 1)
+                     .slice(1, c.j, c.j + 1)
+                     .slice(2, c.i, c.i + 1)
+                     .contiguous();
+      auto y1 = yfrac.slice(1, c.k, c.k + 1)
+                    .slice(2, c.j, c.j + 1)
+                    .slice(3, c.i, c.i + 1)
+                    .contiguous();
+      auto ivol = pthermo->compute("DY->V", {rho1, y1});
+      auto temp = pthermo->compute("VU->T", {ivol, ie1});
+      auto pres = pthermo->compute("VT->P", {ivol, temp});
+      auto one = [](torch::Tensor const &t) {
+        return t.reshape({-1})[0].item<double>();
+      };
+      std::cout << std::scientific << std::setprecision(16)
+                << "D1SATIN rho=" << one(rho1) << " ie=" << one(ie1)
+                << " Tvu=" << one(temp) << " pvu=" << one(pres)
+                << " qv=" << one(y1[iv]) << " ql=" << one(y1[iliq])
+                << std::endl;
+    }
     pthermo->forward(rho.index(sub3), ie.index(sub3), yfrac.index(sub),
                      /*warm_start=*/true);
 
