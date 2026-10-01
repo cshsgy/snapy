@@ -289,8 +289,22 @@ double project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
   auto col =
       w.narrow(1, kl, nk).narrow(2, jl, nj).narrow(3, il, ni).contiguous();
   auto dx = pcoord->dx1f.narrow(0, il, ni).contiguous();
-  auto [balanced, err, sweeps] = snap::balance_column(
-      col, dx, grav, /*wall_clamp=*/true, kBalanceRtol, /*max_iter=*/400);
+  torch::Tensor balanced;
+  double err = 0.;
+  int sweeps = 0;
+  double asked = kBalanceRtol;
+  try {
+    std::tie(balanced, err, sweeps) = snap::balance_column(
+        col, dx, grav, /*wall_clamp=*/true, kBalanceRtol, /*max_iter=*/400);
+  } catch (c10::Error const&) {
+    // 100 m bubble columns floor near 3e-14. Take that state and let the
+    // outer joint loop decide; the 1e-14 gate is not met.
+    asked = 1.e-13;
+    std::tie(balanced, err, sweeps) = snap::balance_column(
+        col, dx, grav, /*wall_clamp=*/true, asked, /*max_iter=*/400);
+    std::cout << std::scientific << std::setprecision(16)
+              << "D1BALANCE fallback asked=" << asked << std::endl;
+  }
   w.narrow(1, kl, nk).narrow(2, jl, nj).narrow(3, il, ni).copy_(balanced);
   g_balance.ran = true;
   g_balance.residual = std::max(g_balance.residual, err);
@@ -655,12 +669,17 @@ void initialize_block(MeshBlock block, Variables& vars,
         converged = true;
         break;
       }
+      // Balance can sit a few times above 1e-14. Once saturation is under
+      // its gate, further passes do not change the evaporation question.
+      if (last_bal < 1.e-13 && last_move < kSatMove) break;
     }
+    int floor =
+        (!converged && last_bal < 1.e-13 && last_move < kSatMove) ? 1 : 0;
     std::cout << std::scientific << std::setprecision(16)
               << "D1JOINT done iters=" << done << " balance=" << last_bal
               << " sat_move=" << last_move
-              << " converged=" << (converged ? 1 : 0) << " sat_tol=" << kSatMove
-              << std::endl;
+              << " converged=" << (converged ? 1 : 0) << " floor=" << floor
+              << " sat_tol=" << kSatMove << std::endl;
   } else if (config["problem"]["discrete-balance"].as<bool>(false)) {
     project_discrete_balance(block, w, grav);
   }
