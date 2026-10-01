@@ -54,16 +54,14 @@ int species_offset(std::vector<std::string> const& species,
   return -1;
 }
 
-torch::Tensor bryan_saturation_pressure(torch::Tensor const& temp) {
+torch::Tensor bryan_saturation_pressure(torch::Tensor const& temp, double eps) {
   constexpr double kT3 = 273.16;
   constexpr double kP3 = 611.7;
   constexpr double kBeta = 24.845;
-  constexpr double kEps = 0.621;
   constexpr double kGamma = 1.4;
   constexpr double kRcpVapor = 1.166;
   constexpr double kRcpLiquid = 3.46;
-  constexpr double kDelta =
-      (kRcpLiquid - kRcpVapor) * kEps / (1. - 1. / kGamma);
+  double kDelta = (kRcpLiquid - kRcpVapor) * eps / (1. - 1. / kGamma);
 
   auto reduced_temp = temp / kT3;
   return kP3 * torch::exp(kBeta * (1. - 1. / reduced_temp) -
@@ -72,24 +70,23 @@ torch::Tensor bryan_saturation_pressure(torch::Tensor const& temp) {
 
 void set_user_output_callback(MeshBlock block,
                               std::vector<std::string> const& species,
-                              double p0) {
+                              double p0, double rd, double eps) {
   int iH2O = species_offset(species, "H2O");
   int iH2Oc = species_offset(species, "H2O(l)");
 
-  block->user_output_callback = [iH2O, iH2Oc, p0](Variables const& vars) {
-    constexpr double kRd = 287.;
-    constexpr double kEps = 0.621;
+  block->user_output_callback = [=](Variables const& vars) {
+    double kRd = rd;
+    double kEps = eps;
     constexpr double kGamma = 1.4;
     constexpr double kRcpVapor = 1.166;
     constexpr double kRcpLiquid = 3.46;
     constexpr double kBeta = 24.845;
     constexpr double kT3 = 273.16;
-    constexpr double kDelta =
-        (kRcpLiquid - kRcpVapor) * kEps / (1. - 1. / kGamma);
+    double kDelta = (kRcpLiquid - kRcpVapor) * kEps / (1. - 1. / kGamma);
 
-    constexpr double kRv = kRd / kEps;
-    constexpr double kCpd = kGamma / (kGamma - 1.) * kRd;
-    constexpr double kCpLiquid = kRcpLiquid * kCpd;
+    double kRv = kRd / kEps;
+    double kCpd = kGamma / (kGamma - 1.) * kRd;
+    double kCpLiquid = kRcpLiquid * kCpd;
 
     auto w = vars.at("hydro_w");
     auto qtol = torch::zeros_like(w[IDN]);
@@ -108,7 +105,8 @@ void set_user_output_callback(MeshBlock block,
     auto xgas = 1. + eta;
     auto pd = w[IPR] / xgas;
     auto pv = w[IPR] * eta / xgas;
-    auto rh = torch::clamp_min(pv / bryan_saturation_pressure(temp), 1.e-12);
+    auto rh =
+        torch::clamp_min(pv / bryan_saturation_pressure(temp, kEps), 1.e-12);
 
     auto cpt = kCpd * qd + kCpLiquid * qtol;
     auto lv = kRv * (kBeta * kT3 - kDelta * temp);
@@ -302,6 +300,81 @@ void project_discrete_balance(MeshBlock block, torch::Tensor w, double grav) {
             << " rtol=" << kBalanceRtol << std::endl;
 }
 
+// Same saturation the last RK stage runs: ThermoY::forward at fixed density
+// and internal energy, species write-back only. Ghosts are left untouched.
+void saturate_ic(MeshBlock block, torch::Tensor w) {
+  auto peos = block->phydro->peos;
+  auto modules = block->named_modules();
+  auto thermo_y = std::dynamic_pointer_cast<kintera::ThermoYImpl>(
+      modules["hydro.eos.thermo"]);
+  TORCH_CHECK(thermo_y && thermo_y->options->reactions().size() > 0,
+              "saturate-ic needs a thermo reaction");
+  auto const& species = thermo_y->options->species();
+  int iv = species_offset(species, "H2O");
+  int iliq = species_offset(species, "H2O(l)");
+
+  auto pcoord = block->pcoord;
+  int i = pcoord->il();
+  double best = std::numeric_limits<double>::infinity();
+  for (int n = pcoord->il(); n <= pcoord->iu(); ++n) {
+    double dz = std::abs(pcoord->x1v[n].item<double>() - 6500.);
+    if (dz < best) {
+      best = dz;
+      i = n;
+    }
+  }
+  int j = (pcoord->jl() + pcoord->ju()) / 2;
+  int k = pcoord->kl();
+
+  auto at = [&](torch::Tensor const& field, int ivar) {
+    return field[ivar][k][j][i].item<double>();
+  };
+  auto temp0 = peos->compute("W->T", {w});
+  double t_before = temp0[k][j][i].item<double>();
+  double p_before = at(w, IPR);
+  double qv_before = iv >= 0 ? at(w, ICY + iv) : 0.;
+  double ql_before = iliq >= 0 ? at(w, ICY + iliq) : 0.;
+
+  auto u = peos->compute("W->U", {w.clone()});
+  int ny = static_cast<int>(u.size(0)) - ICY;
+  auto ke = peos->compute("U->K", {u});
+  auto rho = u[IDN] + u.narrow(0, ICY, ny).sum(0);
+  auto ie = u[IPR] - ke;
+  auto yfrac = u.narrow(0, ICY, ny) / rho;
+  auto y0 = yfrac.clone();
+
+  auto sub = block->part({0, 0, 0}, PartOptions().exterior(false));
+  auto sub3 = block->part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
+  thermo_y->forward(rho.index(sub3), ie.index(sub3), yfrac.index(sub),
+                    /*warm_start=*/true);
+  u.narrow(0, ICY, ny).index(sub).copy_((yfrac * rho).index(sub));
+
+  auto w_eq = peos->compute("U->W", {u});
+  w[IDN].index(sub3).copy_(w_eq[IDN].index(sub3));
+  w[IPR].index(sub3).copy_(w_eq[IPR].index(sub3));
+  w.narrow(0, ICY, ny).index(sub).copy_(w_eq.narrow(0, ICY, ny).index(sub));
+
+  auto temp1 = peos->compute("W->T", {w});
+  auto dq = ((yfrac - y0) * rho).index(sub);
+  double max_qv = iv >= 0 ? dq[iv].abs().max().item<double>() : 0.;
+  double max_ql = iliq >= 0 ? dq[iliq].abs().max().item<double>() : 0.;
+  double dqv = iv >= 0 ? ((yfrac - y0) * rho)[iv][k][j][i].item<double>() : 0.;
+  double dql =
+      iliq >= 0 ? ((yfrac - y0) * rho)[iliq][k][j][i].item<double>() : 0.;
+
+  std::cout << std::scientific << std::setprecision(16)
+            << "D1SATIC z=" << pcoord->x1v[i].item<double>()
+            << " x=" << pcoord->x2v[j].item<double>() << " dqv=" << dqv
+            << " dql=" << dql << " qv0=" << qv_before
+            << " qv1=" << (iv >= 0 ? at(w, ICY + iv) : 0.)
+            << " ql0=" << ql_before
+            << " ql1=" << (iliq >= 0 ? at(w, ICY + iliq) : 0.)
+            << " T0=" << t_before << " T1=" << temp1[k][j][i].item<double>()
+            << " p0=" << p_before << " p1=" << at(w, IPR)
+            << " max_abs_qv=" << max_qv << " max_abs_ql=" << max_ql
+            << std::endl;
+}
+
 void initialize_block(MeshBlock block, Variables& vars,
                       YAML::Node const& config, torch::Device const& device) {
   auto pcoord = block->pcoord;
@@ -408,6 +481,9 @@ void initialize_block(MeshBlock block, Variables& vars,
         .copy_(thermo_x->compute("X->Y", std::vector<torch::Tensor>{xfrac_i}));
   }
 
+  if (config["problem"]["saturate-ic"].as<bool>(false)) {
+    saturate_ic(block, w);
+  }
   if (config["problem"]["discrete-balance"].as<bool>(false)) {
     project_discrete_balance(block, w, grav);
   }
@@ -436,8 +512,18 @@ int main(int argc, char** argv) {
     auto modules = mesh->blocks[i]->named_modules();
     auto thermo_y = std::dynamic_pointer_cast<kintera::ThermoYImpl>(
         modules["hydro.eos.thermo"]);
-    set_user_output_callback(mesh->blocks[i], thermo_y->options->species(),
-                             config["problem"]["p0"].as<double>());
+    auto species = thermo_y->options->species();
+    int ih2o = 1;
+    for (int n = 1; n < static_cast<int>(species.size()); ++n) {
+      if (species[n] == "H2O") ih2o = n;
+    }
+    double rd = kintera::constants::Rgas * thermo_y->inv_mu[0].item<double>();
+    double eps = thermo_y->inv_mu[0].item<double>() /
+                 thermo_y->inv_mu[ih2o].item<double>();
+    std::cout << std::scientific << std::setprecision(16)
+              << "D1THERMO rd=" << rd << " eps=" << eps << std::endl;
+    set_user_output_callback(mesh->blocks[i], species,
+                             config["problem"]["p0"].as<double>(), rd, eps);
     if (args.restart_file.empty()) {
       initialize_block(mesh->blocks[i], vars[i], config, device);
     }
