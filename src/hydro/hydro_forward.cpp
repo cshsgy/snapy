@@ -27,6 +27,60 @@ static bool d1_terms(int cycle) {
   return env != nullptr && env[0] == '1' && cycle == 1;
 }
 
+static bool d1_floor_on(int cycle) {
+  char const* env = std::getenv("SNAPY_D1_FLOOR");
+  return env != nullptr && env[0] == '1' && cycle == 1;
+}
+
+// Horizontal momentum through the four faces of one x1 row, cycle 1 only.
+static void d1_floor_row(MeshBlockImpl const* pmb, torch::Tensor const& w,
+                         torch::Tensor const& flux1, torch::Tensor const& flux2,
+                         double dt, int stage, int i, char const* name) {
+  auto pc = pmb->pcoord;
+  int k = pc->kl();
+  auto area1 = pc->face_area1();
+  auto area2 = pc->face_area2();
+  auto vol = pc->cell_volume();
+
+  double max_net = -1.;
+  double max_bot = 0., max_x1 = 0., max_x2 = 0.;
+  int j_net = pc->jl();
+  double bot = 0., top = 0., left = 0., right = 0., rho = 0.;
+  for (int j = pc->jl(); j <= pc->ju(); ++j) {
+    double vol_c = vol[k][j][i].item<double>();
+    double rho_c = w[IDN][k][j][i].item<double>();
+    double d_bot = dt * area1[k][j][i].item<double>() *
+                   flux1[IVY][k][j][i].item<double>() / vol_c;
+    double d_top = -dt * area1[k][j][i + 1].item<double>() *
+                   flux1[IVY][k][j][i + 1].item<double>() / vol_c;
+    double d_left = dt * area2[k][j][i].item<double>() *
+                    flux2[IVY][k][j][i].item<double>() / vol_c;
+    double d_right = -dt * area2[k][j + 1][i].item<double>() *
+                     flux2[IVY][k][j + 1][i].item<double>() / vol_c;
+    double net = (d_bot + d_top + d_left + d_right) / rho_c;
+    max_bot = std::max(max_bot, std::abs(d_bot / rho_c));
+    max_x1 = std::max(max_x1, std::abs((d_bot + d_top) / rho_c));
+    max_x2 = std::max(max_x2, std::abs((d_left + d_right) / rho_c));
+    if (std::abs(net) > max_net) {
+      max_net = std::abs(net);
+      j_net = j;
+      bot = d_bot / rho_c;
+      top = d_top / rho_c;
+      left = d_left / rho_c;
+      right = d_right / rho_c;
+      rho = rho_c;
+    }
+  }
+  std::cout << std::scientific << std::setprecision(16)
+            << "D1FLOOR stage=" << stage << " row=" << name
+            << " z=" << pc->x1v[i].item<double>() << " j=" << j_net
+            << " x=" << pc->x2v[j_net].item<double>() << " rho=" << rho
+            << " dv_bot=" << bot << " dv_top=" << top << " dv_left=" << left
+            << " dv_right=" << right << " dv_net=" << (bot + top + left + right)
+            << " max_abs_dv_bot=" << max_bot << " max_abs_dv_x1=" << max_x1
+            << " max_abs_dv_x2=" << max_x2 << std::endl;
+}
+
 static D1Cell d1_cell(MeshBlockImpl const* pmb) {
   auto pc = pmb->pcoord;
   int i = pc->il();
@@ -441,6 +495,13 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   auto du = torch::zeros_like(_div);
   auto interior = pmb->part({0, 0, 0}, PartOptions().exterior(false));
   du.index(interior) = -dt * _div.index(interior);
+
+  if (d1_floor_on(pmb->cycle) && _flux1.defined() && _flux2.defined()) {
+    d1_floor_row(pmb, w, _flux1, _flux2, dt, rk_stage, pmb->pcoord->il(),
+                 "bottom");
+    d1_floor_row(pmb, w, _flux1, _flux2, dt, rk_stage, pmb->pcoord->il() + 1,
+                 "above");
+  }
 
   bool d1 = d1_terms(pmb->cycle);
   torch::Tensor d1_flux, d1_after_forc, d1_after_hse, d1_before_ecorr;
