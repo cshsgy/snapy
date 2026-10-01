@@ -327,21 +327,39 @@ void EquationOfStateImpl::apply_conserved_limiter_(torch::Tensor const& cons,
       cons.narrow(0, ICY + nvapor, ncloud).clamp_min_(0.);
     }
 
+    // A column split along x1 is gathered and repaired whole, the same way
+    // as a parentless cloud (#244), and each block keeps its own part.
+    // Block-local, the lower block's vapor total can be negative and
+    // fix_vapor aborts even though the whole column has vapor (#267).
     auto vapor = cons.index(interior).narrow(0, ICY, nvapor);
     auto major = cons.index(interior)[IDN].unsqueeze(0);
+    auto layout = pmb->get_layout();
+    bool split =
+        nvapor > 0 && whole_column && layout && layout->options->pz() > 1;
+    auto column = split ? layout->gather_x1(
+                              torch::cat({vapor, major, vol.expand_as(major)}))
+                        : torch::Tensor();
+    auto cvapor = split ? column.narrow(0, 0, nvapor) : vapor;
+    auto cmajor = split ? column.narrow(0, nvapor, 1) : major;
+    auto cvol = split ? column.narrow(0, nvapor + 1, 1) : vol;
     auto iter = at::TensorIteratorConfig()
                     .resize_outputs(false)
-                    .declare_static_shape(vapor.sizes(),
-                                          /*squash_dim=*/vapor.dim() - 1)
-                    .add_output(vapor)
-                    .add_owned_input(major.expand_as(vapor))
-                    .add_owned_input(vol.expand_as(vapor))
+                    .declare_static_shape(cvapor.sizes(),
+                                          /*squash_dim=*/cvapor.dim() - 1)
+                    .add_output(cvapor)
+                    .add_owned_input(cmajor.expand_as(cvapor))
+                    .add_owned_input(cvol.expand_as(cvapor))
                     .build();
 
     int err = at::native::call_fix_vapor(cons.device().type(), iter);
     TORCH_CHECK(err == 0,
                 "[EquationOfState] apply_conserved_limiter_: "
                 "Failed to fix vapor mass fractions.");
+    if (split) {
+      int nx1 = vapor.size(-1);
+      int rz = std::get<2>(layout->loc_of(layout->options->rank()));
+      vapor.copy_(cvapor.narrow(-1, rz * nx1, nx1));
+    }
     // a repair of round-off size, relative to the cell's total gas density,
     // is applied but not marked (kPositivityRoundoffUlp): kinetics leaves
     // ~1e-304 in a cloud-free cell that no smaller dt removes (#256)
