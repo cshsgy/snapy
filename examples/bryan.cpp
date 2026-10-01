@@ -369,6 +369,86 @@ void probe_sat(MeshBlock block, torch::Tensor w, char const* where) {
             << " dql=" << dql << std::endl;
 }
 
+// One finished interior column, written over every x2 index including ghosts.
+// Prints the column-to-column difference before the copy and 0 after it.
+void copy_ic_column(MeshBlock block, torch::Tensor w) {
+  auto pcoord = block->pcoord;
+  int j0 = pcoord->jl();
+  int nc2 = pcoord->options->nc2();
+  int nc3 = static_cast<int>(w.size(1));
+  int nc1 = static_cast<int>(w.size(3));
+  auto src = w.slice(2, j0, j0 + 1).clone();
+
+  auto report = [&](int j_lo, int j_hi, char const* which) {
+    double max_diff = -1.;
+    int j_at = j0;
+    int v_at = 0;
+    int i_at = pcoord->il();
+    int k_at = pcoord->kl();
+    for (int j = j_lo; j <= j_hi; ++j) {
+      if (j == j0) continue;
+      auto diff = (w.slice(2, j, j + 1) - src).abs();
+      double d = diff.max().item<double>();
+      if (d > max_diff) {
+        max_diff = d;
+        j_at = j;
+        int64_t idx = diff.reshape({-1}).argmax().item<int64_t>();
+        int plane = nc3 * nc1;
+        v_at = static_cast<int>(idx / plane);
+        int rem = static_cast<int>(idx % plane);
+        k_at = rem / nc1;
+        i_at = rem % nc1;
+      }
+    }
+    double col0 = src[v_at][k_at][0][i_at].item<double>();
+    double col = w[v_at][k_at][j_at][i_at].item<double>();
+    double rel = std::abs(col - col0) / std::max(std::abs(col0), 1.e-300);
+    std::cout << std::scientific << std::setprecision(16) << "D1COPY before "
+              << which << " max_abs=" << max_diff << " rel=" << rel
+              << " j=" << j_at << " x=" << pcoord->x2v[j_at].item<double>()
+              << " i=" << i_at << " z=" << pcoord->x1v[i_at].item<double>()
+              << " var=" << v_at << " col0=" << col0 << " col=" << col
+              << std::endl;
+  };
+  report(pcoord->jl(), pcoord->ju(), "interior");
+  report(0, nc2 - 1, "with-ghosts");
+
+  for (int j = 0; j < nc2; ++j) w.slice(2, j, j + 1).copy_(src);
+  double after = 0.;
+  for (int j = 0; j < nc2; ++j) {
+    after = std::max(after,
+                     (w.slice(2, j, j + 1) - src).abs().max().item<double>());
+  }
+  std::cout << std::scientific << std::setprecision(16)
+            << "D1COPY after max_abs_column_diff=" << after << " j0=" << j0
+            << " x0=" << pcoord->x2v[j0].item<double>() << std::endl;
+}
+
+struct VyPeak {
+  double vy = 0.;
+  double abs_vy = 0.;
+  double z = 0.;
+  double x = 0.;
+};
+
+VyPeak vy_peak(MeshBlock block, torch::Tensor const& prim) {
+  auto pcoord = block->pcoord;
+  auto wi = interior_prim(block, prim);
+  auto flat = wi[IVY].abs().reshape({-1});
+  int64_t idx = flat.argmax().item<int64_t>();
+  int n1 = static_cast<int>(wi.size(3));
+  int n2 = static_cast<int>(wi.size(2));
+  int i = static_cast<int>(idx % n1);
+  int j = static_cast<int>((idx / n1) % n2);
+  int k = static_cast<int>(idx / (static_cast<int64_t>(n1) * n2));
+  VyPeak p;
+  p.abs_vy = flat[idx].item<double>();
+  p.vy = wi[IVY][k][j][i].item<double>();
+  p.z = pcoord->x1v[pcoord->il() + i].item<double>();
+  p.x = pcoord->x2v[pcoord->jl() + j].item<double>();
+  return p;
+}
+
 // Same saturation the last RK stage runs: ThermoY::forward at fixed density
 // and internal energy, species write-back only. Ghosts are left untouched.
 double saturate_ic(MeshBlock block, torch::Tensor w) {
@@ -585,6 +665,9 @@ void initialize_block(MeshBlock block, Variables& vars,
     project_discrete_balance(block, w, grav);
   }
   if (probe) probe_sat(block, w, "post");
+  if (config["problem"]["copy-column"].as<bool>(false)) {
+    copy_ic_column(block, w);
+  }
 
   vars["hydro_w"] = w;
 }
@@ -642,6 +725,16 @@ int main(int argc, char** argv) {
   double peak_center = 0.;
   int first_above = -1;
   int first_core = -1;
+  bool copy_column = config["problem"]["copy-column"].as<bool>(false);
+  double max_abs_vy = 0.;
+  double max_vy_signed = 0.;
+  double max_vy_z = 0.;
+  double max_vy_x = 0.;
+  int max_vy_cycle = -1;
+  double first_vy = 0.;
+  double first_vy_z = 0.;
+  double first_vy_x = 0.;
+  int first_vy_cycle = -1;
   if (crossings > 0) {
     double cs_min = std::numeric_limits<double>::infinity();
     for (size_t i = 0; i < mesh->blocks.size(); ++i) {
@@ -686,6 +779,7 @@ int main(int argc, char** argv) {
     current_time += dt;
     if (crossings > 0) {
       MachSample step;
+      VyPeak vy_step;
       for (size_t i = 0; i < mesh->blocks.size(); ++i) {
         auto prim = primitives_of(mesh->blocks[i], vars[i]);
         auto sample = mach_sample(mesh->blocks[i], prim);
@@ -693,6 +787,29 @@ int main(int argc, char** argv) {
             std::isfinite(sample.mach) && std::isfinite(sample.mach_core),
             "D1 mach is not finite at cycle ", cycle);
         if (sample.mach >= step.mach) step = sample;
+        if (copy_column) {
+          auto vy = vy_peak(mesh->blocks[i], prim);
+          if (vy.abs_vy >= vy_step.abs_vy) vy_step = vy;
+        }
+      }
+      if (copy_column) {
+        if (vy_step.abs_vy > max_abs_vy) {
+          max_abs_vy = vy_step.abs_vy;
+          max_vy_signed = vy_step.vy;
+          max_vy_z = vy_step.z;
+          max_vy_x = vy_step.x;
+          max_vy_cycle = cycle;
+        }
+        if (first_vy_cycle < 0 && vy_step.abs_vy > 0.) {
+          first_vy_cycle = cycle;
+          first_vy = vy_step.vy;
+          first_vy_z = vy_step.z;
+          first_vy_x = vy_step.x;
+          std::cout << std::scientific << std::setprecision(16)
+                    << "D1VYLEAVE cycle=" << cycle << " time=" << current_time
+                    << " z=" << first_vy_z << " x=" << first_vy_x
+                    << " vy=" << first_vy << std::endl;
+        }
       }
       step.cycle = cycle;
       step.time = current_time;
@@ -768,6 +885,14 @@ int main(int argc, char** argv) {
               << " balance_residual=" << g_balance.residual
               << " complete=" << (complete ? 1 : 0)
               << " result=" << (roundoff ? "pass" : "fail") << std::endl;
+    if (copy_column) {
+      std::cout << std::scientific << std::setprecision(16)
+                << "D1VY peak_abs=" << max_abs_vy << " cycle=" << max_vy_cycle
+                << " z=" << max_vy_z << " x=" << max_vy_x
+                << " vy=" << max_vy_signed << " first_cycle=" << first_vy_cycle
+                << " first_z=" << first_vy_z << " first_x=" << first_vy_x
+                << " first_vy=" << first_vy << std::endl;
+    }
   }
 
   mesh->finalize(vars, current_time);
