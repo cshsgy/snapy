@@ -491,8 +491,13 @@ endif()
 if(NOT CUDA)
   get_property(_snapy_tests DIRECTORY PROPERTY TESTS)
   foreach(_t IN LISTS _snapy_tests)
-    set_property(TEST ${_t} APPEND PROPERTY ENVIRONMENT_MODIFICATION
-                 "SNAPY_BUILD_CUDA=set:0")
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+      set_property(TEST ${_t} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+                   "SNAPY_BUILD_CUDA=set:0")
+    else()
+      set_property(TEST ${_t} APPEND PROPERTY ENVIRONMENT
+                   "SNAPY_BUILD_CUDA=0")
+    endif()
     set(_disable FALSE)
     if(_t MATCHES "cuda")
       set(_disable TRUE)
