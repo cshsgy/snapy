@@ -222,12 +222,10 @@ set_tests_properties(test_exchange_python PROPERTIES
 set_property(GLOBAL APPEND PROPERTY SNAPY_PYTHON_TESTS test_exchange_python)
 
 # Checks the SNAPY_TEST_PYTHONPATH wiring below. Its own PYTHONPATH stands in for the
-# caller's and must survive behind SNAPY_TEST_PYTHONPATH (only checkable with CMake >= 3.22).
+# caller's and must survive behind SNAPY_TEST_PYTHONPATH.
 set(_marker "${CMAKE_CURRENT_BINARY_DIR}/caller_pythonpath_marker")
-if(SNAPY_TEST_PYTHONPATH AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+if(SNAPY_TEST_PYTHONPATH)
   set(_import_path_args "${SNAPY_TEST_PYTHONPATH}" "${_marker}")
-elseif(SNAPY_TEST_PYTHONPATH)
-  set(_import_path_args "${SNAPY_TEST_PYTHONPATH}")
 endif()
 snapy_add_python_test(test_python_import_path LABELS "python" ARGS ${_import_path_args})
 set_tests_properties(test_python_import_path_python PROPERTIES
@@ -263,15 +261,8 @@ get_property(SNAPY_PYTHON_TESTS GLOBAL PROPERTY SNAPY_PYTHON_TESTS)
 if(SNAPY_TEST_PYTHONPATH)
   # Prepend, do not replace: the caller's PYTHONPATH may be what selects the kintera/pyharp
   # this tree was configured against, and a test's own ENVIRONMENT must survive.
-  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-    set_tests_properties(${SNAPY_PYTHON_TESTS} PROPERTIES ENVIRONMENT_MODIFICATION
-                         "PYTHONPATH=path_list_prepend:${SNAPY_TEST_PYTHONPATH}")
-  else()
-    foreach(test IN LISTS SNAPY_PYTHON_TESTS)
-      set_property(TEST ${test} APPEND PROPERTY ENVIRONMENT
-                   "PYTHONPATH=${SNAPY_TEST_PYTHONPATH}:$ENV{PYTHONPATH}")
-    endforeach()
-  endif()
+  set_tests_properties(${SNAPY_PYTHON_TESTS} PROPERTIES ENVIRONMENT_MODIFICATION
+                       "PYTHONPATH=path_list_prepend:${SNAPY_TEST_PYTHONPATH}")
   message(STATUS "python ctests import snapy from ${SNAPY_TEST_PYTHONPATH}")
 else()
   message(WARNING
