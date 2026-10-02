@@ -1,0 +1,67 @@
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+repair threw arm b2 mutation 0: [EquationOfState] apply_conserved_limiter_: Failed to fix vapor mass fractions.
+Exception raised from apply_conserved_limiter_ at /tmp/snapy-236-g2/src/eos/equation_of_state.cpp:370 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f4d8b19efdd in /home/sam2/pyenv/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: c10::detail::torchCheckFail(char const*, char const*, unsigned int, char const*) + 0x69 (0x7f4d8b134637 in /home/sam2/pyenv/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #2: snap::EquationOfStateImpl::apply_conserved_limiter_(at::Tensor const&, bool) + 0x23b4 (0x7f4d8bb63864 in /tmp/snapy-236-g2/build-cpu/lib/libsnap_release.so)
+frame #3: <unknown function> + 0x1da0c (0x63904cd8ba0c in /tmp/snapy-236-g2/build-cpu/tests/gate2_arm_a.release)
+frame #4: <unknown function> + 0x10269 (0x63904cd7e269 in /tmp/snapy-236-g2/build-cpu/tests/gate2_arm_a.release)
+frame #5: <unknown function> + 0x29d90 (0x7f4d75429d90 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #6: __libc_start_main + 0x80 (0x7f4d75429e40 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #7: <unknown function> + 0x13155 (0x63904cd81155 in /tmp/snapy-236-g2/build-cpu/tests/gate2_arm_a.release)
+
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+cp use_nasa9_cp=0 use_h2_cp=0 h2_cp_mode=equilibrium Tref=300 Rgas=8.31446
+b2_eq_off 1 max_abs 0
+census A 0 0 6 0 bad 6
+census B2 0 0 6 0 bad 6
+b2_bad 0 0 0
+b2_bad 0 0 1
+b2_bad 0 0 2
+b2_bad 0 0 3
+b2_bad 0 0 4
+b2_bad 0 0 5
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+mutation 1 dumped
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+mutation 2 dumped
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+mutation 3 dumped
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+mutation 4 dumped
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+mutation 5 dumped
+WROTE /tmp/snapy-236-g2/study/236/gate2/raw/moist-mixture__x2

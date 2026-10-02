@@ -1,0 +1,14 @@
+b2_eq_off 1
+max_abs_b2_off 0
+idn_a_b2 1
+idn_a_off 1
+i2_neighbor_bitwise 1
+i2_hke_over_s 0
+census_a 0 0 1 0
+census_b2 0 0 1 0
+bad_b2 1
+b2_bad 0 0 0
+bad_a 1
+repair_threw_a 0
+repair_threw_b2 0
+repair_threw_off 0

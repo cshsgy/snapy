@@ -28,6 +28,7 @@ void MoistMixtureImpl::reset() {
   temp = register_buffer("temp", torch::empty({0}, torch::kFloat64));
   cached_prim_.reset();
   cached_prim_version_ = -1;
+  enthalpy_mutation_ = 0;
 }
 
 double MoistMixtureImpl::species_weight(int n) const {
@@ -208,13 +209,47 @@ torch::Tensor MoistMixtureImpl::species_enthalpy(torch::Tensor prim) {
   h.narrow(-1, 0, ngas) +=
       kintera::eval_czh(temp, conc.narrow(-1, 0, ngas), pthermo->options) *
       temp.unsqueeze(-1);
-  h *= kintera::constants::Rgas * pthermo->inv_mu;
+
+  int ncloud = static_cast<int>(pthermo->options->cloud_ids().size());
+  // Molar mutations, before the per-mass conversion.
+  if (enthalpy_mutation_ == 3 && ncloud > 0) {
+    h.narrow(-1, ngas, ncloud) += temp.unsqueeze(-1);
+  }
+  if (enthalpy_mutation_ == 5 && ncloud > 0 && ngas > 1) {
+    auto vapor = h.select(-1, 1);
+    for (int j = 0; j < ncloud; ++j) h.select(-1, ngas + j).copy_(vapor);
+  }
+  if (enthalpy_mutation_ == 2) {
+    h *= kintera::constants::Rgas;
+  } else {
+    h *= kintera::constants::Rgas * pthermo->inv_mu;
+  }
+  if (enthalpy_mutation_ == 4 && ncloud > 0) {
+    double Tref = pthermo->options->Tref();
+    auto const& cv = pthermo->options->cref_R();
+    for (int j = 0; j < ncloud; ++j) {
+      int n = ngas + j;
+      double dcv = (3.5 - cv.at(n)) *
+                   (kintera::constants::Rgas * pthermo->inv_mu[n].item<double>());
+      h.select(-1, n) += dcv * (temp - Tref);
+    }
+  }
 
   auto vel = prim.narrow(0, IVX, 3).clone();
   coord_vec_lower_(vel, pcoord->cosine_cell_kj);
   auto ke = 0.5 * (prim.narrow(0, IVX, 3) * vel).sum(0);
 
-  return h.narrow(-1, 1, ny).permute({3, 0, 1, 2}) + ke;
+  auto spec = h.narrow(-1, 1, ny).permute({3, 0, 1, 2});
+  if (enthalpy_mutation_ == 1) {
+    auto U = pthermo->compute("VT->U", {ivol, temp});
+    int cloud0 = ICY + ny - ncloud;
+    auto ycloud = ncloud > 0 ? prim.narrow(0, cloud0, ncloud).sum(0)
+                             : torch::zeros_like(prim[IDN]);
+    auto rho_gas = (prim[IDN] * (1. - ycloud)).clamp_min(1.e-300);
+    auto bulk = (U + prim[IPR]) / rho_gas;
+    spec = bulk.unsqueeze(0).expand_as(spec).contiguous();
+  }
+  return spec + ke;
 }
 
 torch::Tensor MoistMixtureImpl::_cons2ke(torch::Tensor cons) {

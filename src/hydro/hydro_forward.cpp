@@ -40,6 +40,7 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   int ny = u.size(0) - ICY;
   // the settling part of the x1 species flux, for the positivity carry
   torch::Tensor fsed1;
+  _fsed1 = torch::Tensor();
 
   //// ------------ (2) Calculate dimension 1 flux ------------ ////
   if (u.size(DIM1) > 1) {
@@ -164,12 +165,17 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
       }
     }
 
-    // sedimentation flux; skipped when x1 flux is off (_flux1 not rewritten)
+    // sedimentation flux; skipped when x1 flux is off (_flux1 not rewritten).
+    // Split fsed1 whenever cell repair is on, including the B2 arm that skips
+    // the cut. limiter:false does not save it.
     if (psed && !options->disable_flux_x1()) {
-      bool carry = options->eos()->limiter() && ny > 0;
-      auto fadv = carry ? _flux1.narrow(0, ICY, ny).clone() : torch::Tensor();
+      bool split = options->eos()->limiter() && ny > 0;
+      auto fadv = split ? _flux1.narrow(0, ICY, ny).clone() : torch::Tensor();
       psed->forward(w, _flux1);
-      if (carry) fsed1 = _flux1.narrow(0, ICY, ny) - fadv;
+      if (split) {
+        fsed1 = _flux1.narrow(0, ICY, ny) - fadv;
+        _fsed1 = fsed1;
+      }
     }
 
     // Make internal x1 seam fluxes single-valued. The two ranks sharing an
@@ -332,7 +338,8 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
   // of every shared face is identical on both ranks and conservation stays
   // exact. Positivity of the full multi-stage update follows from the SSP
   // structure of the integrators (see flux_positivity.hpp).
-  if (options->eos()->limiter() && ny > 0) {
+  if (options->eos()->limiter() && ny > 0 &&
+      !options->debug_disable_flux_positivity()) {
     auto uy = u.narrow(0, ICY, ny);
     auto f1 = _flux1.defined() ? _flux1.narrow(0, ICY, ny) : torch::Tensor();
     auto f2 = _flux2.defined() ? _flux2.narrow(0, ICY, ny) : torch::Tensor();

@@ -137,6 +137,26 @@ set_tests_properties(test_exchange.release PROPERTIES
     "BLOCKS_PER_PROCESS=3;EXPECT_LOCAL_NEIGHBOR=1;EXPECT_REMOTE_NEIGHBOR=1"
 )
 
+# Gate 2 arm A driver. Not a ctest: it has its own main and takes a card on
+# the command line. One process per card, because kintera's species table is
+# process-global.
+add_executable(gate2_arm_a.${buildl} gate2_arm_a.cpp)
+set_target_properties(gate2_arm_a.${buildl}
+                      PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_${buildu}})
+target_include_directories(
+  gate2_arm_a.${buildl}
+  PRIVATE ${CMAKE_BINARY_DIR}
+          ${KINTERA_INCLUDE_DIR}
+          ${SNAP_INCLUDE_DIR}
+          ${HARP_INCLUDE_DIR}
+          ${NETCDF_INCLUDES}
+          ${TORCH_INCLUDE_DIR}
+          ${TORCH_API_INCLUDE_DIR})
+target_link_libraries(gate2_arm_a.${buildl} PRIVATE snapy::snap)
+if(UNIX AND NOT APPLE)
+  target_link_options(gate2_arm_a.${buildl} PRIVATE -Wl,--no-as-needed)
+endif()
+
 add_test(
   NAME test_radiating_boundary_python
   COMMAND ${Python3_EXECUTABLE}

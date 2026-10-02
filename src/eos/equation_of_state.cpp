@@ -211,6 +211,34 @@ void EquationOfStateImpl::apply_conserved_limiter_(torch::Tensor const& cons,
   auto pcoord = pmb->pcoord;
 
   if (!options->limiter()) return;  // no limiter
+  // Count NaNs and cells that the repair is about to change, before it does.
+  // A clamp cell is one whose density is under the floor or any species
+  // density is negative. Ghost = every other cell. The next call overwrites.
+  {
+    auto interior3 =
+        pmb->part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
+    auto nan_cell = torch::isnan(cons).any(/*dim=*/0);
+    auto nan_i =
+        nan_cell.index(interior3).to(torch::kInt64).sum().item<int64_t>();
+    auto nan_all = nan_cell.to(torch::kInt64).sum().item<int64_t>();
+    int ny_c = 0;
+    if (options->thermo()) {
+      ny_c = static_cast<int>(options->thermo()->vapor_ids().size() +
+                              options->thermo()->cloud_ids().size()) -
+             1;
+    }
+    auto bad = cons[IDN] < options->density_floor();
+    if (ny_c > 0) {
+      bad = bad.logical_or((cons.narrow(0, ICY, ny_c) < 0).any(/*dim=*/0));
+    }
+    auto clamp_i =
+        bad.index(interior3).to(torch::kInt64).sum().item<int64_t>();
+    auto clamp_all = bad.to(torch::kInt64).sum().item<int64_t>();
+    repair_census_.nan_interior = nan_i;
+    repair_census_.nan_ghost = nan_all - nan_i;
+    repair_census_.clamp_interior = clamp_i;
+    repair_census_.clamp_ghost = clamp_all - clamp_i;
+  }
   // every call marks a repaired interior, so MeshBlock::check_redo redoes it
   auto interior = pmb->part({0, 0, 0}, PartOptions().exterior(false));
   bool mark = limiter_marks_.defined();

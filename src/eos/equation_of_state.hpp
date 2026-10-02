@@ -1,6 +1,7 @@
 #pragma once
 
 // C/C++
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,15 @@ struct EquationOfStateOptionsImpl {
 using EquationOfStateOptions = std::shared_ptr<EquationOfStateOptionsImpl>;
 
 class HydroImpl;
+
+//! Per-cell NaN and clamp counts taken at the start of a repair call,
+//! before any value is changed. Ghost = total − interior. Last call wins.
+struct RepairCensus {
+  int64_t nan_interior = 0;
+  int64_t nan_ghost = 0;
+  int64_t clamp_interior = 0;
+  int64_t clamp_ghost = 0;
+};
 
 class EquationOfStateImpl {
  public:
@@ -125,6 +135,10 @@ class EquationOfStateImpl {
   //! \return (ny, nc3, nc2, nc1); undefined when the EOS has no such split.
   virtual torch::Tensor species_enthalpy(torch::Tensor prim) { return {}; }
 
+  //! Test-only. 0 leaves the hook alone. Moist-mixture applies 1..5;
+  //! other equations of state ignore it.
+  virtual void set_species_enthalpy_mutation(int) {}
+
   //! \brief Computes hydrodynamic variables from the given abbreviation
   /*!
    * These five abbreviations should be supported:
@@ -166,9 +180,12 @@ class EquationOfStateImpl {
   //! in check_redo (MeshBlock and Mesh).
   torch::Tensor const& limiter_marks() const { return limiter_marks_; }
 
+  RepairCensus const& repair_census() const { return repair_census_; }
+
  private:
   // not a buffer: stage forcings get named_buffers()
   torch::Tensor limiter_marks_;
+  RepairCensus repair_census_;
 
   //! Parent vapor slots and normalized stoichiometric mass fractions by cloud.
   std::vector<std::vector<std::pair<int, double>>> cloud_parent_cache_;

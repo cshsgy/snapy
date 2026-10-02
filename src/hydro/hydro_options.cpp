@@ -50,10 +50,16 @@ HydroOptions HydroOptionsImpl::from_yaml(std::string const& filename,
     // Only the TOP level is checked here: the equation-of-state sub-block is
     // co-owned (kintera reads its own keys from it), so it is checked against
     // both libraries' keys in EquationOfStateOptionsImpl::from_yaml.
-    static std::array<char const*, 8> const dynamics_keys = {
-        "equation-of-state", "reconstruct",     "riemann-solver",
-        "verbose",           "disable-flux-x1", "disable-flux-x2",
-        "disable-flux-x3",   "wb-wall-clamp"};
+    static std::array<char const*, 9> const dynamics_keys = {
+        "equation-of-state",
+        "reconstruct",
+        "riemann-solver",
+        "verbose",
+        "disable-flux-x1",
+        "disable-flux-x2",
+        "disable-flux-x3",
+        "wb-wall-clamp",
+        "debug-disable-flux-positivity"};
     for (auto const& item : dyn) {
       auto key = item.first.as<std::string>();
       auto joined = [] {  // the message lists the checked keys
@@ -72,6 +78,8 @@ HydroOptions HydroOptionsImpl::from_yaml(std::string const& filename,
     op->disable_flux_x2() = dyn["disable-flux-x2"].as<bool>(false);
     op->disable_flux_x3() = dyn["disable-flux-x3"].as<bool>(false);
     op->wb_wall_clamp() = dyn["wb-wall-clamp"].as<bool>(true);
+    op->debug_disable_flux_positivity() =
+        dyn["debug-disable-flux-positivity"].as<bool>(false);
   }
 
   // --------------- forcings --------------- //
@@ -151,6 +159,7 @@ HydroOptions HydroOptionsImpl::clone() const {
   op->disable_flux_x1() = disable_flux_x1();
   op->disable_flux_x2() = disable_flux_x2();
   op->disable_flux_x3() = disable_flux_x3();
+  op->debug_disable_flux_positivity() = debug_disable_flux_positivity();
   if (grav()) op->grav() = grav()->clone();
   if (coriolis()) op->coriolis() = coriolis()->clone();
   if (diffusion()) op->diffusion() = diffusion()->clone();

@@ -1,0 +1,22 @@
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+[HydroOptions] -- constant gravity options --
+* grav1 = -1e-12
+* grav2 = 0
+* grav3 = 0
+* non-hydrostatic = 1
+cp use_nasa9_cp=0 use_h2_cp=0 h2_cp_mode=equilibrium Tref=300 Rgas=8.31446
+b2_eq_off 1 max_abs 0
+census A 0 0 2 0 bad 2
+census B2 0 0 2 0 bad 2
+b2_bad 0 0 0
+b2_bad 0 0 5
+WROTE /tmp/snapy-236-g2/study/236/gate2/raw/ideal-moist__donors

@@ -37,7 +37,9 @@ struct HydroOptionsImpl {
     os << "* verbose = " << verbose() << "\n"
        << "* disable_flux_x1 = " << disable_flux_x1() << "\n"
        << "* disable_flux_x2 = " << disable_flux_x2() << "\n"
-       << "* disable_flux_x3 = " << disable_flux_x3() << "\n";
+       << "* disable_flux_x3 = " << disable_flux_x3() << "\n"
+       << "* debug_disable_flux_positivity = "
+       << debug_disable_flux_positivity() << "\n";
   }
 
   //! verbose
@@ -46,6 +48,10 @@ struct HydroOptionsImpl {
   ADD_ARG(bool, disable_flux_x1) = false;
   ADD_ARG(bool, disable_flux_x2) = false;
   ADD_ARG(bool, disable_flux_x3) = false;
+
+  //! limiter stays on (cell repair). Skips only the flux cut and its carry.
+  //! Sedimentation still adds its flux. The unlimited reference for #236 B2.
+  ADD_ARG(bool, debug_disable_flux_positivity) = false;
 
   //! Keep the well-balanced x1 reference's stencils off the wall ghosts
   ADD_ARG(bool, wb_wall_clamp) = true;
@@ -129,6 +135,9 @@ class HydroImpl : public torch::nn::Cloneable<HydroImpl> {
                         Variables const& other);
 
   torch::Tensor flux1() const { return _flux1; }
+  //! Species sedimentation flux saved before the positivity cut (ny, ...).
+  //! Undefined when this forward did not split sedimentation out.
+  torch::Tensor fsed1() const { return _fsed1; }
   torch::Tensor flux2() const { return _flux2; }
   torch::Tensor flux3() const { return _flux3; }
   torch::Tensor face_pressure1() const { return _face_pressure1; }
@@ -182,6 +191,7 @@ class HydroImpl : public torch::nn::Cloneable<HydroImpl> {
   mutable int x1_uniform_ = -1;
 
   torch::Tensor _flux1, _flux2, _flux3, _face_pressure1, _div, _forcing_dry;
+  torch::Tensor _fsed1;
   torch::Tensor _positivity_hits, _positivity_severe, _positivity_min;
   torch::Tensor _lim_cut, _lim_flux;
 };

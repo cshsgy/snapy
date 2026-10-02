@@ -34,6 +34,9 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
   torch::Tensor specific_heat_cv(torch::Tensor prim,
                                  torch::Tensor temp) override;
   torch::Tensor species_enthalpy(torch::Tensor prim) override;
+  void set_species_enthalpy_mutation(int which) override {
+    enthalpy_mutation_ = which;
+  }
 
   /*torch::Tensor get_buffer(std::string var) const override {
     return named_buffers()[var];
@@ -133,6 +136,8 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
   // former full-field cache copy and device reduction.
   torch::Tensor cached_prim_;
   int64_t cached_prim_version_ = -1;
+  //! 0 = production hook. 1..5 are the Gate 2 single-shot mutations.
+  int enthalpy_mutation_ = 0;
 };
 TORCH_MODULE(MoistMixture);
 
