@@ -10,6 +10,8 @@
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
 
+#include "cuda_test_gate.hpp"
+
 // kintera
 #include <kintera/constants.h>
 
@@ -240,7 +242,7 @@ TEST(flux_positivity, withheld_mass_keeps_its_donors_energy_and_momentum) {
 }
 
 TEST(flux_positivity, withheld_mass_keeps_its_donors_energy_and_momentum_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   withheld_mass_keeps_its_donors_energy_and_momentum(
       torch::Device(torch::kCUDA, 0));
 }
@@ -338,7 +340,7 @@ TEST(flux_positivity,
 
 TEST(flux_positivity,
      withheld_mixed_flux_keeps_each_parts_energy_and_momentum_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   withheld_mixed_flux_keeps_each_parts_energy_and_momentum(
       torch::Device(torch::kCUDA, 0));
 }

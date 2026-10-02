@@ -1,6 +1,8 @@
 // gtest
 #include <gtest/gtest.h>
 
+#include "cuda_test_gate.hpp"
+
 // base
 #include <configure.h>
 
@@ -29,7 +31,7 @@ TEST(Mesh, multi_block_exchange) {
 
   auto device = torch::Device(torch::kCPU);
   if (block_opts->layout()->device() == "cuda") {
-    ASSERT_TRUE(torch::cuda::is_available());
+    ASSERT_TRUE(snapy_cuda_test_enabled());
     int device_index = block_opts->layout()->device_id();
     if (device_index < 0) device_index = block_opts->layout()->local_rank();
 #ifdef USE_CUDA

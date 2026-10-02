@@ -6,6 +6,8 @@
 // torch
 #include <torch/torch.h>
 
+#include "cuda_test_gate.hpp"
+
 struct Parameters {
   torch::DeviceType device_type;
   torch::Dtype dtype;
@@ -29,7 +31,7 @@ class DeviceTest : public testing::TestWithParam<Parameters> {
     dtype = param.dtype;
 
     // Check if the device is available, and skip the test if not
-    if (device.type() == torch::kCUDA && !torch::cuda::is_available()) {
+    if (device.type() == torch::kCUDA && !snapy_cuda_test_enabled()) {
       GTEST_SKIP() << "CUDA is not available, skipping test.";
     }
 

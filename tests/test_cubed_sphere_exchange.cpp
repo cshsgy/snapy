@@ -4,6 +4,8 @@
 #include <fstream>
 #include <string>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -177,7 +179,7 @@ TEST(CubedSphere, subdivided_panel_exchange_matches_one_block) {
 }
 
 TEST(CubedSphere, subdivided_panel_exchange_matches_one_block_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   PanelFields ref;
   try {
     ref = run(1, torch::Device(torch::kCUDA, 0));

@@ -474,3 +474,26 @@ if (FULL_TESTS)
     LABELS "gpu;ucx;long"
   )
 endif()
+
+# A build without CUDA skips every CUDA test, even when a GPU is visible.
+# Registration is the gate; torch.cuda.is_available() is not.
+if(NOT CUDA)
+  get_property(_snapy_tests DIRECTORY PROPERTY TESTS)
+  foreach(_t IN LISTS _snapy_tests)
+    set_property(TEST ${_t} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+                 "SNAPY_BUILD_CUDA=set:0")
+    set(_disable FALSE)
+    if(_t MATCHES "cuda")
+      set(_disable TRUE)
+    endif()
+    get_property(_labels TEST ${_t} PROPERTY LABELS)
+    foreach(_l IN LISTS _labels)
+      if(_l STREQUAL "cuda" OR _l STREQUAL "gpu")
+        set(_disable TRUE)
+      endif()
+    endforeach()
+    if(_disable)
+      set_tests_properties(${_t} PROPERTIES DISABLED TRUE)
+    endif()
+  endforeach()
+endif()

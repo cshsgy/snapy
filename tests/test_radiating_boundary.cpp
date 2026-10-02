@@ -8,6 +8,7 @@
 #include <snap/mesh/meshblock.hpp>
 #include <sstream>
 
+#include "cuda_test_gate.hpp"
 #include "device_testing.hpp"
 
 using namespace snap;
@@ -560,7 +561,7 @@ TEST(radiating, composition_entropy_and_joint_limiter) {
 }
 
 TEST(radiating, cpu_cuda_agreement) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA unavailable";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA unavailable";
   auto b = block_for("moist-mixture");
   auto ref = background(b), input = ref.clone();
   input[IVX].fill_(2.);

@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -133,6 +135,6 @@ TEST(sedimentation, rising_cloud_is_taken_from_the_cell_below) {
 }
 
 TEST(sedimentation, rising_cloud_is_taken_from_the_cell_below_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "no CUDA device";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "no CUDA device";
   expect_rising_cloud_taken_from_below(torch::kCUDA);
 }

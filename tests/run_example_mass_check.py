@@ -73,7 +73,7 @@ def ensure_cuda() -> tuple[bool, str]:
     except Exception as exc:  # pragma: no cover - runtime environment dependent
         return False, f"torch import failed: {exc}"
 
-    if not torch.cuda.is_available():
+    if os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available():
         return False, "CUDA runtime is unavailable"
     if torch.cuda.device_count() < 1:
         return False, "need at least 1 GPU, found 0"

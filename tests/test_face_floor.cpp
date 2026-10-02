@@ -4,6 +4,8 @@
 // external
 #include <gtest/gtest.h>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -76,6 +78,6 @@ TEST(hydro, face_floor_uses_adjacent_density) {
 }
 
 TEST(hydro, face_floor_uses_adjacent_density_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   face_floor_uses_adjacent_density(torch::Device(torch::kCUDA, 0));
 }

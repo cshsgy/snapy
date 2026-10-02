@@ -1,6 +1,8 @@
 // external
 #include <gtest/gtest.h>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -54,7 +56,7 @@ TEST(TestANEOSThermo, cpu) {
 }
 
 TEST(TestANEOSThermo, cuda) {
-  if (!torch::cuda::is_available()) {
+  if (!snapy_cuda_test_enabled()) {
     GTEST_SKIP() << "CUDA is not available, skipping test.";
   }
 

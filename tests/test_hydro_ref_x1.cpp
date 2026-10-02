@@ -6,6 +6,8 @@
 // gtest
 #include <gtest/gtest.h>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -246,7 +248,7 @@ TEST(HydroRefX1Dispatch, without_the_clamp_the_ghosts_do_reach_the_interior) {
 }
 
 TEST(HydroRefX1Dispatch, cuda_matches_cpu) {
-  if (!torch::cuda::is_available()) {
+  if (!snapy_cuda_test_enabled()) {
     GTEST_SKIP() << "CUDA is not available";
   }
 

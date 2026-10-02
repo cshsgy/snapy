@@ -6,13 +6,15 @@
 #include <iostream>
 #include <snap/mesh/meshblock.hpp>
 
+#include "cuda_test_gate.hpp"
+
 using namespace snap;
 
 class WallSaturation : public testing::TestWithParam<torch::DeviceType> {};
 
 TEST_P(WallSaturation, phase_change_preserves_energy_and_water) {
   auto device = torch::Device(GetParam());
-  if (device.is_cuda() && !torch::cuda::is_available()) GTEST_SKIP();
+  if (device.is_cuda() && !snapy_cuda_test_enabled()) GTEST_SKIP();
   torch::set_num_threads(1);
   for (bool condense : {true, false}) {
     SCOPED_TRACE(condense ? "condensation" : "evaporation");

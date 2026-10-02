@@ -11,6 +11,8 @@
 // torch
 #include <torch/torch.h>
 
+#include "cuda_test_gate.hpp"
+
 // snap
 #include <snap/snap.h>
 
@@ -729,7 +731,7 @@ TEST(forcing, limiter_clean_step_is_not_redone) {
 
 // The marks are device tensors: the same cases on a GPU.
 TEST(forcing, limiter_marks_on_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "no CUDA device";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "no CUDA device";
   torch::Device cuda(torch::kCUDA);
   auto moist = "test_diffusion_moist.yaml";
   auto dry = "test_gravity_energy.yaml";
@@ -1059,7 +1061,7 @@ TEST(forcing, vertical_gravity_work_removes_the_curvature_excess) {
 }
 
 TEST(forcing, vertical_gravity_work_removes_the_curvature_excess_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   vertical_gravity_work_removes_the_curvature_excess(
       torch::Device(torch::kCUDA, 0));
 }
@@ -1142,7 +1144,7 @@ TEST(forcing, implicit_gravity_work_holds_under_rk3_stage_weighting) {
 }
 
 TEST(forcing, implicit_gravity_work_holds_under_rk3_stage_weighting_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   implicit_gravity_work_holds_under_rk3_stage_weighting(
       torch::Device(torch::kCUDA, 0));
 }

@@ -143,7 +143,7 @@ def main(argv=None):
         default=str(Path(__file__).resolve().parent / "test_flux_positivity_cubedsphere.yaml"),
     )
     args = ap.parse_args(argv)
-    if args.device == "cuda" and not torch.cuda.is_available():
+    if args.device == "cuda" and (os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available()):
         print("SKIP: cuda requested but not available")
         return 125
 

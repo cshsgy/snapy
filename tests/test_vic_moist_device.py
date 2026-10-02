@@ -6,6 +6,7 @@ and the two devices agree. Exits 125 when CUDA is not available.
 
   python test_vic_moist_device.py
 """
+import os
 import sys
 from pathlib import Path
 
@@ -30,7 +31,7 @@ def hydro(scheme, device, base):
 
 
 def main():
-    if not torch.cuda.is_available():
+    if os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available():
         print("SKIP: cuda requested but not available")
         return 125
 
