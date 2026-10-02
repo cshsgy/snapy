@@ -359,6 +359,19 @@ TEST(flux_positivity,
   expect_carried(off, on);
 }
 
+TEST(flux_positivity,
+     moist_mixture_withheld_mass_keeps_its_energy_and_momentum_cuda) {
+  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  auto edit = [](YAML::Node& card) {
+    card["dynamics"]["equation-of-state"]["type"] = "moist-mixture";
+  };
+  auto off =
+      forward_once(false, edit, 2., 3., 0., {}, torch::Device(torch::kCUDA, 0));
+  auto on =
+      forward_once(true, edit, 2., 3., 0., {}, torch::Device(torch::kCUDA, 0));
+  expect_carried(off, on);
+}
+
 // NASA-9 and the H2 rotational energy change u_n. kintera 2.5.15's func2
 // registry is empty, so czh cannot be anything but 1; eval_czh is still what
 // the pressure share uses. The sum over species of rho_n h_n must equal the
