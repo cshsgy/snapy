@@ -1258,7 +1258,16 @@ double MeshBlockImpl::_init_from_restart(Variables &vars, std::string fname) {
     }
     int m = match[n];
     if (m >= 0) {
-      output_types[n]->next_time = data.at("next_time")[m].item<double>();
+      double saved = data.at("next_time")[m].item<double>();
+      double dt = output_types[n]->options->dt();
+      // A disabled output stores a next_time far past the resume. Keeping it
+      // after dt shrinks means the output never fires. A time still within
+      // one dt is a live cadence and stays. dt <= 0 keeps the saved time.
+      if (dt > 0.0 && saved > current_time + dt) {
+        output_types[n]->next_time = current_time + dt;
+      } else {
+        output_types[n]->next_time = saved;
+      }
     } else {  // new output joins the restored grid
       auto dt = output_types[n]->options->dt();
       output_types[n]->next_time =
