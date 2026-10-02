@@ -1,5 +1,6 @@
 // C/C++
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -12,6 +13,8 @@
 
 // kintera
 #include <kintera/constants.h>
+
+#include <kintera/thermo/eval_uhs.hpp>
 
 // snap
 #include <snap/snap.h>
@@ -343,32 +346,100 @@ TEST(flux_positivity,
       torch::Device(torch::kCUDA, 0));
 }
 
-// A KNOWN GAP, pinned (#236): moist-mixture has no species_enthalpy, so the
-// carry is skipped and its withheld species mass keeps no energy or momentum.
-// The advected column above limits five faces; the energy and momentum fluxes
-// must still equal the unlimited arm's. When this fails, #236 is fixed:
-// replace the body's checks with expect_carried(off, on).
-TEST(flux_positivity, moist_mixture_withholds_no_energy_or_momentum_yet) {
+// #236: moist-mixture's species_enthalpy (u_n + z_n R_n T + KE, from
+// kintera) lets the carry run there too; the advected column's withheld mass
+// keeps its energy and momentum as on ideal-moist.
+TEST(flux_positivity,
+     moist_mixture_withheld_mass_keeps_its_energy_and_momentum) {
   auto edit = [](YAML::Node& card) {
     card["dynamics"]["equation-of-state"]["type"] = "moist-mixture";
   };
   auto off = forward_once(false, edit, 2., 3.);
   auto on = forward_once(true, edit, 2., 3.);
-  auto F0 = off.block->phydro->flux1();
-  auto F1 = on.block->phydro->flux1();
-  auto pcoord = off.block->pcoord;
-  int j = pcoord->jl(), limited = 0;
-  for (int i = pcoord->il(); i <= pcoord->iu() + 1; ++i) {
-    double f0 = F0[ICY][0][j][i].item<double>();
-    if (std::abs(f0 - F1[ICY][0][j][i].item<double>()) > 0.1 * std::abs(f0)) {
-      ++limited;
+  expect_carried(off, on);
+}
+
+// NASA-9 and the H2 rotational energy change u_n. kintera 2.5.15's func2
+// registry is empty, so czh cannot be anything but 1; eval_czh is still what
+// the pressure share uses. The sum over species of rho_n h_n must equal the
+// conserved energy plus the pressure.
+TEST(flux_positivity,
+     moist_mixture_nasa9_h2_enthalpy_matches_internal_plus_pressure) {
+  auto edit = [](YAML::Node& card) {
+    card["dynamics"]["equation-of-state"]["type"] = "moist-mixture";
+  };
+  auto arm = forward_once(false, edit, 2., 3.);
+  auto peos = arm.block->phydro->peos;
+  auto thermo = peos->options->thermo();
+  auto saved_low = thermo->nasa9_low();
+  auto saved_high = thermo->nasa9_high();
+  auto saved_names = thermo->names();
+  bool saved_n9 = thermo->use_nasa9_cp();
+  bool saved_h2 = thermo->use_h2_cp();
+  struct Restore {
+    decltype(thermo) op;
+    decltype(saved_low) low, high;
+    decltype(saved_names) names;
+    bool n9, h2;
+    ~Restore() {
+      op->nasa9_low() = low;
+      op->nasa9_high() = high;
+      op->names() = names;
+      op->use_nasa9_cp(n9);
+      op->use_h2_cp(h2);
     }
-    for (int c : {(int)IPR, (int)IVX, (int)IVY, (int)IVZ}) {
-      EXPECT_EQ(F0[c][0][j][i].item<double>(), F1[c][0][j][i].item<double>())
-          << "row " << c << ", face " << i
-          << ": moist-mixture now withholds carried energy or momentum; "
-             "#236 is fixed, check it with expect_carried(off, on)";
-    }
+  } restore{thermo, saved_low, saved_high, saved_names, saved_n9, saved_h2};
+
+  auto w = arm.vars.at("hydro_w");
+  auto h_plain = peos->species_enthalpy(w).clone();
+
+  std::array<double, 9> coeff{};
+  coeff[2] = 3.5;
+  for (auto& row : thermo->nasa9_low()) row = coeff;
+  for (auto& row : thermo->nasa9_high()) row = coeff;
+  thermo->use_nasa9_cp(true);
+  ASSERT_GT(thermo->names().size(), 1u);
+  thermo->names()[1] = "H2";
+  thermo->use_h2_cp(true);
+
+  auto h = peos->species_enthalpy(w);
+  EXPECT_GT((h - h_plain).abs().max().item<double>(), 0.)
+      << "NASA-9 / H2 did not change the species enthalpy";
+
+  auto cons = peos->compute("W->U", {w});
+  auto temp = peos->compute("W->T", {w}).reshape(w[IPR].sizes());
+  auto pcoord = arm.block->pcoord;
+  int i = pcoord->il(), j = pcoord->jl();
+  double rho = w[IDN][0][j][i].item<double>();
+  double pres = w[IPR][0][j][i].item<double>();
+  double Tc = temp[0][j][i].item<double>();
+  int ny = h.size(0);
+  double ysum = 0., carried = 0.;
+  for (int n = 0; n < ny; ++n) {
+    double y = w[ICY + n][0][j][i].item<double>();
+    ysum += y;
+    carried += rho * y * h[n][0][j][i].item<double>();
   }
-  EXPECT_GT(limited, 0) << "the limiter never withheld a species flux";
+  double mu_dry = peos->species_weight(0);
+  double rho_dry = rho * (1. - ysum);
+  int nspc = static_cast<int>(thermo->names().size());
+  int ngas = static_cast<int>(thermo->vapor_ids().size());
+  auto conc = torch::zeros({1, nspc}, torch::kFloat64);
+  conc[0][0] = rho_dry / mu_dry;
+  auto T = torch::tensor({Tc}, torch::kFloat64);
+  auto uR = kintera::eval_intEng_R(T, conc, thermo);
+  auto z = kintera::eval_czh(T, conc.narrow(-1, 0, ngas), thermo);
+  // czh stays 1 because kintera's func2 table is empty (2.5.13 and 2.5.15).
+  // This checks that tripwire, not snapy's use of a czh other than 1.
+  EXPECT_NEAR(z[0][0].item<double>(), 1., 0.);
+  double ke = 0.5 * (2. * 2. + 3. * 3.);
+  double h_dry =
+      uR[0][0].item<double>() * kintera::constants::Rgas / mu_dry +
+      z[0][0].item<double>() * kintera::constants::Rgas / mu_dry * Tc + ke;
+  double lhs = carried + rho_dry * h_dry;
+  double rhs = cons[IPR][0][j][i].item<double>() + pres;
+  // Measured residual on this column is ~1e-16. 1e-9 is below the old 1e-6
+  // and still far under the ~1e-6 miss from dropping kinetic energy.
+  EXPECT_NEAR(lhs, rhs, 1e-9 * std::abs(rhs));
+  (void)restore;
 }

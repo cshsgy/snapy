@@ -378,7 +378,6 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
     auto f1_pre = f1.defined() ? f1.abs() : torch::Tensor();
 
     // the withheld species mass keeps its energy and momentum in the donor
-    // (moist-mixture has no species_enthalpy yet: it carries nothing, #236)
     if (hspec.defined()) {
       flux_positivity_carry_(theta, hspec, u.narrow(0, IVX, 3) / w[IDN], _flux1,
                              _flux2, _flux3, pmb->pcoord, fsed1);

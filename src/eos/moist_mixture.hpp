@@ -33,6 +33,7 @@ class MoistMixtureImpl final : public torch::nn::Cloneable<MoistMixtureImpl>,
   double species_cv_ref(int n = 0) const override;
   torch::Tensor specific_heat_cv(torch::Tensor prim,
                                  torch::Tensor temp) override;
+  torch::Tensor species_enthalpy(torch::Tensor prim) override;
 
   /*torch::Tensor get_buffer(std::string var) const override {
     return named_buffers()[var];
