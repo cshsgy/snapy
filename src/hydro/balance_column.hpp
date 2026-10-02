@@ -63,7 +63,7 @@ namespace snap {
 //!         remove.
 //!
 //! Both x1 ends are treated as PHYSICAL boundaries, which is what a column
-//! bounded by walls is. The caller owns three conditions this cannot check:
+//! bounded by walls is. The caller owns four conditions this cannot check:
 //!
 //!  * the x1 boundaries really are physical, not periodic;
 //!  * every block the column is later split into has at least five x1 cells --
@@ -76,6 +76,8 @@ namespace snap {
 //!    six-face rows while this took the log-mean branch for the column -- and
 //!    then the fixed point found here belongs to an operator no block applies.
 //!    The two branches are different operators, not different accuracies.
+//!  * a moist caller re-applies saturation after the projection and iterates
+//!    the two while saturation still changes the state (examples/bryan.cpp).
 //!
 //! And one consequence rather than an obligation: the fixed point is p' == C
 //! for a FREE constant C, so nothing ties the result to the input. The column

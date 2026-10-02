@@ -81,3 +81,7 @@ problem:
   p0: 1.e5
   Ts: 289.85
   qt: 0.0196
+  # true: project the IC onto the solver's discrete rest state (#250 D1);
+  # the moist loop throws after balance-ic-passes passes
+  balance-ic: false
+  balance-ic-passes: 8
