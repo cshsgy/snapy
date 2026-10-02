@@ -73,7 +73,7 @@ dynamics:
     density-floor:  1.e-10
     pressure-floor: 1.e-10
     limiter: true
-    max-iter: 5
+    max-iter: 10
     ftol: 1.e-6
 
   reconstruct:
@@ -87,7 +87,7 @@ boundary-condition:
   internal:
     solid-density: 1.e3
     solid-pressure: 1.9
-    max-iter: 5
+    max-iter: 10
 
   external:
     x1-inner: reflecting
