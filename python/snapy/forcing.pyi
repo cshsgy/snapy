@@ -128,26 +128,6 @@ class DiffusionOptions:
     def dynamic(self, value: bool) -> "DiffusionOptions": ...
 
     @overload
-    def on_theta(self) -> bool:
-        """Whether kappa_iso conducts on dry ideal-gas potential temperature.
-
-        False, the default, conducts on temperature and leaves existing cases
-        unchanged. Refused unless the EOS is dry ideal gas: type ideal-gas
-        and no vapor or condensate species (issue #252), including when this
-        flag is set after the MeshBlock is built.
-        """
-        ...
-
-    @overload
-    def on_theta(self, value: bool) -> "DiffusionOptions":
-        """Conduct kappa_iso on potential temperature when true.
-
-        Refused unless the EOS is dry ideal gas (issue #252): type ideal-gas,
-        and no vapor or condensate species.
-        """
-        ...
-
-    @overload
     def nu_scale_x1_table(self) -> torch.Tensor:
         """Get the x1 profile of nu_iso as a (2, n) table of x1 knots and scale values."""
         ...

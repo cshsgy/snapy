@@ -252,69 +252,6 @@ TEST_P(DeviceTest, viscous_sine_mode_matches_analytic_decay) {
                               3.e-4, 3.e-4));
 }
 
-// on_theta reads kappa_iso as the diffusivity of theta, D(theta)/Dt =
-// kappa lap(theta) (Straka et al. 1993). The flux -rho c kappa (T/theta)
-// grad(theta) gives D(theta)/Dt = (c / cp) kappa lap(theta), at fixed rho as at
-// fixed p, so this forcing-only step needs c = cp; c = cv gives kappa / gamma.
-TEST_P(DeviceTest, on_theta_sine_mode_decays_at_kappa) {
-  constexpr int nx1 = 64;
-  constexpr int nsteps = 200;
-  auto options = MeshBlockOptionsImpl::from_yaml("test_diffusion.yaml");
-  options->coord()->global_nx1() = nx1;
-  options->coord()->nx1() = nx1;
-  options->coord()->global_x1max() = 2. * M_PI;
-  options->coord()->x1max() = 2. * M_PI;
-  options->hydro()->diffusion()->nu_iso() = 0.;
-  options->hydro()->diffusion()->on_theta() = true;
-  make_x1_periodic(options);
-  auto block = std::make_shared<MeshBlockImpl>(options);
-  block->to(device, dtype);
-  auto coord = block->pcoord;
-  auto peos = block->phydro->peos;
-  int nghost = coord->options->nghost();
-
-  // uniform p, so theta is T times a constant
-  auto x = coord->x1v.to(device, dtype).view({1, 1, -1});
-  auto w = make_primitive(block, device, dtype);
-  auto Rd = 8.31446261815324 / peos->options->weight();
-  w[IDN] = w[IPR] / (Rd * 300. * (1. + 1.e-2 * torch::sin(x)));
-  fill_periodic_x1(w, nghost);
-
-  auto interior = block->part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
-  auto sine =
-      torch::sin(x).expand_as(w[IDN]).index(interior).to(torch::kFloat64);
-  auto r_over_cp = Rd / (peos->species_cv_ref() + Rd);
-  auto amplitude = [&](torch::Tensor const& w) {
-    auto temp = peos->compute("W->T", {w});
-    auto theta = temp * torch::pow(1.e5 / w[IPR], r_over_cp);
-    auto th = theta.index(interior).to(torch::kFloat64);
-    return ((th - th.mean()) * sine).sum().item<double>() * 2. / nx1;
-  };
-
-  auto kappa = block->phydro->pdiffusion->options->kappa_iso();
-  auto dx = 2. * M_PI / nx1;
-  auto dt = 0.25 * dx * dx / kappa;
-  auto a0 = amplitude(w);
-  for (int n = 0; n < nsteps; ++n) {
-    auto temp = peos->compute("W->T", {w});
-    auto du = torch::zeros_like(w);
-    block->phydro->pdiffusion->forward(du, w, temp, dt);
-    w = peos->compute("U->W", {peos->compute("W->U", {w}) + du});
-    fill_periodic_x1(w, nghost);
-  }
-
-  // measured rate over the rate of the centred stencil's k^2 under forward
-  // Euler; 1 / gamma = 0.714 if the prefactor is rho cv
-  auto time = nsteps * dt;
-  auto k2 = 4. * std::pow(std::sin(0.5 * dx), 2) / (dx * dx);
-  auto rate = -std::log(amplitude(w) / a0) / time;
-  auto expected = -std::log(1. - kappa * k2 * dt) / dt;
-  std::cout << "on_theta decay rate / (kappa k^2, discrete k) = "
-            << rate / (kappa * k2) << ", / expected = " << rate / expected
-            << std::endl;
-  EXPECT_NEAR(rate / expected, 1., 1.e-2);
-}
-
 // On a linear density profile the two-cell average is exact on
 // every INTERIOR face, so a uniform dT/dn gives the same tendency in every
 // interior cell -- unless the wall face reads the ghost, which the reflecting

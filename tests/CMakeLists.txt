@@ -204,9 +204,6 @@ snapy_add_python_test(test_eos_species_registry TIMEOUT 120 LABELS "python;eos")
 snapy_add_python_test(test_stage_forcing_dry_tracer TIMEOUT 60 LABELS "python;forcing;scalar")
 snapy_add_python_test(test_local_horizontal_cells TIMEOUT 60 LABELS "python;mesh;coordinate")
 snapy_add_python_test(test_diffusion_x1_scale TIMEOUT 120 LABELS "python;forcing")
-snapy_add_python_test(test_kappa_adiabatic_rest TIMEOUT 60 LABELS "python;forcing")
-snapy_add_python_test(test_kappa_adiabatic_rest_cuda TIMEOUT 60 LABELS "python;forcing;cuda")
-set_tests_properties(test_kappa_adiabatic_rest_cuda_python PROPERTIES SKIP_RETURN_CODE 125)
 
 # DISABLED: snapy.exchange.init_dist still calls the removed SlabLayout(px, py, ...)
 # constructor (see issue #224).

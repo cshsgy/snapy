@@ -178,8 +178,7 @@ struct DiffusionOptionsImpl {
     os << "-- diffusion options --\n";
     os << "* nu_iso = " << nu_iso() << "\n"
        << "* kappa_iso = " << kappa_iso() << "\n"
-       << "* dynamic = " << (dynamic() ? "true" : "false") << "\n"
-       << "* on_theta = " << (on_theta() ? "true" : "false") << "\n";
+       << "* dynamic = " << (dynamic() ? "true" : "false") << "\n";
     show("nu_scale_x1", nu_scale_x1(), nu_scale_x1_table());
     show("kappa_scale_x1", kappa_scale_x1(), kappa_scale_x1_table());
   }
@@ -188,10 +187,6 @@ struct DiffusionOptionsImpl {
   ADD_ARG(double, kappa_iso) = 0.;
   //! nu_iso/kappa_iso as dynamic coefficients: flux = -mu*stress, -k*grad T
   ADD_ARG(bool, dynamic) = false;
-  //! kappa_iso conducts on dry ideal-gas potential temperature instead of T.
-  //! Refused unless the EOS type is ideal-gas (issue #252). Default false
-  //! keeps the temperature flux, so existing cases are unchanged.
-  ADD_ARG(bool, on_theta) = false;
   //! x1 profiles multiplying the kinematic nu_iso/kappa_iso, one value per x1
   //! cell centre of the block (ghosts included), set before it is built;
   //! refused when x1 is split into several blocks (give a table instead)
@@ -225,10 +220,6 @@ class DiffusionImpl : public torch::nn::Cloneable<DiffusionImpl> {
   //! refuses a profile changed since reset; every entry point that reads the
   //! cached profiles (forward, max_time_step) calls it first
   void check_profiles() const;
-  //! on_theta is dry ideal-gas theta: type ideal-gas, and no vapor or
-  //! condensate. The flag is read live, so both reset and check_profiles
-  //! refuse anything else (issue #252).
-  void check_on_theta_eos() const;
 
   //! the x1 profiles on this block's cells (float64, CPU), their maxima, and
   //! copies in the state's device and dtype

@@ -249,9 +249,9 @@ DiffusionOptions DiffusionOptionsImpl::from_yaml(YAML::Node const& forcing) {
   TORCH_CHECK(!node["K"] && !node["type"],
               "DiffusionOptions: legacy 'K' and 'type' keys are unsupported; "
               "use 'nu_iso' and 'kappa_iso'.");
-  check_keys(node, "forcing/diffusion",
-             {"nu_iso", "kappa_iso", "dynamic", "on_theta", "nu_scale_x1",
-              "kappa_scale_x1"});
+  check_keys(
+      node, "forcing/diffusion",
+      {"nu_iso", "kappa_iso", "dynamic", "nu_scale_x1", "kappa_scale_x1"});
 
   // the tables are ordinary tensors even when parsed under inference mode
   c10::InferenceMode not_inference(false);
@@ -284,16 +284,6 @@ DiffusionOptions DiffusionOptionsImpl::from_yaml(YAML::Node const& forcing) {
                 "DiffusionOptions: dynamic must be true or false, got '", text,
                 "'.");
     op->dynamic() = text == "true";
-  }
-  if (node["on_theta"]) {
-    auto const flag = node["on_theta"];
-    TORCH_CHECK(flag.IsScalar(),
-                "DiffusionOptions: on_theta must be true or false.");
-    auto const text = flag.Scalar();
-    TORCH_CHECK(text == "true" || text == "false",
-                "DiffusionOptions: on_theta must be true or false, got '", text,
-                "'.");
-    op->on_theta() = text == "true";
   }
   // {x1: [...], scale: [...]}: an x1 profile as a table in the x1 coordinate
   auto take_table = [&](char const* key) {
@@ -349,9 +339,6 @@ void DiffusionImpl::reset() {
               "[Diffusion] Only cartesian coordinates are supported.");
   TORCH_CHECK(options->nu_iso() == 0. || coord->options->nghost() >= 2,
               "[Diffusion] Isotropic viscosity requires nghost >= 2.");
-  // Before the heat-capacity check: shallow-water and plume-eos have no cv,
-  // and that older error would hide this one when kappa_iso > 0.
-  check_on_theta_eos();
   TORCH_CHECK(options->kappa_iso() == 0. || phydro->peos->species_cv_ref() > 0.,
               "[Diffusion] Isotropic heat conduction requires an EOS with a "
               "positive reference specific heat at constant volume.");
@@ -443,25 +430,6 @@ void DiffusionImpl::check_profiles() const {
   TORCH_CHECK(!any || !options->dynamic(),
               "[Diffusion] an x1 coefficient profile has no meaning with "
               "dynamic: true, set after the MeshBlock was constructed.");
-  // on_theta is likewise read live from the shared options
-  check_on_theta_eos();
-}
-
-void DiffusionImpl::check_on_theta_eos() const {
-  if (!options->on_theta()) return;
-  auto const& eos_type = phydro->peos->options->type();
-  // vapor_ids[0] is the dry carrier. Any further vapor, or any cloud, means
-  // the card is not dry even if the EOS type was set to ideal-gas.
-  auto thermo = phydro->peos->options->thermo();
-  bool dry = true;
-  if (thermo) {
-    dry = thermo->cloud_ids().empty() && thermo->vapor_ids().size() <= 1;
-  }
-  TORCH_CHECK(eos_type == "ideal-gas" && dry,
-              "[Diffusion] on_theta conducts on dry ideal-gas potential "
-              "temperature and is refused for EOS type '",
-              eos_type, "'", dry ? "" : " with vapor or condensate species",
-              "; which theta to use for any other EOS is issue #252.");
 }
 
 torch::Tensor DiffusionImpl::forward(torch::Tensor du, torch::Tensor w,
@@ -506,22 +474,9 @@ torch::Tensor DiffusionImpl::forward(torch::Tensor du, torch::Tensor w,
     }
   }
   if (options->kappa_iso() > 0. && !options->dynamic()) {
+    // Fourier flux -kappa grad T. rho*cv converts the kinematic diffusivity
+    // into a conductivity; W->T is in kelvin.
     rho_cv = w[IDN] * phydro->peos->specific_heat_cv(w, temp);
-    // on theta, kappa_iso diffuses theta: rho * cp = rho * cv + p / T (#261)
-    if (options->on_theta()) rho_cv = rho_cv + w[IPR] / temp;
-  }
-  // Dry ideal-gas potential temperature, theta = T (p_ref / p)^(R/cp), with
-  // the mixture R = p / (rho T) and cp = cv + R. p_ref = 1e5 Pa is a constant
-  // reference; for a spatially constant R/cp it only scales theta.
-  // check_profiles() has already refused on_theta for any other EOS.
-  torch::Tensor theta, t_over_theta;
-  if (options->kappa_iso() > 0. && options->on_theta()) {
-    constexpr double p_ref = 1.0e5;
-    auto pres = w[IPR];
-    auto gas_r = pres / (w[IDN] * temp);
-    auto cp = phydro->peos->specific_heat_cv(w, temp) + gas_r;
-    theta = temp * torch::pow(p_ref / pres, gas_r / cp);
-    t_over_theta = temp / theta;
   }
 
   std::array<torch::Tensor, 3> fluxes;
@@ -588,12 +543,6 @@ torch::Tensor DiffusionImpl::forward(torch::Tensor du, torch::Tensor w,
     if (options->kappa_iso() > 0.) {
       auto dtdn =
           face_normal_derivative(temp, coord, idir, face_start, face_end);
-      if (options->on_theta()) {
-        // (T/theta)_face * d(theta)/dn, in place of dT/dn. Same prefactor
-        // below.
-        dtdn = face_average(t_over_theta, idir, face_start, face_end) *
-               face_normal_derivative(theta, coord, idir, face_start, face_end);
-      }
       if (options->dynamic()) {
         flux[IPR].index(face_index) -= options->kappa_iso() * dtdn;
       } else {
