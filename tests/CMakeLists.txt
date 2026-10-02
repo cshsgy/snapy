@@ -346,6 +346,21 @@ if (NOT APPLE)
     )
 
     add_test(
+      NAME test_restart_dt_change
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/run_restart_dt_change.py
+              --build-dir ${CMAKE_BINARY_DIR}
+              --build-type release
+    )
+
+    set_tests_properties(test_restart_dt_change PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+      TIMEOUT 600
+      SKIP_RETURN_CODE 125
+      LABELS "restart;examples"
+    )
+
+    add_test(
       NAME test_restart_new_output
       COMMAND ${Python3_EXECUTABLE}
               ${CMAKE_CURRENT_SOURCE_DIR}/run_restart_new_output.py
