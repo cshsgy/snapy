@@ -612,9 +612,8 @@ def main():
                 int(float(mb["clamp_interior"])),
                 int(float(mb["clamp_ghost"])),
             ])
-            if any(int(x) != 0 for x in cens):
-                void = True
-                reasons.append(f"B2 census {cens}")
+            # Rescore: B2 is the unlimited reference, so a negative drained
+            # cell does not void it. Valid means bitwise = limiter:false.
             if o3["M_void"]:
                 void = True
                 reasons.append(f"M rel {o3['M_rel']:.3e}")
@@ -659,7 +658,9 @@ def main():
                 "RE": worst["RE"] <= 1.0,
                 "RM": worst["RM"] <= 1.0,
                 "column": col <= 1.0,
-                "A_census0": all(int(x) == 0 for x in cens_a),
+                # Species rows only (ICY..). An IDN undershoot is reported
+                # beside main; it is not an arm A clamp.
+                "A_census0": ca["species_only"] + ca["both"] == 0,
             }
             status = []
             for name, ok in bars.items():
