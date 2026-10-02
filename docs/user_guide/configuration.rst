@@ -133,7 +133,6 @@ Add constant isotropic viscosity and heat conduction on a Cartesian mesh:
         nu_iso: 0.0         # Kinematic viscosity, or dynamic viscosity mu if dynamic
         kappa_iso: 0.0      # Thermal diffusivity (length^2 / time), or conductivity k if dynamic
         dynamic: false      # Read the two above as DYNAMIC coefficients
-        on_theta: false     # kappa_iso on dry ideal-gas potential temperature
         nu_scale_x1:        # optional x1 profile multiplying nu_iso
           x1: [0., 5.e4, 1.e5]
           scale: [1., 10., 100.]
@@ -161,14 +160,6 @@ energy flux ``-rho * cv * kappa_iso * grad(T)``, where ``cv`` is the local
 mixture specific heat supplied by the equation of state. An EOS without a
 positive reference specific heat at constant volume cannot enable heat
 conduction.
-
-``on_theta: true`` conducts on dry ideal-gas potential temperature instead of
-``T``: the gradient is ``(T/theta) * d(theta)/dn`` with
-``theta = T (1e5 Pa / p)^(R/cp)``. It is refused unless the equation of state
-is dry ideal gas: type ``ideal-gas``, and no vapor or condensate species
-(the dry carrier in the species list does not count). That includes turning
-the flag on after the MeshBlock is built. Which theta to use otherwise is
-issue #252. Default ``false`` keeps the temperature flux.
 
 With ``dynamic: true`` the same two numbers are read as the dynamic viscosity
 ``mu`` and the conductivity ``k``: the fluxes are ``-mu * stress`` and
