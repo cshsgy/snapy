@@ -13,7 +13,70 @@
 #include <snap/input/command_line.hpp>
 #include <snap/mesh/meshblock.hpp>
 
+#include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
 using namespace snap;
+
+namespace {
+
+// Same seed on main and arm A. uranus.yaml draws IVX/IVY with rand_like and
+// does not seed, so an unseeded pair cannot report max|dT|.
+constexpr uint64_t kGate2Seed = 236500;
+
+void gate2_measure(MeshBlock block, Variables& vars, double current_time,
+                   char const* tag) {
+  auto hydro_u = vars.at("hydro_u");
+  auto pcoord = block->pcoord;
+  auto peos = block->phydro->peos;
+  auto interior4 = block->part({0, 0, 0}, PartOptions().exterior(false));
+  auto interior3 =
+      block->part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
+  auto vol = pcoord->cell_volume();
+  // Same reduction as MeshBlockImpl::print_cycle_info: sum u[IPR] * V
+  // on interior cells. Ghosts are not in it.
+  double energy = (hydro_u * vol)
+                      .index(interior4)
+                      .sum({1, 2, 3})[IPR]
+                      .item<double>();
+  int64_t hits = block->phydro->positivity_hits().item<int64_t>();
+
+  // Clone first. W->T caches the tensor it is given; the live primitive and
+  // the redo snapshot must stay out of that cache. At cycle 0 the primitive
+  // is the IC. Later, kinetics has written species into hydro_u after the
+  // last primitive update, so invert a clone of the conserved state.
+  torch::Tensor w = (std::string(tag) == "cycle0")
+                        ? vars.at("hydro_w").clone()
+                        : peos->compute("U->W", {hydro_u.clone()});
+  auto temp = peos->compute("W->T", {w}).clone();
+  auto ti = temp.index(interior3).reshape({-1}).to(torch::kFloat64).cpu();
+
+  if (char const* prefix = std::getenv("SNAPY_GATE2_DUMP")) {
+    if (prefix[0] != '\0') {
+      // Raw float64, length-prefixed. torch::save of a tensor is not a stable
+      // thing to diff from Python here.
+      std::ofstream out(std::string(prefix) + "_" + tag + "_T.bin",
+                        std::ios::binary);
+      int64_t n = ti.numel();
+      out.write(reinterpret_cast<char const*>(&n), sizeof(n));
+      out.write(reinterpret_cast<char const*>(ti.data_ptr<double>()),
+                static_cast<std::streamsize>(n * sizeof(double)));
+    }
+  }
+
+  std::cout << std::setprecision(17) << "GATE2_URANUS"
+            << " tag=" << tag << " cycle=" << block->cycle
+            << " time=" << current_time << " positivity_hits=" << hits
+            << " energy=" << energy << " Tmin=" << ti.min().item<double>()
+            << " Tmax=" << ti.max().item<double>()
+            << " ncell=" << ti.numel() << std::endl;
+}
+
+}  // namespace
 
 int main(int argc, char **argv) {
   torch::set_num_threads(1);
@@ -130,7 +193,9 @@ int main(int argc, char **argv) {
     w.narrow(0, ICY, ny).select(3, i) = thermo_x->compute("X->Y", {xfrac});
   }
 
-  // add noise
+  // add noise. Seed immediately before the draws so earlier RNG use in
+  // construction cannot desynchronize main and arm A.
+  torch::manual_seed(kGate2Seed);
   w[IVX] += 0.01 * torch::rand_like(w[IVX]);
   w[IVY] += 0.01 * torch::rand_like(w[IVY]);
 
@@ -138,6 +203,8 @@ int main(int argc, char **argv) {
   std::map<std::string, torch::Tensor> vars;
   vars["hydro_w"] = w;
   double current_time = block->initialize(vars, cli->restart_filename);
+  std::cout << "GATE2_URANUS seed=" << kGate2Seed << std::endl;
+  gate2_measure(block, vars, current_time, "cycle0");
 
   // user output variables
   // (1) total precipitable mass fraction [kg/kg]
@@ -198,6 +265,10 @@ int main(int argc, char **argv) {
     current_time += dt;
     block->make_outputs(vars, current_time);
   }
+
+  // cycle here is the integrator count: check_redo decrements it on a redo,
+  // so a clean nlim of 500 is 500 successful forwards, not 500 attempts.
+  gate2_measure(block, vars, current_time, "final");
 
   int status = block->finalize(vars, current_time);
 

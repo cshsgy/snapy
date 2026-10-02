@@ -1,0 +1,12 @@
+main and arm A, CUDA_VISIBLE_DEVICES empty, kintera 2.5.13, seed 236500
+input study/236/gate2/uranus_nlim500.yaml (examples/uranus.yaml with nlim 500, ncycle_out 1)
+both exit 0, Terminating on cycle limit, time=2783.84 cycle=500, tlim=100000 nlim=500
+redos 0, abnormal 0, equilibrate_tp did not converge: 9682 lines on each side
+
+main cycle0 cycle=0 time=0 positivity_hits=0 energy=1.5102600646786102e+18 Tmin=51.984896600283847 Tmax=248.84156508897271 ncell=20000
+arm  cycle0 cycle=0 time=0 positivity_hits=0 energy=1.5102600646786102e+18 Tmin=51.984896600283847 Tmax=248.84156508897271 ncell=20000
+cycle0 max|dT|=0 on 20000 interior cells
+
+main final cycle=500 time=2783.8358967327667 positivity_hits=484774 energy=1.5098307230627448e+18 Tmin=52.615780988854667 Tmax=248.82168377049891 ncell=20000
+arm  final cycle=500 time=2783.835896732764 positivity_hits=484761 energy=1.5098307230627456e+18 Tmin=52.61578098885574 Tmax=248.82168377049837 ncell=20000
+final max|dT|=1.23202426038915291e-09 K, 19821 cells nonzero, median 1.251e-12 K
