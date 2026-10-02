@@ -108,7 +108,7 @@ def main(argv=None):
     ap.add_argument("--steps", type=int, default=10)
     ap.add_argument("--kappa", type=float, default=75.0)
     args = ap.parse_args(argv)
-    if args.device.startswith("cuda") and not torch.cuda.is_available():
+    if args.device.startswith("cuda") and (os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available()):
         print("SKIP: cuda requested but not available")
         return 125
     torch.set_default_dtype(torch.float64)

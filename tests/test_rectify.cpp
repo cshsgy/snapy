@@ -6,6 +6,8 @@
 // torch
 #include <torch/torch.h>
 
+#include "cuda_test_gate.hpp"
+
 // snap
 #include <snap/utils/flip_zero.h>
 
@@ -89,7 +91,7 @@ int test1(int argc, char *argv[]) {
 int test2() {
   int flips = 0;
   auto solid = torch::zeros({8, 8, 8}, torch::kInt32);
-  if (torch::cuda::is_available()) solid = solid.to(torch::kCUDA);
+  if (snapy_cuda_test_enabled()) solid = solid.to(torch::kCUDA);
 
   solid[4][4][4] = 1;
   solid[2][5][3] = 1;

@@ -176,7 +176,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--device", default="cpu")
     args = ap.parse_args(argv)
-    if args.device.startswith("cuda") and not torch.cuda.is_available():
+    if args.device.startswith("cuda") and (os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available()):
         print("SKIP: cuda requested but not available")
         return 125
     failures = run(args.device)

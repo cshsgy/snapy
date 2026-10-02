@@ -246,7 +246,7 @@ def main(argv=None):
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--yaml", default=os.path.join(HERE, "test_check_redo_saturation.yaml"))
     args = ap.parse_args(argv)
-    if args.device.startswith("cuda") and not torch.cuda.is_available():
+    if args.device.startswith("cuda") and (os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available()):
         print("SKIP: cuda requested but not available")
         return 125
 

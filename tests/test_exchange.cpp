@@ -1,5 +1,7 @@
 // C/C++
 #include <cstdlib>
+
+#include "cuda_test_gate.hpp"
 #include <iostream>
 
 // base
@@ -65,7 +67,7 @@ int source_side(Layout const& layout, std::tuple<int, int, int> const& iloc,
 torch::Device select_device(LayoutOptions const& layout) {
   auto device = torch::Device(torch::kCPU);
   if (layout->device() == "cuda") {
-    TORCH_CHECK(torch::cuda::is_available(),
+    TORCH_CHECK(snapy_cuda_test_enabled(),
                 "CUDA is required for device=cuda");
     int device_index = layout->device_id();
     if (device_index < 0) device_index = layout->local_rank();

@@ -53,7 +53,7 @@ def main() -> int:
         except Exception as exc:
             return skip(f"torch import failed: {exc}")
 
-        if not torch.cuda.is_available():
+        if os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available():
             return skip("CUDA runtime is unavailable")
 
         if args.backend == "ucx" and not commux_has_cuda_support():

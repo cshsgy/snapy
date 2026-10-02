@@ -3,6 +3,8 @@
 // the tiled path. WENO5, WENO3, and polynomial degrees 3 and 5 share it.
 
 #include <gtest/gtest.h>
+
+#include "cuda_test_gate.hpp"
 #include <torch/torch.h>
 
 #include <exception>
@@ -100,7 +102,7 @@ void expect_matches_cpu(Kind kind, torch::Tensor w, int dim) {
 }  // namespace
 
 TEST(recon_cuda, line_above_1024_matches_cpu) {
-  if (!torch::cuda::is_available()) {
+  if (!snapy_cuda_test_enabled()) {
     GTEST_SKIP() << "no CUDA device";
   }
   auto opts = torch::TensorOptions().dtype(torch::kFloat64);

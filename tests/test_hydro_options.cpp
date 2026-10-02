@@ -6,6 +6,8 @@
 // external
 #include <gtest/gtest.h>
 
+#include "cuda_test_gate.hpp"
+
 // torch
 #include <torch/torch.h>
 
@@ -326,6 +328,6 @@ TEST(hydro_options, wb_wall_clamp_reaches_the_x1_reference) {
 }
 
 TEST(hydro_options, wb_wall_clamp_reaches_the_x1_reference_cuda) {
-  if (!torch::cuda::is_available()) GTEST_SKIP() << "CUDA is not available";
+  if (!snapy_cuda_test_enabled()) GTEST_SKIP() << "CUDA is not available";
   wb_wall_clamp_reaches_the_x1_reference(torch::Device(torch::kCUDA, 0));
 }

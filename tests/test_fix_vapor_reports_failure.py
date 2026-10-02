@@ -16,7 +16,7 @@ def main(argv=None):
     ap.add_argument("--yaml", default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                    "test_fix_vapor_reports_failure.yaml"))
     args = ap.parse_args(argv)
-    if args.device.startswith("cuda") and not torch.cuda.is_available():
+    if args.device.startswith("cuda") and (os.environ.get("SNAPY_BUILD_CUDA", "1") == "0" or not torch.cuda.is_available()):
         print("SKIP: cuda requested but not available")
         return 125
 
