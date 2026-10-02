@@ -9,6 +9,7 @@
 
 #include "flux_positivity.hpp"
 #include "hydro.hpp"
+#include "hydro_rho_moist.hpp"
 
 namespace snap {
 
@@ -127,6 +128,8 @@ torch::Tensor HydroImpl::forward(double dt, torch::Tensor u,
       auto n1 = density.size(-1);
       auto rho_below = torch::cat(
           {density.narrow(-1, 0, 1), density.narrow(-1, 0, n1 - 1)}, -1);
+      note_wb_positivity_fallback((dl <= 0).sum().item<int64_t>(),
+                                  (dr <= 0).sum().item<int64_t>());
       wtmp[ILT][IDN].copy_(torch::where(dl > 0., dl, rho_below));
       wtmp[IRT][IDN].copy_(torch::where(dr > 0., dr, density));
     } else {

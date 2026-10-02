@@ -6,11 +6,13 @@
 // snap
 #include <snap/snap.h>
 
+#include <snap/eos/ideal_moist.hpp>
 #include <snap/mesh/meshblock.hpp>
 #include <snap/utils/log.hpp>
 
 #include "hydro.hpp"
 #include "hydro_dispatch.hpp"
+#include "hydro_rho_moist.hpp"
 
 namespace snap {
 HydroImpl::HydroImpl(const HydroOptions& options_, torch::nn::Module* p)
@@ -429,7 +431,23 @@ HydroImpl::_hydro_ref_x1(torch::Tensor const& w) const {
     dsf.copy_(psf_lo);
     dsf.narrow(-1, 1, nc1 - 1).copy_(0.5 * (from_b + from_a));
     dsf.select(-1, 0).copy_(dsf.select(-1, 1));
+  } else if (form == "moist_cell" || form == "moist_column") {
+    auto* moist = dynamic_cast<IdealMoistImpl*>(peos.get());
+    TORCH_CHECK(moist, "[Hydro] wb-density-ref: ", form,
+                " requires an ideal-moist equation of state");
+    if (form == "moist_column") {
+      // Same adiabat on every block of the column. The x1 relay does not
+      // carry the anchor entropy, so refuse a split column.
+      TORCH_CHECK(!x1_split && phys_in,
+                  "[Hydro] wb-density-ref: moist_column needs the whole x1 "
+                  "column on one block (nb1 == 1)");
+    }
+    apply_moist_density_ref(moist, w, pref, psf_lo, dref, dsf,
+                            form == "moist_cell", is, iu, pcoord->jl(),
+                            pcoord->ju());
   }
+
+  log_wb_dref_t0(w[IDN], dref, is, iu, pcoord->jl(), pcoord->ju());
 
   if (below >= 0) {
     constexpr int kWbRefTag = 0x7715;

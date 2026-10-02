@@ -256,7 +256,7 @@ TEST(hydro_options, wb_wall_clamp_ships_enabled) {
   std::remove(f.c_str());
 }
 
-// wb-density-ref ships as smooth5 (#250), accepts the three forms, and
+// wb-density-ref ships as smooth5 (#250), accepts the named forms, and
 // refuses anything else; wb-rop-guard ships off.
 TEST(hydro_options, wb_density_ref_parses_and_ships_smooth5) {
   auto write = [](std::string const &fname, std::string const &extra) {
@@ -273,8 +273,8 @@ TEST(hydro_options, wb_density_ref_parses_and_ships_smooth5) {
   EXPECT_EQ(op->wb_density_ref(), "smooth5");
   EXPECT_FALSE(op->wb_rop_guard());
 
-  for (std::string form :
-       {"smooth5", "isentrope", "none", "local_polytrope"}) {
+  for (std::string form : {"smooth5", "isentrope", "none", "local_polytrope",
+                           "moist_cell", "moist_column"}) {
     write(f, "  wb-density-ref: " + form + "\n  wb-rop-guard: true\n");
     op = snap::HydroOptionsImpl::from_yaml(f);
     EXPECT_EQ(op->wb_density_ref(), form);

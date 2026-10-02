@@ -1,5 +1,6 @@
 // C/C++
 #include <cmath>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -273,7 +274,14 @@ void initialize_block(MeshBlock block, Variables& vars,
 }  // namespace
 
 int main(int argc, char** argv) {
-  torch::set_num_threads(1);
+  // Default one intra-op thread. SNAPY_THREADS overrides it for the moist
+  // adiabat arms; those calls are the whole step at one thread.
+  int nthreads = 1;
+  if (char const* env = std::getenv("SNAPY_THREADS")) {
+    nthreads = std::atoi(env);
+    if (nthreads < 1) nthreads = 1;
+  }
+  torch::set_num_threads(nthreads);
   torch::set_num_interop_threads(1);
 
   auto args = ParseArguments(argc, argv, "bryan.yaml");
