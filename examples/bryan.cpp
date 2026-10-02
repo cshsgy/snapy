@@ -1,6 +1,11 @@
 // C/C++
 #include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 // yaml
@@ -14,6 +19,7 @@
 // snap
 #include <snap/snap.h>
 
+#include <snap/hydro/balance_column.hpp>
 #include <snap/mesh/mesh.hpp>
 
 using namespace snap;
@@ -161,6 +167,100 @@ void solve_virtual_temperature_perturbation(
   thermo_x->forward(temp_out, pres, xfrac_out);
 }
 
+// Leftover |a|/g after a projection; 1e-13 g over 330 s is 3e-10 m/s.
+constexpr double kBalanceRtol = 1.e-13;
+
+torch::Tensor interior(MeshBlock block, torch::Tensor const& w) {
+  auto pcoord = block->pcoord;
+  auto op = pcoord->options;
+  return w.narrow(1, pcoord->kl(), op->nx3())
+      .narrow(2, pcoord->jl(), op->nx2())
+      .narrow(3, pcoord->il(), op->nx1());
+}
+
+// The saturation adjustment of the last RK stage (MeshBlockImpl::forward):
+// ThermoY at fixed density and internal energy, species written back, applied
+// here through the same W -> U -> W round trip and kept on interior cells.
+void saturate(MeshBlock block, torch::Tensor w,
+              std::shared_ptr<kintera::ThermoYImpl> const& thermo_y) {
+  auto peos = block->phydro->peos;
+  auto u = peos->compute("W->U", {w.clone()});
+  int ny = u.size(0) - ICY;
+
+  auto ke = peos->compute("U->K", {u});
+  auto rho = u[IDN] + u.narrow(0, ICY, ny).sum(0);
+  auto ie = u[IPR] - ke;
+  auto yfrac = u.narrow(0, ICY, ny) / rho;
+
+  auto sub = block->part({0, 0, 0}, PartOptions().exterior(false));
+  auto sub3 = block->part({0, 0, 0}, PartOptions().exterior(false).ndim(3));
+  thermo_y->forward(rho.index(sub3), ie.index(sub3), yfrac.index(sub),
+                    /*warm_start=*/true);
+  u.narrow(0, ICY, ny).copy_(yfrac * rho);
+
+  interior(block, w).copy_(interior(block, peos->compute("U->W", {u})));
+}
+
+double project(MeshBlock block, torch::Tensor w, double grav, int* sweeps) {
+  auto pcoord = block->pcoord;
+  auto wi = interior(block, w);
+  auto dx = pcoord->dx1f.narrow(0, pcoord->il(), wi.size(3)).contiguous();
+  torch::Tensor balanced;
+  double residual;
+  std::tie(balanced, residual, *sweeps) =
+      balance_column(wi.contiguous(), dx, grav, /*wall_clamp=*/true,
+                     kBalanceRtol, /*max_iter=*/400);
+  wi.copy_(balanced);
+  return residual;
+}
+
+// problem/balance-ic (#250 D1): project the IC onto the discrete hydrostatic
+// balance. balance_column holds T and mass fractions fixed and the run's first
+// saturation adjustment moves the column off that balance again, so a moist
+// column alternates the two until saturation no longer moves it.
+void balance_ic(MeshBlock block, torch::Tensor w, double grav, int max_pass) {
+  auto op = block->pcoord->options;
+  TORCH_CHECK(op->nx1() == op->global_nx1(),
+              "bryan: balance-ic needs the whole x1 column in one block, nx1=",
+              op->nx1(), " global_nx1=", op->global_nx1());
+  TORCH_CHECK(block->phydro->options->wb_wall_clamp(),
+              "bryan: balance-ic needs dynamics/wb-wall-clamp: true");
+
+  auto thermo_y = std::dynamic_pointer_cast<kintera::ThermoYImpl>(
+      block->named_modules()["hydro.eos.thermo"]);
+  int sweeps = 0;
+  if (!thermo_y || thermo_y->options->reactions().empty()) {
+    project(block, w, grav, &sweeps);
+    return;
+  }
+
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  double residual = -1.;  // no projection yet
+  for (int pass = 0;; ++pass) {
+    auto before = interior(block, w).clone();
+    saturate(block, w, thermo_y);
+    auto after = interior(block, w);
+    double drho = (after[IDN] - before[IDN]).abs().max().item<double>() /
+                  before[IDN].abs().max().item<double>();
+    double dp =
+        ((after[IPR] - before[IPR]) / before[IPR]).abs().max().item<double>();
+    double dp_abs = (after[IPR] - before[IPR]).abs().max().item<double>();
+    std::cout << std::scientific << std::setprecision(6)
+              << "bryan: balance-ic pass " << pass << " residual " << residual
+              << " sweeps " << sweeps << " | saturation max|drho|/max|rho| "
+              << drho << " max|dp/p| " << dp << " max|dp| " << dp_abs
+              << std::endl;
+    if (pass > 0 && drho <= 4. * kEps && dp <= 1.e-13 &&
+        residual <= kBalanceRtol) {
+      return;
+    }
+    TORCH_CHECK(pass < max_pass, "bryan: balance-ic did not converge in ",
+                max_pass, " passes: saturation still moves the projected ",
+                "column by max|drho|/max|rho| = ", drho, ", max|dp/p| = ", dp);
+    residual = project(block, w, grav, &sweeps);
+  }
+}
+
 void initialize_block(MeshBlock block, Variables& vars,
                       YAML::Node const& config, torch::Device const& device) {
   auto pcoord = block->pcoord;
@@ -265,6 +365,11 @@ void initialize_block(MeshBlock block, Variables& vars,
     w.narrow(0, ICY, ny)
         .select(3, i)
         .copy_(thermo_x->compute("X->Y", std::vector<torch::Tensor>{xfrac_i}));
+  }
+
+  if (config["problem"]["balance-ic"].as<bool>(false)) {
+    balance_ic(block, w, grav,
+               config["problem"]["balance-ic-passes"].as<int>(8));
   }
 
   vars["hydro_w"] = w;

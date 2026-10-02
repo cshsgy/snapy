@@ -314,6 +314,17 @@ set_tests_properties(test_shallow_splash PROPERTIES
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
 )
 
+add_test(
+  NAME test_bryan_balance_ic
+  COMMAND ${CMAKE_COMMAND}
+          -Dbuildl=release
+          -P ${CMAKE_CURRENT_SOURCE_DIR}/run_bryan_balance_ic.cmake
+)
+
+set_tests_properties(test_bryan_balance_ic PROPERTIES
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+)
+
 if (NOT APPLE)
     add_test(
       NAME test_restart_multiblock
