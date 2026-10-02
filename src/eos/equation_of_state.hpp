@@ -147,9 +147,10 @@ class EquationOfStateImpl {
                         torch::optional<torch::Tensor> out = torch::nullopt);
 
   //! \brief Apply the conserved variable limiter in place.
-  //! \param whole_column repair a parentless cloud over the whole x1 column
-  //!        when it spans meshblocks; all blocks of the column must then call
-  //!        together, as MeshBlockImpl::advance_local does (#232).
+  //! \param whole_column repair a parentless cloud and the vapor over the
+  //!        whole x1 column when it spans meshblocks; all blocks of the column
+  //!        must then call together, as MeshBlockImpl::advance_local does
+  //!        (#232).
   virtual void apply_conserved_limiter_(torch::Tensor const& cons,
                                         bool whole_column = false);
 
