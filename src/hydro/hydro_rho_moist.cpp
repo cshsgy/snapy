@@ -289,7 +289,31 @@ void apply_moist_density_ref(IdealMoistImpl* moist, torch::Tensor const& w,
       density_on_adiabat(tx, temp_tgt, pres_tgt.clone(), x_tgt, s_tgt,
                          per_cell ? "moist_cell" : "moist_column");
   dref.copy_(rho_tgt[0]);
-  dsf.copy_(rho_tgt[1]);
+  if (!per_cell) {
+    dsf.copy_(rho_tgt[1]);
+  } else {
+    // psf_lo(i) is the face between cells i-1 and i. Same mean as
+    // local_polytrope, on each cell's own adiabat. One stored value.
+    auto rho_here = rho_tgt[1];
+    int64_t nc1 = psf_lo.size(-1);
+    TORCH_CHECK(nc1 >= 2, "[Hydro] wb-density-ref moist_cell needs nc1 >= 2");
+    auto p_face = psf_lo.narrow(-1, 1, nc1 - 1).contiguous();
+    auto s_below = s_src.narrow(-1, 0, nc1 - 1).contiguous();
+    auto t_below = temp_src.narrow(-1, 0, nc1 - 1).contiguous();
+    auto x_below = x_src.narrow(-2, 0, nc1 - 1).contiguous();
+    auto rho_below = density_on_adiabat(tx, t_below.clone(), p_face, x_below,
+                                        s_below, "moist_cell-face");
+    dsf.copy_(rho_here);
+    dsf.narrow(-1, 1, nc1 - 1)
+        .copy_(0.5 * (rho_below + rho_here.narrow(-1, 1, nc1 - 1)));
+    dsf.select(-1, 0).copy_(dsf.select(-1, 1));
+    static bool face_logged = false;
+    if (!face_logged) {
+      face_logged = true;
+      std::fprintf(stderr, "WB_FACE_MEAN form=moist_cell\n");
+      std::fflush(stderr);
+    }
+  }
 
   if (calls < 5) {
     double sec =

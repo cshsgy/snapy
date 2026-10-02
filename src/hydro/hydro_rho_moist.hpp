@@ -10,7 +10,11 @@ class IdealMoistImpl;
 // #250 O3 step 5. Replaces dref and dsf with densities on kintera's
 // reversible saturated adiabat (rainout off). per_cell uses each cell's own
 // entropy and total water; otherwise the bottom interior cell's, broadcast
-// up the column. Aborts if the Newton misses any cell, ghosts included.
+// up the column. dref is that adiabat at pref. For per_cell, dsf at face
+// i > 0 is the mean of cells i-1 and i, both at psf_lo(i); one value per
+// face, not a one-sided upwind. Face 0 copies face 1. The column form is
+// one adiabat, so its face is that adiabat at psf_lo. Aborts if the Newton
+// misses any cell, ghosts included.
 void apply_moist_density_ref(IdealMoistImpl* moist, torch::Tensor const& w,
                              torch::Tensor const& pref,
                              torch::Tensor const& psf_lo, torch::Tensor& dref,
