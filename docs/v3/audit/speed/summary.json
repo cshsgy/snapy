@@ -1,0 +1,1094 @@
+{
+ "c1_cpu_fp64": {
+  "after": {
+   "runs": 3,
+   "median_ms": 61.18516600690782,
+   "spread_ms": [
+    59.96996397152543,
+    61.668949900195
+   ],
+   "per_run_median_ms": [
+    59.96996397152543,
+    61.18516600690782,
+    61.668949900195
+   ],
+   "steps": 30,
+   "execution_report": {
+    "captures": 0,
+    "eager": 99,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "the state is not on a CUDA device"
+    ]
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 53.93215804360807,
+   "spread_ms": [
+    53.17794205620885,
+    56.40525300987065
+   ],
+   "per_run_median_ms": [
+    53.17794205620885,
+    53.93215804360807,
+    56.40525300987065
+   ],
+   "steps": 30,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  }
+ },
+ "c1_cuda_fp32_eager": {
+  "after": {
+   "runs": 3,
+   "median_ms": 25.845980970188975,
+   "spread_ms": [
+    25.225857039913535,
+    26.17099485360086
+   ],
+   "per_run_median_ms": [
+    25.225857039913535,
+    25.845980970188975,
+    26.17099485360086
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": false,
+    "eager_fp32": true,
+    "graph_fp64": false,
+    "graph_fp32": true,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 21.331252995878458,
+   "spread_ms": [
+    21.279064938426018,
+    21.57323877327144
+   ],
+   "per_run_median_ms": [
+    21.279064938426018,
+    21.331252995878458,
+    21.57323877327144
+   ],
+   "steps": 100,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1_cuda_fp32_eagerB": {
+  "after": {
+   "runs": 3,
+   "median_ms": 26.17099485360086,
+   "spread_ms": [
+    25.752257090061903,
+    27.14061108417809
+   ],
+   "per_run_median_ms": [
+    25.752257090061903,
+    26.17099485360086,
+    27.14061108417809
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": false,
+    "eager_fp32": true,
+    "graph_fp64": false,
+    "graph_fp32": true,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1_cuda_fp32_graph": {
+  "after": {
+   "runs": 3,
+   "median_ms": 12.404507026076317,
+   "spread_ms": [
+    5.93755510635674,
+    12.871243059635162
+   ],
+   "per_run_median_ms": [
+    5.93755510635674,
+    12.404507026076317,
+    12.871243059635162
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 3,
+    "eager": 0,
+    "graphs": 3,
+    "replays": 315
+   },
+   "capability": {
+    "eager_fp64": false,
+    "eager_fp32": true,
+    "graph_fp64": false,
+    "graph_fp32": true,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1_cuda_fp64_eager": {
+  "after": {
+   "runs": 3,
+   "median_ms": 24.4178359862417,
+   "spread_ms": [
+    23.322988068684936,
+    24.590844986960292
+   ],
+   "per_run_median_ms": [
+    23.322988068684936,
+    24.4178359862417,
+    24.590844986960292
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 19.21814098022878,
+   "spread_ms": [
+    18.453973811119795,
+    20.26509796269238
+   ],
+   "per_run_median_ms": [
+    18.453973811119795,
+    19.21814098022878,
+    20.26509796269238
+   ],
+   "steps": 100,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1_cuda_fp64_eagerB": {
+  "after": {
+   "runs": 3,
+   "median_ms": 24.33620602823794,
+   "spread_ms": [
+    23.322988068684936,
+    25.499504059553146
+   ],
+   "per_run_median_ms": [
+    23.322988068684936,
+    24.33620602823794,
+    25.499504059553146
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1_cuda_fp64_graph": {
+  "after": {
+   "runs": 3,
+   "median_ms": 12.049885001033545,
+   "spread_ms": [
+    11.787142138928175,
+    12.274391017854214
+   ],
+   "per_run_median_ms": [
+    11.787142138928175,
+    12.049885001033545,
+    12.274391017854214
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 3,
+    "eager": 0,
+    "graphs": 3,
+    "replays": 315
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1d_cpu_fp64": {
+  "after": {
+   "runs": 3,
+   "median_ms": 46.40641692094505,
+   "spread_ms": [
+    45.958037953823805,
+    46.943738125264645
+   ],
+   "per_run_median_ms": [
+    45.958037953823805,
+    46.40641692094505,
+    46.943738125264645
+   ],
+   "steps": 30,
+   "execution_report": {
+    "captures": 0,
+    "eager": 99,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "the state is not on a CUDA device",
+     "equation of state is ideal-gas, not ideal-moist",
+     "riemann solver is lmars, not hllc"
+    ]
+   },
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 40.76076881028712,
+   "spread_ms": [
+    39.06598500907421,
+    41.00204398855567
+   ],
+   "per_run_median_ms": [
+    39.06598500907421,
+    40.76076881028712,
+    41.00204398855567
+   ],
+   "steps": 30,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  }
+ },
+ "c1d_cuda_fp64_eager": {
+  "after": {
+   "runs": 3,
+   "median_ms": 18.599335104227066,
+   "spread_ms": [
+    18.351831007748842,
+    18.83011986501515
+   ],
+   "per_run_median_ms": [
+    18.351831007748842,
+    18.599335104227066,
+    18.83011986501515
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "equation of state is ideal-gas, not ideal-moist",
+     "riemann solver is lmars, not hllc"
+    ]
+   },
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 14.815524918958545,
+   "spread_ms": [
+    14.449315844103694,
+    15.247714938595891
+   ],
+   "per_run_median_ms": [
+    14.449315844103694,
+    14.815524918958545,
+    15.247714938595891
+   ],
+   "steps": 100,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1d_cuda_fp64_eagerB": {
+  "after": {
+   "runs": 3,
+   "median_ms": 18.599335104227066,
+   "spread_ms": [
+    18.053634092211723,
+    18.755658995360136
+   ],
+   "per_run_median_ms": [
+    18.053634092211723,
+    18.599335104227066,
+    18.755658995360136
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "equation of state is ideal-gas, not ideal-moist",
+     "riemann solver is lmars, not hllc"
+    ]
+   },
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c1d_cuda_fp64_graph": {
+  "after": {
+   "runs": 3,
+   "median_ms": 18.77862890250981,
+   "spread_ms": [
+    17.61740492656827,
+    19.481393974274397
+   ],
+   "per_run_median_ms": [
+    17.61740492656827,
+    18.77862890250981,
+    19.481393974274397
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "equation of state is ideal-gas, not ideal-moist",
+     "riemann solver is lmars, not hllc"
+    ]
+   },
+   "dt0": 0.2595694076999867,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c2_cpu_1rank": {
+  "after": {
+   "runs": 3,
+   "median_ms": 3134.67766600661,
+   "spread_ms": [
+    2991.618324071169,
+    4135.515857022256
+   ],
+   "per_run_median_ms": [
+    2991.618324071169,
+    3134.67766600661,
+    4135.515857022256
+   ],
+   "steps": 30,
+   "execution_report": {
+    "captures": 0,
+    "eager": 99,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "the state is not on a CUDA device"
+    ]
+   },
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 2735.2756690233946,
+   "spread_ms": [
+    2625.906523084268,
+    2812.3368830420077
+   ],
+   "per_run_median_ms": [
+    2625.906523084268,
+    2735.2756690233946,
+    2812.3368830420077
+   ],
+   "steps": 30,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  }
+ },
+ "c2_cpu_4rank": {
+  "after": {
+   "runs": 3,
+   "median_ms": 1571.9994229730219,
+   "spread_ms": [
+    1490.3698989655823,
+    1600.9132228791714
+   ],
+   "per_run_median_ms": [
+    1490.3698989655823,
+    1571.9994229730219,
+    1600.9132228791714
+   ],
+   "steps": 30,
+   "execution_report": {
+    "captures": 0,
+    "eager": 0,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "the state is not on a CUDA device",
+     "more than one block"
+    ]
+   },
+   "dt0": 0.023306639802554097,
+   "world_size": 4,
+   "blocks": 1,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 1290.3101609554142,
+   "spread_ms": [
+    1083.9479330461472,
+    1343.4556960128248
+   ],
+   "per_run_median_ms": [
+    1083.9479330461472,
+    1290.3101609554142,
+    1343.4556960128248
+   ],
+   "steps": 30,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.023306639802554097,
+   "world_size": 4,
+   "blocks": 1,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": null,
+   "finite": true
+  }
+ },
+ "c2_cuda_eager": {
+  "after": {
+   "runs": 3,
+   "median_ms": 72.70551193505526,
+   "spread_ms": [
+    72.18075101263821,
+    72.97227089293301
+   ],
+   "per_run_median_ms": [
+    72.18075101263821,
+    72.70551193505526,
+    72.97227089293301
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 59.920022962614894,
+   "spread_ms": [
+    59.8881880287081,
+    66.4336490444839
+   ],
+   "per_run_median_ms": [
+    59.8881880287081,
+    59.920022962614894,
+    66.4336490444839
+   ],
+   "steps": 100,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c2_cuda_eagerB": {
+  "after": {
+   "runs": 3,
+   "median_ms": 72.7497860789299,
+   "spread_ms": [
+    67.23898998461664,
+    72.97227089293301
+   ],
+   "per_run_median_ms": [
+    67.23898998461664,
+    72.7497860789299,
+    72.97227089293301
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c2_cuda_graph": {
+  "after": {
+   "runs": 3,
+   "median_ms": 53.32690291106701,
+   "spread_ms": [
+    47.25886392407119,
+    53.51030780002475
+   ],
+   "per_run_median_ms": [
+    47.25886392407119,
+    53.32690291106701,
+    53.51030780002475
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 3,
+    "eager": 0,
+    "graphs": 3,
+    "replays": 315
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.023306639802554097,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c3_cpu_6rank": {
+  "after": {
+   "runs": 3,
+   "median_ms": 455.05877607502043,
+   "spread_ms": [
+    426.44032696262,
+    467.90326409973204
+   ],
+   "per_run_median_ms": [
+    426.44032696262,
+    455.05877607502043,
+    467.90326409973204
+   ],
+   "steps": 30,
+   "execution_report": {
+    "captures": 0,
+    "eager": 0,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "the state is not on a CUDA device",
+     "geometry is gnomonic-equiangle, not cartesian",
+     "more than one block",
+     "forcing is not const-gravity alone"
+    ]
+   },
+   "dt0": 46.00918531526652,
+   "world_size": 6,
+   "blocks": 1,
+   "driver": "mesh",
+   "threads": 4,
+   "gpu": null,
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 401.2837850023061,
+   "spread_ms": [
+    380.738167790696,
+    439.24298300407827
+   ],
+   "per_run_median_ms": [
+    380.738167790696,
+    401.2837850023061,
+    439.24298300407827
+   ],
+   "steps": 30,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 46.00918531526652,
+   "world_size": 6,
+   "blocks": 1,
+   "driver": "mesh",
+   "threads": 4,
+   "gpu": null,
+   "finite": true
+  }
+ },
+ "c3_cuda_eager": {
+  "after": {
+   "runs": 3,
+   "median_ms": 199.10283596254885,
+   "spread_ms": [
+    176.67846800759435,
+    202.18853908590972
+   ],
+   "per_run_median_ms": [
+    176.67846800759435,
+    199.10283596254885,
+    202.18853908590972
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 0,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "geometry is gnomonic-equiangle, not cartesian",
+     "forcing is not const-gravity alone"
+    ]
+   },
+   "dt0": 46.00918531526652,
+   "world_size": 1,
+   "blocks": 6,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  },
+  "before": {
+   "runs": 3,
+   "median_ms": 137.04281207174063,
+   "spread_ms": [
+    119.46944706141949,
+    139.33164905756712
+   ],
+   "per_run_median_ms": [
+    119.46944706141949,
+    137.04281207174063,
+    139.33164905756712
+   ],
+   "steps": 100,
+   "execution_report": "AttributeError",
+   "capability": "AttributeError",
+   "dt0": 46.00918531526652,
+   "world_size": 1,
+   "blocks": 6,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c3_cuda_eagerB": {
+  "after": {
+   "runs": 3,
+   "median_ms": 176.67846800759435,
+   "spread_ms": [
+    172.612511087209,
+    196.36824307963252
+   ],
+   "per_run_median_ms": [
+    172.612511087209,
+    176.67846800759435,
+    196.36824307963252
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 0,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "geometry is gnomonic-equiangle, not cartesian",
+     "forcing is not const-gravity alone"
+    ]
+   },
+   "dt0": 46.00918531526652,
+   "world_size": 1,
+   "blocks": 6,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c3_cuda_graph": {
+  "after": {
+   "runs": 3,
+   "median_ms": 186.92249595187604,
+   "spread_ms": [
+    174.14614302106202,
+    194.39532002434134
+   ],
+   "per_run_median_ms": [
+    174.14614302106202,
+    186.92249595187604,
+    194.39532002434134
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 0,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": false,
+    "graph_fp32": false,
+    "eager_reasons": [
+     "geometry is gnomonic-equiangle, not cartesian",
+     "forcing is not const-gravity alone"
+    ]
+   },
+   "dt0": 46.00918531526652,
+   "world_size": 1,
+   "blocks": 6,
+   "driver": "mesh",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c4_eager_varying": {
+  "after": {
+   "runs": 3,
+   "median_ms": 24.02275986969471,
+   "spread_ms": [
+    23.829575860872865,
+    24.110942147672176
+   ],
+   "per_run_median_ms": [
+    23.829575860872865,
+    24.02275986969471,
+    24.110942147672176
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 0,
+    "eager": 315,
+    "graphs": 0,
+    "replays": 0
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c4_graph_fixed": {
+  "after": {
+   "runs": 3,
+   "median_ms": 12.04988593235612,
+   "spread_ms": [
+    12.004435993731022,
+    12.28609005920589
+   ],
+   "per_run_median_ms": [
+    12.004435993731022,
+    12.04988593235612,
+    12.28609005920589
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 3,
+    "eager": 0,
+    "graphs": 3,
+    "replays": 315
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ },
+ "c4_graph_varying": {
+  "after": {
+   "runs": 3,
+   "median_ms": 102.02016890980303,
+   "spread_ms": [
+    101.1811199132353,
+    104.14247494190931
+   ],
+   "per_run_median_ms": [
+    101.1811199132353,
+    102.02016890980303,
+    104.14247494190931
+   ],
+   "steps": 100,
+   "execution_report": {
+    "captures": 303,
+    "eager": 0,
+    "graphs": 3,
+    "replays": 315
+   },
+   "capability": {
+    "eager_fp64": true,
+    "eager_fp32": false,
+    "graph_fp64": true,
+    "graph_fp32": false,
+    "eager_reasons": []
+   },
+   "dt0": 0.2594361089829126,
+   "world_size": 1,
+   "blocks": 1,
+   "driver": "block",
+   "threads": 8,
+   "gpu": "NVIDIA H100 80GB HBM3",
+   "finite": true
+  }
+ }
+}

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/sam/.local/share/slack-agents/ziwei/workspace/aam/speed/bench.py", line 216, in <module>
+    main()
+  File "/home/sam/.local/share/slack-agents/ziwei/workspace/aam/speed/bench.py", line 177, in main
+    step(n, dt0)
+  File "/home/sam/.local/share/slack-agents/ziwei/workspace/aam/speed/bench.py", line 171, in step
+    mesh.forward(mesh_vars, dt, s)
+RuntimeError: integration/execution-strict: a Mesh runs its blocks eagerly (CUDA graphs cover a single MeshBlock only)
