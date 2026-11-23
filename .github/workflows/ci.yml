@@ -42,7 +42,7 @@ jobs:
     needs: pre-commit
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
     steps:
