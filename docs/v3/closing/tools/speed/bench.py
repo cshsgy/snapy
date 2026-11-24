@@ -199,6 +199,8 @@ def main():
                 dt = dt0 if a.dt_mode == "fixed" else dt0 * (0.95 + 0.05 * ((n * 7919) % 13) / 13.0)
                 step(n, dt)
             sync()
+        if os.environ.get("SPEED_PROF_TRACE"):
+            prof.export_chrome_trace(a.out + ".trace.json")
         key = "cuda_time_total" if dev.type == "cuda" else "cpu_time_total"
         with open(a.out + ".prof.txt", "w") as pf:
             pf.write(f"profile of {a.profile} steps after the timed loop; sorted by {key}\n")
