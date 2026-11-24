@@ -202,9 +202,9 @@ def main():
         key = "cuda_time_total" if dev.type == "cuda" else "cpu_time_total"
         with open(a.out + ".prof.txt", "w") as pf:
             pf.write(f"profile of {a.profile} steps after the timed loop; sorted by {key}\n")
-            pf.write(prof.key_averages().table(sort_by=key, row_limit=40))
+            pf.write(prof.key_averages().table(sort_by=key, row_limit=int(os.environ.get("SPEED_PROF_ROWS", "40"))))
             pf.write("\n\nsorted by cpu_time_total\n")
-            pf.write(prof.key_averages().table(sort_by="cpu_time_total", row_limit=25))
+            pf.write(prof.key_averages().table(sort_by="cpu_time_total", row_limit=int(os.environ.get("SPEED_PROF_ROWS", "25"))))
     ts = sorted(times)
     med = ts[len(ts) // 2]
     rep = {

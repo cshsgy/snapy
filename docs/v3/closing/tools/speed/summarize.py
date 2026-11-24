@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """Collect aam/speed/runs/*.rank0.json into per-cell medians: for each cell and tree, the median
 per-step time of each of the 3 runs; reported value = median of the 3 run medians, spread = min..max
@@ -23,7 +24,7 @@ for name, trees in cells.items():
 json.dump(out, open(os.environ.get("SPEED_SUMMARY") or os.path.join(os.path.dirname(R), "summary.json"), "w"), indent=1)
 def fmt(c):
     return f"{c['median_ms']:.2f} ms ({c['spread_ms'][0]:.2f}–{c['spread_ms'][1]:.2f})"
-print("| cell | before 730b3500 | after d3178f20 | speed-up (before/after) |")
+print(f"| cell | before {os.environ.get('SPEED_LABEL_BEFORE', '730b3500')} | after {os.environ.get('SPEED_LABEL_AFTER', 'd3178f20')} | speed-up (before/after) |")
 print("|---|---|---|---|")
 for name, trees in out.items():
     b = trees.get("before"); a = trees.get("after")

@@ -43,9 +43,13 @@ geometry:
     nx2: 32
     nx3: 32
   type: gnomonic-equiangle
+# S3 deck: cubed6_moist + implicit-scheme 9 + const-gravity. The bench's generic
+# column is isothermal with p = ps exp(-2 z/L), rho = rs exp(-2 z/L), p/rho = 3900*320,
+# L = x1max - x1min = 2e6 m, so it is hydrostatic for g = 2 (p/rho) / L = 1.248 m/s^2
+# (g = 9.8 is 8x off balance and the implicit solve goes non-finite by step 7).
 forcing:
   const-gravity:
-    grav1: -9.8
+    grav1: -1.248
 integration:
   cfl: 0.5
   implicit-scheme: 9
