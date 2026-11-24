@@ -47,6 +47,7 @@ def main():
     ap.add_argument("--driver", default="auto", choices=["auto", "block", "mesh"],
                     help="block: MeshBlock.forward (the only path that captures CUDA graphs; one local block, one rank); mesh: Mesh.forward (eager, any decomposition)")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--profile", type=int, default=0, help="after the timed steps, profile this many more steps with torch.profiler; writes OUT.prof.txt")
     a = ap.parse_args()
 
     import torch
@@ -188,6 +189,22 @@ def main():
         sync()
         times.append(time.perf_counter() - t0)
     finite = all(bool(torch.isfinite(v["hydro_u"]).all()) for v in mesh_vars)
+    if getattr(a, "profile", 0) and a.profile > 0:  # speed-gate profiles: where the step time goes (CPU ops, CUDA kernels, graph launches)
+        from torch.profiler import profile, ProfilerActivity
+        acts = [ProfilerActivity.CPU] + ([ProfilerActivity.CUDA] if dev.type == "cuda" else [])
+        n0 = a.warmup + a.steps
+        sync()
+        with profile(activities=acts) as prof:
+            for n in range(n0, n0 + a.profile):
+                dt = dt0 if a.dt_mode == "fixed" else dt0 * (0.95 + 0.05 * ((n * 7919) % 13) / 13.0)
+                step(n, dt)
+            sync()
+        key = "cuda_time_total" if dev.type == "cuda" else "cpu_time_total"
+        with open(a.out + ".prof.txt", "w") as pf:
+            pf.write(f"profile of {a.profile} steps after the timed loop; sorted by {key}\n")
+            pf.write(prof.key_averages().table(sort_by=key, row_limit=40))
+            pf.write("\n\nsorted by cpu_time_total\n")
+            pf.write(prof.key_averages().table(sort_by="cpu_time_total", row_limit=25))
     ts = sorted(times)
     med = ts[len(ts) // 2]
     rep = {

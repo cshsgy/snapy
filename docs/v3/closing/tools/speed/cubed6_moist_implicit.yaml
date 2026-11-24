@@ -1,0 +1,81 @@
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+    x2-inner: custom
+    x2-outer: custom
+    x3-inner: custom
+    x3-outer: custom
+distribute:
+  blocks_per_process: 6
+  layout: cubed-sphere
+  nb2: 1
+  nb3: 1
+  verbose: false
+dynamics:
+  equation-of-state:
+    density-floor: 1.0e-10
+    limiter: false
+    pressure-floor: 1.0e-10
+    type: ideal-moist
+  reconstruct:
+    horizontal:
+      scale: true
+      shock: false
+      type: plm
+    vertical:
+      scale: true
+      shock: true
+      type: weno5
+  riemann-solver:
+    type: hllc
+geometry:
+  bounds:
+    x1max: 8.0e6
+    x1min: 6.0e6
+    x2max_pi: 0.25
+    x2min_pi: -0.25
+    x3max_pi: 0.25
+    x3min_pi: -0.25
+  cells:
+    nghost: 3
+    nx1: 16
+    nx2: 32
+    nx3: 32
+  type: gnomonic-equiangle
+forcing:
+  const-gravity:
+    grav1: -9.8
+integration:
+  cfl: 0.5
+  implicit-scheme: 9
+  ncycle_out: 0
+  nlim: -1
+  tlim: 1000000000000.0
+  type: rk3
+outputs: []
+reactions:
+- equation: vapor <=> cloud
+  rate-constant:
+    formula: h2o_ideal
+  type: nucleation
+reference-state:
+  Pref: 1.e5
+  Tref: 300.0
+species:
+- composition:
+    H: 1.64813
+    He: 0.17591
+  cv_R: 2.5
+  name: dry
+- composition:
+    H: 2
+    O: 1
+  cv_R: 3.5
+  name: vapor
+- composition:
+    H: 2
+    O: 1
+  cv_R: 9.0
+  name: cloud
+  u0_R: -3430.0
