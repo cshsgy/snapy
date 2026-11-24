@@ -1,0 +1,54 @@
+# #348 harness deck full_cell_stretched; initial state: h348.py initial_w(); dt = 304.16303230219506 s; 10 steps
+geometry:
+  type: cartesian
+  bounds:
+    x1min: 0.0
+    x1max: 1347606.382977
+    x2min: 0.0
+    x2max: 31415926.53589793
+    x3min: 0.0
+    x3max: 3926990.8169872416
+  cells:
+    nx1: 45
+    nx2: 8
+    nx3: 1
+    nghost: 3
+    x1rat: 1.05
+dynamics:
+  equation-of-state:
+    type: ideal-gas
+    gammad: 1.403461
+    weight: 0.0023654232199582475
+    density-floor: 3.4682e-18
+    pressure-floor: 3.4682e-18
+    temperature-floor: 1.0e-06
+    limiter: true
+  reconstruct:
+    vertical:
+      type: weno5
+      scale: true
+      shock: false
+    horizontal:
+      type: weno5
+      scale: true
+      shock: false
+  riemann-solver:
+    type: lmars
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+    x2-inner: periodic
+    x2-outer: periodic
+    x3-inner: periodic
+    x3-outer: periodic
+integration:
+  type: rk3
+  cfl: 0.5
+  implicit-scheme: 9
+  nlim: -1
+  tlim: 1000000000.0
+forcing:
+  const-gravity:
+    grav1: -23.1
+    gravity-work: cell

@@ -1,0 +1,13 @@
+diff --git a/src/mesh/meshblock.cpp b/src/mesh/meshblock.cpp
+index cb944ad0..158742f2 100644
+--- a/src/mesh/meshblock.cpp
++++ b/src/mesh/meshblock.cpp
+@@ -306,7 +306,7 @@ void MeshBlockImpl::reset() {
+   TORCH_CHECK(phydro->peos->nvar() > 0, "Hydro model must have nvar > 0.");
+   _hydro_u0 =
+       register_buffer("u0", torch::zeros({phydro->peos->nvar(), nc3, nc2, nc1},
+-                                         policy.storage(Quantity::kBackup)));
++                                         torch::kFloat32));  // MUTANT
+
+   //// ------- (10) set up scalar buffer ------- ////
+   _scalar_s0 =

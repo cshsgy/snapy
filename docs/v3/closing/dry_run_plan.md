@@ -12,18 +12,24 @@ compares a V3 build against a baseline build made with the same flags, on the sa
 | V3 side | the final `v3/final` head after the graph stack merges (`git ls-remote https://github.com/UCzhangxi/snapy.git v3/final`, pinned in every post) | every leg |
 
 Both sides are built from a clean worktree at the pinned sha with the same CMake flags, the same
-kintera and pyharp packages on `PYTHONPATH`, and the same torch. The kintera version is the one the
-V3 CI pins at that head (`2.6.13` once the move commit lands; `2.6.12` before it). The baseline is
-built against the same kintera package, so the comparison isolates snapy.
+kintera and pyharp packages on `PYTHONPATH`, and the same torch. For the correctness legs the kintera
+version is the one the V3 CI pins at the V3 head (`2.6.13` once the move commit lands; `2.6.12` before
+it), and the baseline is built against that same kintera package, so a byte-identical result isolates
+snapy: kintera 2.6.13's exact SI Rgas alone moves every moist dump at the 1e-9 level, so a baseline on
+its own CI pin (2.6.9 at deeabfee) cannot be compared byte for byte with V3 on 2.6.13. A baseline built
+on its own pin (Xinyue's dart2 builds) is still the right thing for the base_a vs base_b controls, and
+it bounds the kintera effect on its own if the same tree is also built on 2.6.13. deeabfee's CMake
+floor is `find_package(Kintera 2.6.9)`, so 2.6.13 satisfies it; whether the tree builds against
+2.6.13 is checked on this node before the runs start (result pinned in the thread).
 
 ## Legs, decks and who runs them
 
 | leg | decks | compare | CUDA sm_90 + x86 (this node, Sihe) | sm_120 (Zoey) | sm_61 (Jiheng) | arm64, NETCDF=ON (Jiachen) | macOS MPS (fork CI) |
 |---|---|---|---|---|---|---|---|
-| #349 dump set | 23 cases of `aam/dumpset349/tools/dumpset349/dumpset349.py` (20 rk3 steps, `hydro_u` + `scalar_s`), FP64 and FP32 | byte-identical per file; `compare.py` lists differing cases | CPU + CUDA | CUDA | CUDA | CPU | — |
-| #348 face decks | 8 decks of `aam/w2so/h348_face.py` (the face-gravity subset of harness #348; the cell decks are refused since I-7) | identical 8/8, worst energy-row rel diff | CPU + CUDA | CUDA | CUDA | CPU | — |
-| nb/pz | 49 dumps of `aam/nbpz/tools/gate_nbpz/gate_nbpz.py` (cart3d, cart3d_pert, sph_face × 5 layouts; sph_co4/sph_centroid fail on both trees) | byte-identical | CPU | — | — | CPU | — |
-| x1_golden | 5 cases / 200 dumps of `aam/x1g/tools/v3/x1_golden` (`run_gate.sh`: base_a, base_b, step, step_perturb) | identical; base_a vs base_b must be 200/200 | CPU + CUDA | CUDA | — | — | — |
+| #349 dump set | 23 cases of `docs/v3/closing/tools/dumpset349/dumpset349.py` (20 rk3 steps, `hydro_u` + `scalar_s`), FP64 and FP32 | byte-identical per file; `compare.py` lists differing cases | CPU + CUDA | CUDA | CUDA | CPU | — |
+| #348 face decks | 8 decks of `docs/v3/closing/tools/h348_face.py` (the face-gravity subset of harness #348; the cell decks are refused since I-7) | identical 8/8, worst energy-row rel diff | CPU + CUDA | CUDA | CUDA | CPU | — |
+| nb/pz | 49 dumps of `docs/v3/closing/tools/gate_nbpz/gate_nbpz.py` (cart3d, cart3d_pert, sph_face × 5 layouts; sph_co4/sph_centroid fail on both trees) | byte-identical | CPU | — | — | CPU | — |
+| x1_golden | 5 cases / 200 dumps of `docs/v3/closing/tools/x1_golden` (`run_gate.sh`: base_a, base_b, step, step_perturb) | identical; base_a vs base_b must be 200/200 | CPU + CUDA | CUDA | — | — | — |
 | serial ctest by name | the `gates.sh` subset regex (below), `ctest -j 1` | every common entry keeps its verdict; new entries listed | x86 CPU (no GPU) + CUDA | CUDA | CUDA | CPU | CI runs the full suite |
 | moist-mixture decks | Jiheng's 7-deck set | identical | — | — | CUDA | — | — |
 | speed table | `aam/speed`: straka_hllc, `examples/straka.yaml`, cart3d_pert_64 (1 rank, 4 ranks), cubed6_moist (6 ranks CPU; 1 process 6 blocks CUDA) eager and cuda-graph on the same GPU, cart3d_moist_64 | ms/step medians, before/after ratio, graph speed-up | CPU + one H100, interleaved before/after, 3 reps | — | — | — | — |
@@ -32,6 +38,14 @@ Legs marked "—" are not run on that machine. Each owner posts one message per 
 the device, the kintera version, the counts and the worst difference.
 
 ## Commands (this node; the other machines substitute their paths)
+
+The gate tools are vendored at `docs/v3/closing/tools/` on this branch (dumpset349, gate_nbpz, x1_golden,
+harness348 + `h348_face.py`, and `gates.sh` for the ctest regex), so every machine runs the same files;
+`aam/...` below is this node's checkout of the same tools. `build-x1` is the CMake build directory the
+tree was configured in (whatever name a machine used). snapy's CMakeLists overrides
+`CMAKE_CUDA_ARCHITECTURES` with its own list (a fat binary, sm_60 to sm_120 on nvcc 12.9), so the `=90`
+in the flags below has no effect anywhere and is harmless: each comparison is one binary against another
+on the same device.
 
 Build one tree (`NAME`, `SHA`), package it, and verify the import (`aam/final/build_head.sh`):
 
@@ -48,7 +62,9 @@ Correctness legs, base vs step (same device compared only with itself; a base_a 
     OUT=DIR PYTHON=python bash aam/x1g/tools/v3/x1_golden/run_gate.sh {cpu,cuda} PREFIX_base PREFIX_step
     cd build-x1 && PYTHONPATH=$PKG:$HK ctest -j 1 --timeout 900 -R "$RE" --output-on-failure   # then verdicts by name, sorted, diffed
 
-with `RE` = the `gates.sh` subset: axial|aam|closure|global_phase|coriolis|register|diffusion|radial|cubed|sphere|seam|exchange|implicit|vic|straka|shallow|redo|mesh|conservation|budget|options|gnomonic|momentum|hydro|split|combine|restart|output|coordinate|eos|riemann|reconstruct|scalar|fp32|sedimentation|forcing|capture|stage_executor|positivity|user|jit|netcdf
+Eigen entries caught by the regex (for example `autodiff_scalar_*`) have no executable and show as
+`Not Run` on both sides; they are ignored in the by-name diff. The restart and NetCDF tests fail on a
+`NETCDF=OFF` build on both sides for the same reason. With `RE` = the `gates.sh` subset: axial|aam|closure|global_phase|coriolis|register|diffusion|radial|cubed|sphere|seam|exchange|implicit|vic|straka|shallow|redo|mesh|conservation|budget|options|gnomonic|momentum|hydro|split|combine|restart|output|coordinate|eos|riemann|reconstruct|scalar|fp32|sedimentation|forcing|capture|stage_executor|positivity|user|jit|netcdf
 
 Speed table (`aam/speed/run_all.sh`, one GPU, before and after interleaved, 3 reps per cell; CPU cells
 30 steps after 3 warm-up, CUDA cells 100 steps after 5; `bench.py` times each step with

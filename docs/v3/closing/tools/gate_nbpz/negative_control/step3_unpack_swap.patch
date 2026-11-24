@@ -1,0 +1,13 @@
+diff --git a/src/layout/exchange.cpp b/src/layout/exchange.cpp
+index 68d4826..aca7558 100644
+--- a/src/layout/exchange.cpp
++++ b/src/layout/exchange.cpp
+@@ -49,7 +49,7 @@ void Exchange::x1_rows(std::vector<torch::Tensor> fields, int m, bool faces,
+   };
+   auto unpack = [&](torch::Tensor const& rows, int start) {
+     for (int k = 0; k < nf; ++k)
+-      fields[k].narrow(-1, start, m).copy_(rows.narrow(-1, k * m, m));
++      fields[nf - 1 - k].narrow(-1, start, m).copy_(rows.narrow(-1, k * m, m));
+   };
+ 
+   std::vector<std::vector<torch::Tensor>> sbufs;

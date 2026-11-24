@@ -1,0 +1,53 @@
+# #348 harness deck full_cell_spherical-polar; initial state: h348.py initial_w(); dt = 304.16303230219506 s; 10 steps
+geometry:
+  type: spherical-polar
+  bounds:
+    x1min: 70000000.0
+    x1max: 71347606.382977
+    x2min: 1.3707963267948966
+    x2max: 1.7707963267948965
+    x3min: 0.0
+    x3max: 0.05
+  cells:
+    nx1: 45
+    nx2: 1
+    nx3: 1
+    nghost: 3
+dynamics:
+  equation-of-state:
+    type: ideal-gas
+    gammad: 1.403461
+    weight: 0.0023654232199582475
+    density-floor: 3.4682e-18
+    pressure-floor: 3.4682e-18
+    temperature-floor: 1.0e-06
+    limiter: true
+  reconstruct:
+    vertical:
+      type: weno5
+      scale: true
+      shock: false
+    horizontal:
+      type: weno5
+      scale: true
+      shock: false
+  riemann-solver:
+    type: lmars
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+    x2-inner: periodic
+    x2-outer: periodic
+    x3-inner: periodic
+    x3-outer: periodic
+integration:
+  type: rk3
+  cfl: 0.5
+  implicit-scheme: 9
+  nlim: -1
+  tlim: 1000000000.0
+forcing:
+  const-gravity:
+    grav1: -23.1
+    gravity-work: cell

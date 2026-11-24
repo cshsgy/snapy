@@ -1,0 +1,59 @@
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+    x2-inner: reflecting
+    x2-outer: reflecting
+    x3-inner: periodic
+    x3-outer: periodic
+distribute:
+  blocks_per_process: 1
+  layout: cubed
+  nb1: 2
+  nb2: 1
+  nb3: 1
+dynamics:
+  equation-of-state:
+    density-floor: 1.0e-12
+    gammad: 1.4
+    limiter: true
+    pressure-floor: 1.0e-12
+    temperature-floor: 1.0e-12
+    type: ideal-gas
+    weight: 8.31446
+  reconstruct:
+    horizontal:
+      scale: false
+      shock: false
+      type: weno5
+    vertical:
+      scale: false
+      shock: false
+      type: weno5
+  riemann-solver:
+    type: lmars
+forcing:
+  const-gravity:
+    grav1: -1.0
+    gravity-work: cell
+    non-hydrostatic: 1.0
+geometry:
+  bounds:
+    x1max: 7.0
+    x1min: 5.0
+    x2max: 1.6207963267948966
+    x2min: 1.5207963267948965
+    x3max: 0.1
+    x3min: 0.0
+  cells:
+    nghost: 3
+    nx1: 32
+    nx2: 1
+    nx3: 1
+  type: spherical-polar
+integration:
+  cfl: 0.4
+  implicit-scheme: 0
+  nlim: -1
+  tlim: 1000000000.0
+  type: rk3
