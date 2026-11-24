@@ -12,15 +12,17 @@ compares a V3 build against a baseline build made with the same flags, on the sa
 | V3 side | the final `v3/final` head after the graph stack merges (`git ls-remote https://github.com/UCzhangxi/snapy.git v3/final`, pinned in every post) | every leg |
 
 Both sides are built from a clean worktree at the pinned sha with the same CMake flags, the same
-kintera and pyharp packages on `PYTHONPATH`, and the same torch. For the correctness legs the kintera
-version is the one the V3 CI pins at the V3 head (`2.6.13` once the move commit lands; `2.6.12` before
-it), and the baseline is built against that same kintera package, so a byte-identical result isolates
-snapy: kintera 2.6.13's exact SI Rgas alone moves every moist dump at the 1e-9 level, so a baseline on
-its own CI pin (2.6.9 at deeabfee) cannot be compared byte for byte with V3 on 2.6.13. A baseline built
-on its own pin (Xinyue's dart2 builds) is still the right thing for the base_a vs base_b controls, and
-it bounds the kintera effect on its own if the same tree is also built on 2.6.13. deeabfee's CMake
-floor is `find_package(Kintera 2.6.9)`, so 2.6.13 satisfies it; whether the tree builds against
-2.6.13 is checked on this node before the runs start (result pinned in the thread).
+kintera and pyharp packages on `PYTHONPATH`, and the same torch. Kintera rule (round 3, agreed with Xi
+2026-11-24): every correctness leg and every speed leg builds both sides on **kintera 2.6.12**, the last
+version both trees build against. V3 ships pinned to 2.6.13 (the move commit), but main deeabfee reads
+`pthermo->nfail_` in `src/mesh/meshblock_redo.cpp:124-126`, and 2.6.13 dropped that member (kintera #159,
+K5); the baseline is not patched. The kintera effect is measured on its own by one extra V3-only leg,
+V3@2.6.12 vs V3@2.6.13 on this node (on d3178f20 it was 44/49 nb/pz dumps differing at <= 1.1e-9
+relative, the 5 dry sphere dumps identical, and only the seam test's energy sum moving among ctest
+verdicts). The closing PR body states both comparisons and that V3 ships pinned to 2.6.13. The V3 side of
+every leg, including the V3-only one, is the final `v3/final` head after the graph stack merges; deeabfee
+and 730b3500 are only ever the baselines. A baseline built on its own CI pin (2.6.9, Xinyue's dart2
+builds) is valid for the base_a vs base_b controls only.
 
 ## Legs, decks and who runs them
 
@@ -32,6 +34,7 @@ floor is `find_package(Kintera 2.6.9)`, so 2.6.13 satisfies it; whether the tree
 | x1_golden | 5 cases / 200 dumps of `docs/v3/closing/tools/x1_golden` (`run_gate.sh`: base_a, base_b, step, step_perturb) | identical; base_a vs base_b must be 200/200 | CPU + CUDA | CUDA | — | — | — |
 | serial ctest by name | the `gates.sh` subset regex (below), `ctest -j 1` | every common entry keeps its verdict; new entries listed | x86 CPU (no GPU) + CUDA | CUDA | CUDA | CPU | CI runs the full suite |
 | moist-mixture decks | Jiheng's 7-deck set | identical | — | — | CUDA | — | — |
+| V3@2.6.12 vs V3@2.6.13 (kintera effect alone) | the #349 dump set, nb/pz, the seam ctest; same V3 head built against the 2.6.12 and the 2.6.13 package | per-file max relative difference; the list of differing cases; ctest verdicts by name | CPU + CUDA | — | — | — | — |
 | speed table | `aam/speed`: straka_hllc, `examples/straka.yaml`, cart3d_pert_64 (1 rank, 4 ranks), cubed6_moist (6 ranks CPU; 1 process 6 blocks CUDA) eager and cuda-graph on the same GPU, cart3d_moist_64 | ms/step medians, before/after ratio, graph speed-up | CPU + one H100, interleaved before/after, 3 reps | — | — | — | — |
 
 Legs marked "—" are not run on that machine. Each owner posts one message per leg with both full shas,
