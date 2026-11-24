@@ -1,10 +1,12 @@
-# V3 closing PR body (draft)
+# V3 closing PR body (draft, r2)
 
-Draft for the closing PR `v3/final` -> `main`. Written 2026-11-24 against `v3/final`
-f703419432858ffcbf245d956a026f1b7d16e2ca; the graph stack (graph-ab-d, C4, C, the Mesh-agreement
-commit) is not in that head yet, so its rows below are written from the lane posts and are marked
-"pending" until the trial integration (`v3-closing/trial-on-f7034194`) and then the merged head
-replace them. Every sha is a commit on `v3/final` unless a fork is named.
+Draft for the closing PR `v3/final` -> `main`. r2 written 2026-11-24 against `v3/final`
+833aca42 (f7034194 + F13 f4fa5f63 + F9 833aca42); the graph stack (graph-ab-d, C4, C-on-C4, the
+Mesh-agreement commit) is not in that head yet, so its rows below are written from the lane posts and
+are marked "pending" until the merged head replaces them. The dry-run and speed tables carry the
+rehearsal numbers from the trial integration head 92418563 (happysky19/snapy
+`v3-closing/trial-on-f7034194` = f7034194 + graph-ab-d + B3 + C4) and are re-run on the merged head.
+Every sha is a commit on `v3/final` unless a fork is named.
 
 ## What V3 changes
 
@@ -46,10 +48,8 @@ f7034194 (99 commits on the base before the graph stack). By lane:
   sound speed in one place, be018f65; the deck readers take their defaults from the option tables).
   Audit 2 rows F1-F8, F10-F12, F14-F16 (0456087d, f8c0c66d, fec6b5e3, 14c7b221, b5212677: unreached
   code, unread fields, commented-out code, one-caller wrappers, a duplicate ctest entry). Option
-  defaults read from their option structs (b9632696, 80ac12e9, c07afc5d, 1477afb0, d1eae7bf). F13 and
-  F9 (the two unread output options; the six unused `Quantity` rows) are pending on
-  happysky19/snapy `v3-closing/f13-f9-f7034194` (c57138ae, f173a0c2) and join this list when they
-  land.
+  defaults read from their option structs (b9632696, 80ac12e9, c07afc5d, 1477afb0, d1eae7bf). F13
+  (the two unread output options, f4fa5f63) and F9 (the six unused `Quantity` rows, 833aca42).
 - **Build and CI.** kintera 2.6.11 from PyPI instead of a source build (b541a6db), then 2.6.12 on
   every leg (1497416a, 7d48cfa4), then 2.6.13 on every leg with the seam energy reference re-recorded
   (f7034194; see "kintera pin"). The parallel tests keep `snap_cu` linked (750a5b09). `SNAP_SQR` is a
@@ -102,6 +102,11 @@ NetCDF, the six nb/pz sph cell runs (refused since I-7).
   `docs/v3/closing/dry_run_plan.md` (round 3): the correctness and speed legs build **both sides on
   kintera 2.6.12**, and one V3-only leg, V3@2.6.12 vs V3@2.6.13, measures the kintera effect by
   itself. Both comparisons are reported below.
+- Building a V3 head on 2.6.12: heads after f7034194 carry `find_package(Kintera 2.6.13 REQUIRED)`
+  and refuse the 2.6.12 package at configure. The dry-run driver (`docs/v3/closing/tools/dryrun.sh`)
+  lowers that one floor to 2.6.12 for the k2612 configure only and restores the tree (markers
+  `DRYRUN_<name>_k2612_FLOOR_LOWERED` / `TREE_RESTORED` in its log); no source changes. The seam
+  test is RED on 2.6.12 by design (its reference is 2.6.13's).
 
 ## Follow-ups (not in this PR)
 
@@ -116,33 +121,49 @@ NetCDF, the six nb/pz sph cell runs (refused since I-7).
 - Known, not changed: the single-block gnomonic decks' sensitivity to the boundary.prescribed item
   (declared in wave 2); test_python_import_path depends on the sandbox's Python path.
 
-## Dry-run table (placeholder; filled from the rehearsal on the trial head, then the merged head)
+## Dry-run table (rehearsal on the trial head 92418563; re-run on the merged head)
 
 Both sides on kintera 2.6.12 unless the row says otherwise; base = main deeabfee built from a clean
-worktree with the plan's flags; "identical" means byte-identical per file.
+worktree with the plan's flags; "identical" means byte-identical per file. The sm_90 column is the
+2026-11-24 rehearsal (CPU + H100, Sihe); the other owners' columns fill in on the merged head.
 
 | leg | device (owner) | base_a vs base_b | base vs V3 | differing cases and worst bound | attributed to |
 |---|---|---|---|---|---|
-| #349 dump set FP64 (23 cases) | CPU + CUDA sm_90 (Sihe); sm_120 (Zoey); sm_61 (Jiheng); sm_75 (Xinyue) | | | | |
-| #349 dump set FP32 (23 cases) | same | | | | |
-| #348 face decks (8) | CPU + CUDA sm_90; sm_120; sm_61 | | | | |
-| nb/pz (49 dumps) | CPU (Sihe, Xinyue) | | | | |
-| x1_golden (5 cases, 200 dumps) | CPU + CUDA sm_90; sm_120; sm_75 | | | | |
-| serial ctest by name (gates.sh subset) | CPU + CUDA sm_90; sm_120; sm_61; sm_75 | | | verdict changes by name | |
+| #349 dump set FP64 (23 cases) | CPU + CUDA sm_90 (Sihe); sm_120 (Zoey); sm_61 (Jiheng); sm_75 (Xinyue) | identical x4 (CPU, CUDA; a, b) | 19/23 identical | 4 moist cases, rel_to_max 1.20e-13 CPU / 1.53e-13 CUDA | EF-13 (summation order) |
+| #349 dump set FP32 (23 cases) | same | identical x4 | 21 files differ | rel_to_max <= 1.0e-4; FP32-vs-own-FP64 ratio 0.86-1.35 CPU / 0.71-1.46 CUDA (same as W3) | C9 re-baseline |
+| #348 face decks (8) | CPU + CUDA sm_90; sm_120; sm_61 | identical | 8/8 identical, both devices | none | - |
+| nb/pz (49 dumps) | CPU (Sihe, Xinyue) | identical | 44/49 differ | max rel 4.3e-15; 6 sph_co4/sph_centroid runs refused on both trees (gravity-work cell removed in I-7) | round-off |
+| x1_golden (5 cases, 200 dumps) | CPU + CUDA sm_90; sm_120; sm_75 | 200/200 both devices | CPU 152/200, CUDA 160/200 identical | cart_moist_fp64, cubed6_fp64 bitwise; jupiter_crm_fp64 5.0e-13 CPU / 9.5e-13 CUDA (1-ulp mutant 7.0e-13 / 4.3e-13); jupiter_crm_fp32 1.6e-5 / 6.0e-6; cart_moist_fp32 2.4e-4 (mutant level) | EF-13; C9 |
+| serial ctest by name (gates.sh subset) | CPU + CUDA sm_90; sm_120; sm_61; sm_75 | n/a | 141 -> 160 entries | 141 common keep their verdicts except test_sedimentation_cubed_seam.release/_gloo Passed -> Failed (designed RED on 2.6.12); +19 V3 entries (17 Passed; test_budget/_cuda Failed = NETCDF=OFF build; test_netcdf_cubed_lonlat_python Skipped); -1 test_hydro_ref_x1_stretched_cuda (audit-2 duplicate) | seam reference = 2.6.13; F15 |
 | moist-mixture decks (7) | CUDA sm_61 (Jiheng) | | | | |
-| V3@2.6.12 vs V3@2.6.13 (kintera effect alone) | CPU + CUDA sm_90 (Sihe) | n/a | | | kintera 2.6.13 Rgas |
+| V3@2.6.12 vs V3@2.6.13 (kintera effect alone) | CPU + CUDA sm_90 (Sihe) | n/a | #349 FP64 4 moist cases 1.32e-10, FP32 byte-identical; nb/pz max rel 1.1e-9; ctest 160 -> 160, only the two seam tests Failed -> Passed | as listed | kintera 2.6.13 Rgas (3.1e-7) |
 
-## Speed table (placeholder; `aam/speed`, before = main 730b3500, after = V3, both on kintera 2.6.12)
+## Speed table (rehearsal on the trial head; `docs/v3/closing/tools/speed`, before = main 730b3500, after = V3, both on kintera 2.6.12)
 
-One GPU (H100) and the CPU, before and after interleaved, 3 reps per cell; medians of ms/step.
+One GPU (H100, shared) and the CPU, before and after interleaved, 3 reps per cell; medians of
+ms/step. Gate (Xi, 2026-11-24): S1 V3 cuda-graph <= main eager; S2 V3 cuda-graph < V3 eager; S3 the
+cubed sphere with the implicit solve on, 6 blocks in one process, dt changing every step, captures
+with no dt recapture and meets S1. The RTX 5090 table (Zoey) is added on the merged head.
 
-| deck | device | before ms/step (730b3500 eager) | after ms/step (V3 eager) | after ms/step (V3 cuda-graph) | after/before | graph speed-up |
-|---|---|---|---|---|---|---|
-| straka_hllc | CPU | | | n/a | | n/a |
-| straka_hllc | H100 | | | | | |
-| examples/straka.yaml | CPU | | | n/a | | n/a |
-| examples/straka.yaml | H100 | | | | | |
-| cart3d_pert_64 (1 rank) | CPU / H100 | | | | | |
-| cart3d_pert_64 (4 ranks) | CPU | | | n/a | | n/a |
-| cubed6_moist (6 ranks CPU; 1 process 6 blocks CUDA) | CPU / H100 | | | | | |
-| cart3d_moist_64 | CPU / H100 | | | | | |
+| deck | device | before ms/step (730b3500 eager) | after ms/step (V3 eager) | after ms/step (V3 cuda-graph) | eager after/before | S1 | S2 |
+|---|---|---|---|---|---|---|---|
+| straka_hllc FP64 (moist-dry, HLLC) | CPU | 59.26 | 64.75 | n/a | 1.09 | n/a | n/a |
+| straka_hllc FP64 | H100 | 20.24 | 22.06 | 11.74 | 1.09 | pass | pass |
+| straka_hllc FP32 | H100 | 21.15 | 25.00 | 12.46 | 1.18 | pass | pass |
+| examples/straka.yaml (ideal-gas, LMARS) | CPU | 43.72 | 44.31 | n/a | 1.01 | n/a | n/a |
+| examples/straka.yaml | H100 | 13.64 | 17.38 | not capturable (ideal-gas, lmars) | 1.27 | n/a | n/a |
+| cart3d_pert_64 (1 rank) | CPU | 2826.99 | 2732.83 | n/a | 0.97 | n/a | n/a |
+| cart3d_pert_64 (4 ranks) | CPU | 857.92 | 858.71 | n/a | 1.00 | n/a | n/a |
+| cart3d_pert_64 | H100 | 62.37 | 63.96 | 46.36 | 1.03 | pass | pass |
+| cubed6_moist (6 ranks) | CPU | 215.08 | 239.17 | n/a | 1.11 | n/a | n/a |
+| cubed6_moist (1 process, 6 blocks) | H100 | 122.66 | 152.88 | not capturable (deck has no forcing) | 1.25 | n/a | n/a |
+| S3: cubed6_moist + implicit 9 + const-gravity, 6 blocks, dt new every step | H100 | 167.42 | 191.59 | 80.05 (dt fixed 80.57); captures 18 = 18, replays 1890 | 1.14 | pass | pass, S3 pass |
+| dt new every step vs fixed (straka_hllc FP64 graph) | H100 | - | 23.63 | 11.71 vs 11.73; captures 3 = 3 | - | - | no recapture |
+
+Every capturable deck passes S1 and S2 and S3 passes. The one miss is the eager path: V3 eager is
+slower than main eager on every deck (9-27%). Profile (torch.profiler, full op table, both Straka
+decks): aten calls per step 6234 -> 7902; the added ops are the per-stage on-device event counters
+(src/riemann/riemann.cpp:338,341; src/recon/reconstruct.cpp:280,290,296; src/recon/conversion.cpp:46,101;
+src/hydro/flux_register.cpp:66), each a compare + sum + add_; small eager decks are launch-bound.
+Inside a graph they replay for free. Open: fold them into the kernels, accumulate once per step, or
+make them opt-in (Xi's call, see the thread).

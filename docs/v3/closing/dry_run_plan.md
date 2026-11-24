@@ -16,7 +16,11 @@ kintera and pyharp packages on `PYTHONPATH`, and the same torch. Kintera rule (r
 2026-11-24): every correctness leg and every speed leg builds both sides on **kintera 2.6.12**, the last
 version both trees build against. V3 ships pinned to 2.6.13 (the move commit), but main deeabfee reads
 `pthermo->nfail_` in `src/mesh/meshblock_redo.cpp:124-126`, and 2.6.13 dropped that member (kintera #159,
-K5); the baseline is not patched. The kintera effect is measured on its own by one extra V3-only leg,
+K5); the baseline is not patched. Heads after f7034194 carry `find_package(Kintera 2.6.13 REQUIRED)`
+and refuse the 2.6.12 package at configure: the driver (`tools/dryrun.sh`) lowers that one floor to
+2.6.12 for the k2612 configure only and restores the tree (markers `DRYRUN_<name>_k2612_FLOOR_LOWERED`
+/ `TREE_RESTORED`), and the seam test is RED on 2.6.12 by design (its reference is 2.6.13's). The
+kintera effect is measured on its own by one extra V3-only leg,
 V3@2.6.12 vs V3@2.6.13 on this node (on d3178f20 it was 44/49 nb/pz dumps differing at <= 1.1e-9
 relative, the 5 dry sphere dumps identical, and only the seam test's energy sum moving among ctest
 verdicts). The closing PR body states both comparisons and that V3 ships pinned to 2.6.13. The V3 side of
@@ -78,6 +82,16 @@ Speed table (`aam/speed/run_all.sh`, one GPU, before and after interleaved, 3 re
 `launch.sh` maps `before` to the 730b3500 package and `after` to the V3 package; the cubed-sphere
 6-block deck runs eager and `execution: cuda-graph` on the same GPU (a Mesh may refuse the capture:
 the table then records the refusal reason, as speed.md does today).
+
+Speed gate (Xi, 2026-11-24), marked per deck that captures: S1 V3 cuda-graph ms/step <= main 730b3500
+eager; S2 V3 cuda-graph < V3 eager; S3 the cubed sphere with the implicit solve on, 6 blocks in one
+process, dt changing every step, captures with no dt recapture (captures equal for varying and fixed
+dt) and meets S1. Any miss is a V3 defect and gets a profile (`bench.py --profile N` writes a
+torch.profiler table next to the json). S3 runs `tools/speed/run_s3.sh` on
+`tools/speed/cubed6_moist_implicit.yaml`: the shipped cubed6_moist has no forcing (the V3 head refuses
+the capture with "forcing is not const-gravity alone"), so the S3 deck adds `implicit-scheme: 9` and
+const-gravity `grav1: -1.248`, the value that keeps the bench's isothermal column hydrostatic (at -9.8
+the implicit solve goes non-finite by step 7 on both trees). Owners: H100 (Sihe), RTX 5090 (Zoey).
 
 ## Rules
 
