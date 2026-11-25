@@ -1,8 +1,8 @@
 # S4: the eager-path launch gap and the ruled bound
 
-Status: **complete for the default commit `8854ccd4`** (5090 in 5.4, H100 in 5.3); the report
-re-pins to the closing head when it lands. Chapters 11 and 16 of the technical report
-cite this file; it carries the S4 table and the bound, nothing else.
+Status: **complete for the landed head `4c023985`** (`v3/final`; 5090 in 5.5, H100 in 5.6); the
+default-commit numbers at `8854ccd4` stay in 5.3 and 5.4. Chapters 11 and 16 of the technical
+report cite this file; it carries the S4 table and the bound, nothing else.
 
 ## 1. The bound as ruled
 
@@ -152,6 +152,51 @@ cell. Launches/step main / default / explicit eager: c1 1840 / 2019 / 2001, c3 3
 35328; the default's count includes the kernels replayed inside the graphs, and what the host
 issues per step drops to 15 on c1 and about 1670 on c3.
 
+### 5.5 RTX 5090, the landed head
+
+`v3/final` at `4c023985` (12 commits on `939f7928`: #316, the default, the wall batch and its MPS
+operands, the EfStatus save list) against main `730b3500` on the idle RTX 5090 under the setup of
+5.4 (clean CUDA Release builds of both heads; 3 interleaved reps of 100 steps after 5 warm-up
+steps; ms/step).
+
+| cell | main eager | head, no key (default) | head, `execution: eager` | default / main | eager / main |
+|---|---|---|---|---|---|
+| c1 | 7.374 | 3.628 | 8.239 | 0.492 | 1.117 |
+| c1 FP32 | 7.957 | 3.764 | 8.985 | 0.473 | 1.129 |
+| c1d | 5.138 | 2.607 | 5.862 | 0.507 | 1.141 |
+| c3 | 36.709 | 19.524 | 45.763 | 0.532 | 1.247 |
+| S3 | 46.183 | 27.042 | 55.549 | 0.586 | 1.203 |
+
+Bound 1 holds on every cell. The default captures every cell with no refusal and its end state is
+byte-identical to explicit eager in every rep. Against `8854ccd4` (5.4) the default is 1-2 % slower
+with 23-156 more eager launches per step, the cost of the wall-batch and EfStatus save-list
+entries. Same host: the serial ctest by name gives 259 passed / 3 failed / 3 skipped of 265 on the
+head against 256 / 3 / 3 of 262 on `939f7928`, no name changed verdict, the three new tests pass;
+#349 on CUDA is byte-identical to `939f7928` in FP64 and FP32 for the default and for explicit
+eager.
+
+### 5.6 H100, the landed head (shared node)
+
+Same node and caveat as 5.2 (host load 68-80, every GPU busy with another user's job). CPU eager,
+3 interleaved reps of 30 steps after 3 warm-up steps, ms/step as the median of the 3 run medians
+with the run medians in brackets:
+
+| cell | main `730b3500` eager | head `4c023985` eager | head / main |
+|---|---|---|---|
+| c1 (1 rank, 8 threads) | 58.96 [56.56, 58.96, 59.95] | 61.78 [60.39, 61.78, 63.78] | 1.048 |
+| c3 (6 ranks, 4 threads) | 217.64 [201.46, 217.64, 220.15] | 226.33 [221.82, 226.33, 247.69] | 1.040 |
+
+Both are within the 5 % bound; the spread of the run medians (up to 12 % on c3) is the host load,
+as in 5.2. #349 (23 cases) is byte-identical to `939f7928` in FP64 and FP32 on CPU and on CUDA.
+Serial ctest by name, both heads built clean on this node: CUDA 246 passed / 14 failed / 5 skipped
+of 265 against 243 / 14 / 5 of 262, the 14 names identical on both sides and all environmental
+(the torchrun tests' fixed port while a second ctest ran on the node, the two-GPU ucx test under a
+one-GPU pin, the restart and netcdf tests' output lookup on this node); CPU 199 passed / 12
+failed / 19 skipped of 230 against 199 / 12 / 16 of 227, the 12 names identical. Six multi-process
+names on the `939f7928` side first failed on the torchrun port while the two runs overlapped and
+were rerun serially: they pass on both heads. No name changed verdict; the three new tests pass on
+both devices.
+
 ## 6. Reading
 
 The eager gap is launch-bound: the V3 eager step issues 9-21 % more launches than main on every
@@ -160,4 +205,4 @@ counts. The cuda-graph path replays the captured stages; on the shared H100 it r
 against 19-20 ms eager and S3 at 104 ms against 217 ms eager (same session as section 5.2). That is
 why cuda-graph became the CUDA default rather than closing the eager gap kernel by kernel: with
 the default commit the no-key path runs at 0.46-0.58 of main eager on the idle 5090 and 0.43-0.57
-on the shared H100, on every S4 cell.
+on the shared H100, on every S4 cell, and 0.47-0.59 on the idle 5090 at the landed head (5.5).
