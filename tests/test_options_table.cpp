@@ -78,7 +78,6 @@ TEST(options_table, pin_defaults) {
   EXPECT_TRUE(o.variables().empty());
   EXPECT_FALSE(o.double_precision());
   EXPECT_TRUE(o.combine());
-  EXPECT_FALSE(o.verbose());
 
   HydroOptionsImpl h;
   EXPECT_FALSE(h.verbose());
@@ -107,7 +106,7 @@ TEST(options_table, pin_report) {
             "* include_ghost_zones = 0\n"
             "* double_precision = 0\n* x1_slice = []\n* x2_slice = []\n"
             "* x3_slice = []\n* file_type = \n"
-            "* variables = []\n* combine = 1\n* verbose = 0\n");
+            "* variables = []\n* combine = 1\n");
   std::stringstream sh;
   HydroOptionsImpl().report(sh);
   EXPECT_EQ(sh.str(),
