@@ -782,6 +782,21 @@ if (NOT APPLE)
       LABELS "restart;examples"
     )
 
+    # a failed combine on the root rank stops every rank (two ranks, gloo)
+    add_test(
+      NAME test_combine_root_throw
+      COMMAND ${Python3_EXECUTABLE}
+              ${CMAKE_CURRENT_SOURCE_DIR}/run_combine_root_throw.py
+              --build-dir ${CMAKE_BINARY_DIR}
+              --build-type release
+    )
+    set_tests_properties(test_combine_root_throw PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+      TIMEOUT 300
+      SKIP_RETURN_CODE 125
+      LABELS "output;examples"
+    )
+
     set(restart_tests
       cycle_limit
       dt_change
