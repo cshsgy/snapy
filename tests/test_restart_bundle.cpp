@@ -123,3 +123,12 @@ TEST(RestartBundle, metadata_mismatches_are_still_refused) {
   // perturbation-flux needs the species reference
   EXPECT_THROW(check_restart_metadata(data, grid, true), c10::Error);
 }
+
+// A restart entry is always combined: `combine: false` on it is refused
+// instead of being silently overridden.
+TEST(RestartBundle, combine_false_is_refused) {
+  auto rst = OutputOptionsImpl::create();
+  rst->file_type("restart");
+  rst->combine(false);
+  EXPECT_ANY_THROW({ RestartOutput refused(rst); });
+}
