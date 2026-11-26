@@ -702,30 +702,13 @@ TEST(OutputPrecision, netcdf_double_precision_reads_back_exactly) {
   std::filesystem::remove(dir);
 }
 #else
-// NETCDF=OFF: a netcdf output writes nothing and returns, as NetcdfOutput did
-// (the netcdf sink used to be null there)
-TEST(OutputPrecision, netcdf_output_without_netcdf_writes_nothing) {
-  auto block = make_3d_block();
-  auto dir = std::filesystem::temp_directory_path() /
-             ("snapy_off_" +
-              std::to_string(reinterpret_cast<std::uintptr_t>(block.get())));
-  block->options->output_dir(dir.string());
-  block->options->basename("off");
-
+// NETCDF=OFF: a netcdf output is refused when its writer is built, as a
+// pnetcdf output is without PNETCDF=ON; it is not silently dropped
+TEST(OutputPrecision, netcdf_output_without_netcdf_is_refused) {
   auto opts = OutputOptionsImpl::create();
   opts->file_type("netcdf");
   opts->variables({"d"});
-  GriddedWriter output(opts);
-
-  int nc1 = block->pcoord->options->nc1();
-  int nc2 = block->pcoord->options->nc2();
-  int nc3 = block->pcoord->options->nc3();
-  int nvar = block->phydro->peos->nvar();
-  Variables vars;
-  vars["hydro_w"] = torch::ones({nvar, nc3, nc2, nc1}, torch::kFloat64);
-  vars["hydro_u"] = torch::ones_like(vars["hydro_w"]);
-  EXPECT_NO_THROW(output.write_output_file(block.get(), vars, 0.0, false));
-  EXPECT_FALSE(std::filesystem::exists(dir));
+  EXPECT_THROW({ GriddedWriter output(opts); }, std::runtime_error);
 }
 #endif
 
