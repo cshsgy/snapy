@@ -240,17 +240,8 @@ std::shared_ptr<Sink> make_netcdf_sink() {
   return std::make_shared<NetcdfSink>();
 }
 #else
-namespace {
-// NETCDF=OFF: a netcdf output writes nothing, as NetcdfOutput did
-class NoNetcdfSink : public Sink {
- public:
-  void write(MeshBlockImpl*, Frame const&, OutputOptionsImpl const&, int,
-             double) override {}
-};
-}  // namespace
-
 std::shared_ptr<Sink> make_netcdf_sink() {
-  return std::make_shared<NoNetcdfSink>();
+  throw std::runtime_error("Output type 'netcdf' requires NETCDF=ON.");
 }
 #endif  // NETCDFOUTPUT
 }  // namespace snap
