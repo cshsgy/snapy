@@ -11,6 +11,7 @@
 
 // snap
 #include <snap/coord/coordinate.hpp>
+#include <snap/utils/log.hpp>
 #include <snap/mesh/meshblock.hpp>
 
 #include "output_utils.hpp"
@@ -241,11 +242,18 @@ std::shared_ptr<Sink> make_netcdf_sink() {
 }
 #else
 namespace {
-// NETCDF=OFF: a netcdf output writes nothing, as NetcdfOutput did
+// NETCDF=OFF: a netcdf output writes nothing; the first write says so once
+// per process instead of leaving the deck's frames silently unwritten
 class NoNetcdfSink : public Sink {
  public:
   void write(MeshBlockImpl*, Frame const&, OutputOptionsImpl const&, int,
-             double) override {}
+             double) override {
+    static bool warned = false;
+    if (warned) return;
+    warned = true;
+    SINFO(NetcdfOutput) << "netcdf output requested but this build has "
+                           "NETCDF=OFF: nothing is written" << std::endl;
+  }
 };
 }  // namespace
 
