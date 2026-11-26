@@ -331,9 +331,29 @@ void combine_on_root(Layout const& layout, std::string const& key,
     }
   } release{layout};
 
-  if (layout->options->process_rank() == layout->options->process_root_rank()) {
-    root_work();
+  bool root =
+      layout->options->process_rank() == layout->options->process_root_rank();
+  if (!layout->has_process_group()) {
+    if (root) root_work();
+    return;
   }
+  // the root's failure is shared with every rank before anyone returns, so no
+  // rank carries on without the combined file
+  int failed = 0;
+  std::string what;
+  if (root) {
+    try {
+      root_work();
+    } catch (std::exception const& e) {
+      failed = 1;
+      what = e.what();
+    }
+  }
+  std::vector<torch::Tensor> status{torch::tensor({failed}, torch::kInt)};
+  layout->comm->allreduce(status, c10d::ReduceOp::MAX);
+  TORCH_CHECK(status[0].item<int>() == 0,
+              "[combine_on_root] combine failed on the root rank",
+              root ? ": " + what : std::string());
 }
 
 std::vector<std::string> glob_block_files(std::string const& pattern,
