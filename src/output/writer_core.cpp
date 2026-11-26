@@ -229,8 +229,6 @@ std::tuple<int, int, int, int, int, int> output_range(
   int ks = nc3 > 1 ? nghost : 0;
   int ke = nc3 > 1 ? nc3 - nghost - 1 : 0;
 
-  // FIXME: include_ghost zones probably doesn't work with grids other than
-  // CCC
   if (include_ghost_zones) {
     if (is != ie) {
       is -= nghost;
