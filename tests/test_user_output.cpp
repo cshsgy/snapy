@@ -702,9 +702,9 @@ TEST(OutputPrecision, netcdf_double_precision_reads_back_exactly) {
   std::filesystem::remove(dir);
 }
 #else
-// NETCDF=OFF: a netcdf output writes nothing and returns, as NetcdfOutput did
-// (the netcdf sink used to be null there)
-TEST(OutputPrecision, netcdf_output_without_netcdf_writes_nothing) {
+// NETCDF=OFF: a netcdf output writes nothing, and says so once on the first
+// write instead of staying silent (the deck asked for frames it will not get)
+TEST(OutputPrecision, netcdf_output_without_netcdf_warns_once) {
   auto block = make_3d_block();
   auto dir = std::filesystem::temp_directory_path() /
              ("snapy_off_" +
@@ -724,8 +724,17 @@ TEST(OutputPrecision, netcdf_output_without_netcdf_writes_nothing) {
   Variables vars;
   vars["hydro_w"] = torch::ones({nvar, nc3, nc2, nc1}, torch::kFloat64);
   vars["hydro_u"] = torch::ones_like(vars["hydro_w"]);
+  testing::internal::CaptureStdout();
   EXPECT_NO_THROW(output.write_output_file(block.get(), vars, 0.0, false));
+  EXPECT_NO_THROW(output.write_output_file(block.get(), vars, 1.0, false));
+  std::string out = testing::internal::GetCapturedStdout();
   EXPECT_FALSE(std::filesystem::exists(dir));
+  std::string line = "netcdf output requested but this build has NETCDF=OFF";
+  auto first = out.find(line);
+  EXPECT_NE(first, std::string::npos) << out;
+  if (first != std::string::npos)
+    EXPECT_EQ(out.find(line, first + 1), std::string::npos)
+        << "warned more than once:\n" << out;
 }
 #endif
 
