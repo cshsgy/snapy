@@ -33,8 +33,9 @@ constexpr char kRestartBundleMagic[] = "SNAPY_RESTART_BUNDLE_V1";
 
 RestartOutput::RestartOutput(OutputOptions const& options_)
     : OutputType(options_) {
-  // restart files are always combined
-  options->combine(true);
+  // restart files are always combined: a deck that turns it off is refused
+  TORCH_CHECK(options->combine(),
+              "restart: combine must stay on; restart files are always combined");
 }
 
 void RestartOutput::write_output_file(MeshBlockImpl* pmb, Variables const& vars,
