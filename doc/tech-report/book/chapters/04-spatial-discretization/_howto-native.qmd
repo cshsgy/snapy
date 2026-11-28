@@ -317,7 +317,8 @@ geometry ignores `face_pressure1` ([`src/coord/coordinate.cpp:698`](https://gith
 ([`README.md:65`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/README.md#L65)):
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DNETCDF=ON -DBUILD_TESTS=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DNETCDF=ON \
+  -DBUILD_TESTS=ON
 cmake --build build --parallel 3
 python -m pip install --no-build-isolation --no-deps .
 ```

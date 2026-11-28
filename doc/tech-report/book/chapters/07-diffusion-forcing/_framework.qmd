@@ -384,16 +384,16 @@ increment to $2.8\times10^{-17}$, and is not formed without tracers.
 
 The ctest cases run on CPU[^rg-9dfff25f07b9], one rank; there is no CUDA or multi-rank arm. They pass at the pin.[^fw-ctest]
 
+[^fw-run]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the check itself, seed 21; run: `python3 src/snapy_report/ch07/checks/framework_check.py`,
+    CPU, double, 1 process; Python 3.12.6, numpy 2.5.5, sympy 1.14.0; output identical to the committed file]. Output `framework_check.out`, lines `[C1]`–`[C3]`.
+    Re-run of the committed numpy port from the report directory at the pin (and, byte-identical, at the previous pin); this does not execute snapy.
+
 [^fw-ctest]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own inputs; run: `ctest -j1
     --output-on-failure -R <pattern>`, with anchored patterns over the 25 ctests this chapter cites, in the `tests`
     directory of a README CUDA Release build at the pin; CPU, and two visible CUDA GPUs (Quadro RTX 4000) for the CUDA
     and two-device arms; Python 3.11.13, torch 2.10.0+cu128, numpy 2.4.6, kintera 2.6.13, pyharp 2.8.2]. 24 of the 25
     ctests passed; `test_diffusion_cubed_sphere_two_gpu.release`, registered as one process, skipped by design, and
     its two-rank registration passed.
-
-[^fw-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the check itself, seed 21; run: `python3 src/snapy_report/ch07/checks/framework_check.py`,
-    CPU, double, 1 process; Python 3.11.13, numpy 2.4.6, sympy 1.14.0; output identical to the committed file]. Output `framework_check.out`, lines `[C1]`–`[C3]`.
-    Re-run of the committed numpy port from the report directory; this does not execute snapy.
 
 ### Limits
 

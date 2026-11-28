@@ -18,6 +18,9 @@ replaces the cell work in every stage. The cell work is still computed, because 
 hydro then subtracts it and adds the face work. This section states the forcing, the refusal, and why the cell form
 is not offered: its work is exact in each cell but its budget does not close, @eq-ch06-cell-defect.
 
+`gravity-work` and `gravity-work-fixer` are the retired `const-gravity` keys: the deck reader refuses them as
+unknown, with any value.
+
 ::: {.callout-note title="At a glance"}
 **Purpose.** The body force of constant gravity and its cell work, @eq-ch06-cell-work; the cell form as a booking is refused.
 

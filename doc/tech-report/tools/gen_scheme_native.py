@@ -17,6 +17,24 @@ TARGET = 'book/chapters/04-spatial-discretization/_howto-native.qmd'
 PIN = '0d5caacbd8e365c87a30af6ce043c39ab30c0959'
 
 
+def shell_wrap(block, width=78):
+    """Break a shell line longer than `width` at spaces, with the shell's backslash continuation."""
+    out = []
+    for line in block.splitlines():
+        if len(line) <= width:
+            out.append(line)
+            continue
+        cur = ''
+        for word in line.split(' '):
+            if cur and len(cur) + 1 + len(word) > width - 2:
+                out.append(cur + ' \\')
+                cur = '  ' + word
+            else:
+                cur = f'{cur} {word}' if cur else word
+        out.append(cur)
+    return '\n'.join(out)
+
+
 def generate(report):
     repo, sha = code_anchors.read_pin(report / 'code_pin.yml')
     if sha != PIN:
@@ -112,6 +130,7 @@ def generate(report):
     rebuild, rebuild_cite = excerpt('README.md',
         r'^cmake -S \. -B build -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DNETCDF=ON -DBUILD_TESTS=ON\ncmake --build build --parallel 3')
     install, install_cite = excerpt('README.md', r'^python -m pip install --no-build-isolation --no-deps \.$')
+    rebuild, install = shell_wrap(rebuild), shell_wrap(install)
 
     # face slots (left/right) and how the solver consumes them
     slots, slots_cite = excerpt('src/snap.h',
