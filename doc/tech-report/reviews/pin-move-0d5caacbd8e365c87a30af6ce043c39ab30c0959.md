@@ -201,6 +201,10 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 - the reader glossary (`tools/reader-glossary.json`: the two retired keys), the glossary, topic, task and reader-task
   appendices, the derivation and notation indices and the reader-reference blocks were regenerated after the
   content edits (2447ca10); every `gen_*.py --check` passes on the head.
+- the N6 contract generators (`gen_forcing_contract.py`, `gen_scheme_contract.py`, `gen_scheme_native.py`,
+  `gen_species_contract.py`) carry `PIN = 0d5caacb...` and were run with `--write`; the native contract reads the
+  README's new build and install lines (its patterns were rewritten) and wraps a shell line longer than the page
+  with a backslash; `gen_boundary_contract.py` stays at `919936da` while ch14 is legacy.
 - `src/snapy_report/ch01/figures/fig_mesh_flow.py`: the global-phase box no longer names the chemistry; the
   figure-data check already failed on the base (fig-ch06-face-order and 21 other series, a pre-existing finding),
   and this move does not touch `tools/figure-data-baseline.json`.
@@ -210,12 +214,15 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 ## Provenance tags and the ratchet
 
 `tools/check_provenance.py` requires a tag's sha to be the pin or later, so every run tag at `73c45a7c` now counts
-against its chapter: 77 problems at the base -> 200 at the head (`check_provenance.py --update`, 9d346469). The
-ratchet's `offpin` count rises the same way, 225 -> 585 (`ratchet_gate.py update`, same commit). Both tools ask for
-exactly this update in a pin move, and both checks pass against `a71bfa1b` afterwards. New tags at the pin: ch06
-`_cell`/`_fixer` and ch15 `_options`/`_output` (the replacement ctests, run under the node's ctest lock: 98ab72e5),
-appE's build record (f41a1c7c), appC's refresh (dd49df61). Run tags kept at `73c45a7c`: every other one; their
-owners re-run after the merge.
+against its chapter: 77 problems at the base -> 198 at the head (`check_provenance.py --update`). The ratchet's
+`offpin` count rises the same way, 225 -> 499 (`ratchet_gate.py update`; the regenerated how-to contracts carry the
+new sha, which is why the first measurement, 585, fell). Both tools ask for exactly this update in a pin move, and
+both checks pass against `a71bfa1b` afterwards. New tags at the pin: ch06 `_cell`/`_fixer` and ch15
+`_options`/`_output` (the replacement ctests, run under the node's ctest lock: 98ab72e5), appE's build record
+(f41a1c7c), appC's refresh (dd49df61), and ch07 `_framework`'s port tag `[^fw-run]` (`framework_check.py` re-run,
+byte-identical to the committed output; `tools/tests/test_provenance.py` requires the port's tag, now defined first
+in the file, at the pin). Run tags kept at `73c45a7c`: every other one, ch07's CUDA ctest record `[^fw-ctest]`
+included; their owners re-run after the merge.
 
 The PROVENANCE `pin:` line of every fragment whose claims this move edited was set to `0d5caacb`; fragments the move
 did not touch keep their line.
@@ -258,7 +265,7 @@ appended to by hand; the per-symbol table above is this move's re-read record.
   form) is not made here.
 - ch13: `test_mesh_executor.cpp`'s new `repeated_local_exchange_reads_current_buffers_after_failure` case (#383) has
   no Tests-table row yet.
-- Every run tag at `73c45a7c` (200 provenance problems, 585 off-pin mentions): chapter owners re-run or re-word after
+- Every run tag at `73c45a7c` (198 provenance problems, 499 off-pin mentions): chapter owners re-run or re-word after
   the merge, as in the previous move.
 - The figure-data gate fails on the base and on the head alike (22 changed series of ch06 and others, 2 broken
   identity links, 28 coverage differences); not touched by this move.
