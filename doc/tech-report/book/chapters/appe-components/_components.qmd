@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml);
-     kintera@0429d795f79a0665afeca565e5a05c87ab4ba1e2 (tools/package-pins.json, the v2.6.13 tag);
+     kintera@4eb9b2350be692860c63cd8f0b736ad050762078 (tools/package-pins.json, the v2.6.13 tag);
      pyharp@4721715855e937c1e8b218e964c0655f46e56e29 (tools/package-pins.json, the v2.7.1 tag)
 sources: CMakeLists.txt, pyproject.toml, setup.py, cmake/modules/Find{Kintera,Harp,Disort}.cmake, cmake/parameters.cmake,
          src/CMakeLists.txt, python/__init__.py, src/eos/equation_of_state.cpp, src/eos/ideal_moist.cpp,
@@ -113,24 +113,24 @@ before it caches the cloud parents, because a later deck can declare other speci
 ({{< code src/mesh/meshblock.cpp MeshBlockImpl::thermo >}}) and prepares it before the first adjustment or a
 capture: `prepare` gives the failure counter, the active-set buffers and the table their interior shape, device
 and dtype ({{< code src/mesh/meshblock.cpp MeshBlockImpl::prepare_thermo overload=2 >}}; kintera `ThermoYImpl::prepare`
-([`kintera thermo_y.cpp:126-135`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L126-L135))).
+([`kintera thermo_y.cpp:126-135`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L126-L135))).
 When an FP32 anomaly state adjusts in FP64 totals, the state's own table is built in kintera's store first
 (`tables_for`), so no call inside a capture swaps the module's table. On the final stage the block calls
 `ThermoYImpl::forward` on the interior with density, internal energy density and species mass fractions, writes the
 adjusted fractions back, and posts rows 1 and 2 of the failure counter (the temperature and pressure solves that
 did not converge) to the monitor ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}};
-[`kintera thermo_y.cpp:225-327`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L225-L327)).
+[`kintera thermo_y.cpp:225-327`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L225-L327)).
 Row 0, the adjustment failures, is the retry cause: the redo test consumes it on the device with
 `consume_failures`
-([`kintera thermo_y.cpp:121-124`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L121-L124)),
+([`kintera thermo_y.cpp:121-124`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L121-L124)),
 with no host read ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::local_redo_flag_tensor >}}); kintera's host
 read `take_saturation_adjustment_failures`
-([`kintera thermo_y.cpp:329-334`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L329-L334))
+([`kintera thermo_y.cpp:329-334`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L329-L334))
 exists and snapy does not call it. A rejected step restores the active set the step started from
 ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}}). The stage executor keys a capture on
 `alloc_epoch`, kintera's host hash of the module's buffers, so a reallocation of the counter, the active set or the
 table invalidates the capture ({{< code src/mesh/stage_executor.cpp StageExecutor::make_key >}};
-[`kintera thermo.hpp:346-359`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo.hpp#L346-L359)),
+[`kintera thermo.hpp:346-359`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo.hpp#L346-L359)),
 and its warm-up save list carries the counter and the active-set buffers so that a warm-up leaves no count
 ({{< code src/mesh/stage_executor.cpp StageExecutor::save_list >}}).
 
@@ -140,9 +140,9 @@ the block runs them as the last op of its last stage ({{< code src/mesh/meshbloc
 The adapter owns a kintera `Kinetics` and a `ThermoX` ({{< code src/chemistry/chemistry_source.cpp ChemistrySource::ChemistrySource >}}).
 Its step refreshes the primitives after the dynamics and the adjustment, converts mass to mole fractions and to
 concentrations, evaluates the rates with their rate constants, `forward_with_rate_constants`
-([`kintera kinetics.hpp:192-196`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/kinetics/kinetics.hpp#L192-L196)),
+([`kintera kinetics.hpp:192-196`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/kinetics/kinetics.hpp#L192-L196)),
 forms the Jacobian and advances the concentrations implicitly with `evolve_implicit`
-([`kintera evolve_implicit.hpp:26-27`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/kinetics/evolve_implicit.hpp#L26-L27)),
+([`kintera evolve_implicit.hpp:26-27`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/kinetics/evolve_implicit.hpp#L26-L27)),
 then adds the FP64 increment to the species rows of the stored state
 ({{< code src/chemistry/chemistry_source.cpp ChemistrySource::forward >}}). A dry or reaction-free deck makes the
 step a no-op.

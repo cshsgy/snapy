@@ -169,7 +169,7 @@ $$ {#eq-ch02-ideal-moist-perturbation}
 
 with $p_{\mathrm{ref}}=\Theta^{\mathrm{th}}_{\mathrm{ref}}\mathcal G_{\mathrm{ref}}/\mathcal C_{v,\mathrm{ref}}$.
 @eq-ch02-ideal-moist-perturbation is kintera's `eval_const_cv_pressure_delta`
-([`kintera eval_uhs.hpp:44-52`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.hpp#L44-L52)),
+([`kintera eval_uhs.hpp:44-52`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.hpp#L44-L52)),
 called by `perturbations`. It is the exact difference
 $(\Theta^{\mathrm{th}}_{\mathrm{ref}}+\delta\Theta^{\mathrm{th}})(\mathcal G_{\mathrm{ref}}+\delta\mathcal G)
 /(\mathcal C_{v,\mathrm{ref}}+\delta\mathcal C_v)-p_{\mathrm{ref}}$, rearranged so that no large term is
@@ -252,24 +252,24 @@ the rotor formula, not a kintera run.[^h2he-run]
 | id | fact | source |
 |---|---|---|
 | T-1 | The default EOS `type` is `moist-mixture`; the decks set it explicitly | {{< code src/eos/equation_of_state.hpp EquationOfStateOptionsImpl >}} |
-| T-2 | Without a `reference-state:` block kintera builds no thermo options, and both moist classes stop with "thermo pointer is null" | `from_yaml` in [`kintera thermo_options.cpp:18-30`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L18-L30); {{< code src/eos/ideal_moist.cpp IdealMoistImpl::reset >}} |
-| T-3 | A species' molar mass is the sum of count $\times$ element weight over its `composition:` map, in kg/mol | `molar_mass` in [`kintera molar_mass.cpp:17-19`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/utils/molar_mass.cpp#L17-L19); `get_compound_weight` in [`pyharp compound.cpp:73-79`](https://github.com/chengcli/pyharp/blob/4721715855e937c1e8b218e964c0655f46e56e29/src/compound.cpp#L73-L79) |
+| T-2 | Without a `reference-state:` block kintera builds no thermo options, and both moist classes stop with "thermo pointer is null" | `from_yaml` in [`kintera thermo_options.cpp:18-30`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_options.cpp#L18-L30); {{< code src/eos/ideal_moist.cpp IdealMoistImpl::reset >}} |
+| T-3 | A species' molar mass is the sum of count $\times$ element weight over its `composition:` map, in kg/mol | `molar_mass` in [`kintera molar_mass.cpp:17-19`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/utils/molar_mass.cpp#L17-L19); `get_compound_weight` in [`pyharp compound.cpp:73-79`](https://github.com/chengcli/pyharp/blob/4721715855e937c1e8b218e964c0655f46e56e29/src/compound.cpp#L73-L79) |
 | T-4 | Element weights: H 1.008, He 4.002602, N 14.007, O 15.999, S 32.06 g/mol | `helium` and the other rows in [`pyharp element.cpp:54-69`](https://github.com/chengcli/pyharp/blob/4721715855e937c1e8b218e964c0655f46e56e29/src/element.cpp#L54-L69) |
-| T-5 | `dry` `{H: 1.5, He: 0.15}` gives $\mu_{\mathrm d}=2.1123903$ g/mol; with $\mathcal R=8.31446261815324$ J mol$^{-1}$ K$^{-1}$, $R_{\mathrm d}=3936.04$ J kg$^{-1}$ K$^{-1}$ | `Rgas` in [`kintera constants.h:6`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/constants.h#L6); checks C1, C2 |
-| T-6 | `cv_R` defaults to 2.5; `u0_R` and `s0_R` default to 0 | `cv_R` in [`kintera species.cpp:172-187`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/species.cpp#L172-L187) |
-| T-7 | For a gas $c_p/\mathcal R=c_v/\mathcal R+1$; a condensate has $c_p=c_v$ | `cref_R` in [`kintera eval_uhs.cpp:179-180`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L179-L180) |
+| T-5 | `dry` `{H: 1.5, He: 0.15}` gives $\mu_{\mathrm d}=2.1123903$ g/mol; with $\mathcal R=8.31446261815324$ J mol$^{-1}$ K$^{-1}$, $R_{\mathrm d}=3936.04$ J kg$^{-1}$ K$^{-1}$ | `Rgas` in [`kintera constants.h:6`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/constants.h#L6); checks C1, C2 |
+| T-6 | `cv_R` defaults to 2.5; `u0_R` and `s0_R` default to 0 | `cv_R` in [`kintera species.cpp:172-187`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/species.cpp#L172-L187) |
+| T-7 | For a gas $c_p/\mathcal R=c_v/\mathcal R+1$; a condensate has $c_p=c_v$ | `cref_R` in [`kintera eval_uhs.cpp:179-180`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L179-L180) |
 | T-8 | snapy sets $\gamma_{\mathrm d}=1+1/c^{\mathrm{ref}}_{\mathrm d}$ and the dry molar mass from the thermo, overwriting any `gammad`/`weight` of the EOS block; for `cv_R: 2.5`, $\gamma_{\mathrm d}=7/5$, $c_{v,\mathrm d}=9840.11$ and $c_{p,\mathrm d}=13776.16$ J kg$^{-1}$ K$^{-1}$, $R_{\mathrm d}/c_{p,\mathrm d}=2/7$ | {{< code src/eos/moist_base.cpp MoistEOSImpl::sync_dry_options_ >}}; checks C3–C6 |
 | T-9 | `ideal-moist` keeps every heat capacity constant: $c_{v,n}$ is `cref_R` times $R_n$[^rg-8291c2d31ed0] | {{< code src/eos/ideal_moist.cpp IdealMoistImpl::reset >}} |
 | T-10 | `moist-mixture` asks kintera for $c_p(T)$ and $c_v(T)$; they equal the constants unless a capacity switch is on | {{< code src/eos/moist_mixture.cpp MoistMixtureImpl::_adiabatic_index >}} |
-| T-11 | The per-species "extra" capacity, energy and compressibility functions are empty names in these decks. **That an empty name adds exactly zero is a hypothesis** here: `call_func2` was not traced | `cp_R_extra` in [`kintera eval_uhs.cpp:160-176`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L160-L176) |
+| T-11 | The per-species "extra" capacity, energy and compressibility functions are empty names in these decks. **That an empty name adds exactly zero is a hypothesis** here: `call_func2` was not traced | `cp_R_extra` in [`kintera eval_uhs.cpp:160-176`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L160-L176) |
 
 : EOS and species choices at the pin. {#tbl-ch02-h2he-eos}
 
 | id | fact | source |
 |---|---|---|
-| T-21 | `Tref` and `Pref` default to 300 K and $10^5$ Pa | `Tref` in [`kintera thermo.hpp:168-169`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo.hpp#L168-L169) |
-| T-22 | At start-up kintera moves each `u0_R` to a $T=0$ zero (`u0_R -= cv_R*Tref`) and each vapour's `s0_R` to $T=1$ K, $P=1$ Pa; condensate entropy offsets are set to 0. With the decks' `Tref: 0.` the energy shift is zero | `thermo_zero_offsets` in [`kintera thermo_options.cpp:292-311`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L292-L311) |
-| T-23 | The NASA-9 and H$_2$-rotor branches reference their energy to $T_0=300$ K (`kNasa9Tref`), not to `Tref` | `kNasa9Tref` in [`kintera eval_uhs.cpp:63-66`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L63-L66) |
+| T-21 | `Tref` and `Pref` default to 300 K and $10^5$ Pa | `Tref` in [`kintera thermo.hpp:168-169`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo.hpp#L168-L169) |
+| T-22 | At start-up kintera moves each `u0_R` to a $T=0$ zero (`u0_R -= cv_R*Tref`) and each vapour's `s0_R` to $T=1$ K, $P=1$ Pa; condensate entropy offsets are set to 0. With the decks' `Tref: 0.` the energy shift is zero | `thermo_zero_offsets` in [`kintera thermo_options.cpp:292-311`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_options.cpp#L292-L311) |
+| T-23 | The NASA-9 and H$_2$-rotor branches reference their energy to $T_0=300$ K (`kNasa9Tref`), not to `Tref` | `kNasa9Tref` in [`kintera eval_uhs.cpp:63-66`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L63-L66) |
 
 : Reference-state conventions. {#tbl-ch02-h2he-reference}
 

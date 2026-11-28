@@ -115,7 +115,7 @@ dynamics:
    would otherwise load silently and run without it.
 3. *An invalid `uv-solver`*, by kintera when it parses the same block, with "Invalid UV solver: " and the value;
    the accepted values are `auto`, `kkt` and `partition`
-   (`uv_solver` in [`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L95-L101)).
+   (`uv_solver` in [`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_options.cpp#L95-L101)).
 4. *An unknown `type`*, at construction, with "EquationOfState: Unknown type: " and the value.
 5. *An ideal gas with species or reactions*, at construction, with "ideal-gas has no vapor, cloud or reaction
    support; use ideal-moist or moist-mixture" and the counts.

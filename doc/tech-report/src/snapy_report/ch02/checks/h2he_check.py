@@ -2,7 +2,7 @@
 
 Independent calculations, not a snapy/kintera runtime test.
 Sources: snapy 73c45a7c8c991209924e1137992352c335575062 examples/jupiter_crm.yaml;
-kintera 0429d795f79a0665afeca565e5a05c87ab4ba1e2 (v2.6.13) src/constants.h:6 (Rgas),
+kintera 4eb9b2350be692860c63cd8f0b736ad050762078 (v2.6.13) src/constants.h:6 (Rgas),
 src/thermo/h2_rotation.h:10-43 (rotor); pyharp 4721715855e937c1e8b218e964c0655f46e56e29
 src/element.cpp:54-69. All numeric inputs are in SI except the element weights (g/mol).
 Run: python src/snapy_report/ch02/checks/h2he_check.py from the report directory.

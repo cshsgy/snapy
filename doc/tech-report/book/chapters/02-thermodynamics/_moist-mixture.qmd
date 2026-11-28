@@ -73,7 +73,7 @@ rests on the assumption of step 2, that each $Z_n$ depends on its own $\tilde c_
 been checked against kintera. It is settled by reading, at the kintera pin 0429d795, the `czh` and `czh_ddC`
 function tables that `tables_for` builds and the `call_func2` kernel that `eval_czh_ddC` runs
 (`eval_czh_ddC` in
-[`kintera eval_uhs.cpp:215-233`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L215-L233)):
+[`kintera eval_uhs.cpp:215-233`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L215-L233)):
 the formula holds if each species' function reads only $T$ and its own $\tilde c_n$, and trivially if the tables
 are empty so that $Z_n=1$. Step 3 is exact only for $Z_n=1$; for $Z_n\ne1$ the isentropic speed also needs
 $\partial Z_n/\partial T$, which the formula omits.
@@ -94,11 +94,11 @@ T\leftarrow T+\frac{\rho e-\sum_n\tilde c_nu_n(T)}{\sum_n\tilde c_nc_{v,n}(T)} .
 $$ {#eq-ch02-moist-mixture-newton}
 
 @eq-ch02-moist-mixture-newton is the step of `_intEng_to_temp` in
-[`kintera thermo_y.cpp:450-462`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L450-L462),
+[`kintera thermo_y.cpp:450-462`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L450-L462),
 run by `solve` in
-[`kintera thermo_y.cpp:385-414`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L385-L414).
+[`kintera thermo_y.cpp:385-414`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L385-L414).
 How many steps run is set once per thermo, in `reset`, by `temp_plan`
-([`kintera thermo_y.cpp:100-103`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L100-L103)):
+([`kintera thermo_y.cpp:100-103`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L100-L103)):
 
 - `exact`: no NASA-9 or H$_2$ capacity and no extra energy term. Then $U$ is linear in $T$, the start of step 5 is
   the root, and `solve` runs a single Newton step as its one correction, with no host read.
@@ -110,7 +110,7 @@ How many steps run is set once per thermo, in `reset`, by `temp_plan`
 
 A solve whose run flag is still set at the end (in `exact`, one that produced a non-finite $T$) adds one to row 1 of
 kintera's failure counter (row 2 for the pressure inversion): at most one per solve call, not one per cell
-([`kintera thermo_y.cpp:388-412`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L388-L412)); those rows reach the register's monitor as `thermo.temp_solve` and `thermo.pres_solve` (@sec-ch13).
+([`kintera thermo_y.cpp:388-412`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L388-L412)); those rows reach the register's monitor as `thermo.temp_solve` and `thermo.pres_solve` (@sec-ch13).
 
 **What the stopping rule guarantees (`eager_exit`).** Let $T_\ast$ be the root and $\psi$ the error of an iterate.
 Taylor's theorem gives $\lvert\psi_{\mathrm{new}}\rvert\le(\Upsilon/2)\psi_{\mathrm{old}}^2$ with
@@ -122,7 +122,7 @@ $\epsilon_{\mathrm m}\sum_n\tilde c_n\lvert u_n\rvert/\Psi$. `[C4]` and `[C5]` o
 the Newton error identity and the bound.
 
 The pressure inversion `PV->T` (`_pres_to_temp`,
-[`kintera thermo_y.cpp:416-440`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L416-L440))
+[`kintera thermo_y.cpp:416-440`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L416-L440))
 floors each gas concentration at `gas_floor` ($10^{-20}$ mol m$^{-3}$), starts at $T=p/(\mathcal R\sum\tilde c_n)$
 and subtracts $f/\sum\tilde c_n(c_{p,n}-c_{v,n})/\mathcal R$ with $f=T\sum\tilde c_nZ_n-p/\mathcal R$. Its plan is
 exact when no species has a compressibility function, because the start then solves $f=0$.
@@ -138,8 +138,8 @@ e_n(T)=u_n^\star+c_{v,n}^{\mathrm{ref}}\,T_0
 $$ {#eq-ch02-moist-mixture-integral}
 
 @eq-ch02-moist-mixture-integral is `intEng_nasa` in `eval_intEng_R` and `eval_nasa9`
-([`kintera eval_uhs.cpp:52-69`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L52-L69),
-`intEng_nasa` in [`kintera eval_uhs.cpp:263`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/eval_uhs.cpp#L263)).
+([`kintera eval_uhs.cpp:52-69`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L52-L69),
+`intEng_nasa` in [`kintera eval_uhs.cpp:263`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/eval_uhs.cpp#L263)).
 For the selected species the NASA-9 and H$_2$ branches replace the generic energy through `torch::where`; they do
 not add to it.
 
@@ -154,16 +154,16 @@ $$
 $$ {#eq-ch02-moist-mixture-rotor}
 
 @eq-ch02-moist-mixture-rotor is `h2_rot` and `h2_rot_eval` in
-[`kintera h2_rotation.h:10-43`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/h2_rotation.h#L10-L43).
+[`kintera h2_rotation.h:10-43`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/h2_rotation.h#L10-L43).
 `h2-cp-mode: equilibrium` (the default) multiplies the odd-$J$ weights by three in one ensemble; `normal` averages
 separately normalized even and odd ensembles with weights $\tfrac14$ and $\tfrac34$. The sum is truncated at
 $J=40$; no error bound for the truncation is derived here.
 
 **The opt-in switches.** `reference-state` accepts exactly `Tref`, `Pref`, `use-nasa9-cp`, `use-h2-cp` and
 `h2-cp-mode`, and refuses any other key with a suggestion (`keys` in
-[`kintera species.cpp:232-243`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/species.cpp#L232-L243)).
+[`kintera species.cpp:232-243`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/species.cpp#L232-L243)).
 `use_nasa9_cp` and `use_h2_cp` default to false and `h2_cp_mode` to `equilibrium`
-([`kintera species.hpp:104-119`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/species.hpp#L104-L119));
+([`kintera species.hpp:104-119`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/species.hpp#L104-L119));
 the NASA-9 switch applies to a species whose **name** has an entry in `data/nasa9.dat` (293 entries at the kintera pin;
 the decks' `H2O`, `H2S` and `NH3`, and `H2` and `He`, have one, and no entry is named `dry`), and the rotor only to a species named exactly `H2`. Gas entropy follows either switch.
 `ideal-moist` reads only the constant `cref_R`, so neither switch reaches its dynamics
@@ -224,8 +224,8 @@ dynamics:
 | conserved to primitive | {{< code src/eos/moist_mixture.cpp MoistMixtureImpl::_cons2prim >}} | `_cons2prim` | `moist-mixture` |
 | species enthalpy | {{< code src/eos/moist_mixture.cpp MoistMixtureImpl::species_enthalpy >}} | `species_enthalpy` | `moist-mixture` |
 | sound speed | {{< code src/eos/moist_mixture.cpp MoistMixtureImpl::_isothermal_sound_speed >}} | `_isothermal_sound_speed` | `moist-mixture` |
-| Newton | [`kintera thermo_y.cpp:385-414`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L385-L414) | `solve` | `ftol`, `max-iter` |
-| Newton defaults | [`kintera thermo.hpp:171-173`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo.hpp#L171-L173) | `max_iter` | `ftol`, `max-iter` |
+| Newton | [`kintera thermo_y.cpp:385-414`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L385-L414) | `solve` | `ftol`, `max-iter` |
+| Newton defaults | [`kintera thermo.hpp:171-173`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo.hpp#L171-L173) | `max_iter` | `ftol`, `max-iter` |
 
 : Code map of the moist mixture. {#tbl-ch02-moist-mixture-code}
 
@@ -242,7 +242,7 @@ dynamics:
 The check is independent algebra and isolated loop ports, not kintera.[^mm-run] At the pin both ctests
 pass.[^mm-ctest]
 
-[^mm-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062 and kintera 0429d795f79a0665afeca565e5a05c87ab4ba1e2
+[^mm-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062 and kintera 4eb9b2350be692860c63cd8f0b736ad050762078
     (the ported update and stop test are those of `solve` in `eager_exit`); deck: the check itself, seed 5; run:
     `python3 src/snapy_report/ch02/checks/moist-mixture_check.py`, CPU, double, 1 process; Python 3.11.13, numpy
     2.4.6, sympy 1.14.0; output identical to the committed file]. Output `moist-mixture_check.out`.

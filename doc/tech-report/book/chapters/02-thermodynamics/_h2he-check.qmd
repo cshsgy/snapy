@@ -1,5 +1,5 @@
 [^h2he-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062 (the decks), kintera
-    0429d795f79a0665afeca565e5a05c87ab4ba1e2 and pyharp 4721715855e937c1e8b218e964c0655f46e56e29 (the constants and the
+    4eb9b2350be692860c63cd8f0b736ad050762078 and pyharp 4721715855e937c1e8b218e964c0655f46e56e29 (the constants and the
     rotor kernel `h2_rot`, whose constants and weights the port uses); deck: the element weights and temperature grids in
     `src/snapy_report/ch02/checks/h2he_check.py`; run: `python src/snapy_report/ch02/checks/h2he_check.py`, CPU float64,
     one process; Python 3.11.13, numpy 2.4.6, sympy 1.14.0; output identical to the committed file]. Fourteen checks
