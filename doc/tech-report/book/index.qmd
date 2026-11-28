@@ -69,8 +69,8 @@ The build also compiles the tests (`BUILD_TESTS` is on by default). A test named
 `ctest --test-dir build -R <name>`; to reproduce a documented test case and check it against the book, follow
 @sec-ch16-metrics. The last line installs the Python package from the same build, which the Python
 listings of the chapters import (`import snapy`). It puts `pd-combine` and `pd-inspect` on the path as entry points
-(`pd-combine`, [`pyproject.toml:54`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/pyproject.toml#L54); `pd-inspect`, [`pyproject.toml:55`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/pyproject.toml#L55)) and installs
-the `api/pd-run` script beside them (`script-files`, [`pyproject.toml:61`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/pyproject.toml#L61)).
+(`pd-combine`, [`pyproject.toml:54`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/pyproject.toml#L54); `pd-inspect`, [`pyproject.toml:55`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/pyproject.toml#L55));
+the `api/pd-run` script is gone at the pin.
 
 **Run a deck.** The build puts one driver program per example in `build/bin`, next to links to the decks of
 `examples/`. A deck is a YAML input file, and a *driver* is the program that reads it, sets the initial state
@@ -101,7 +101,7 @@ The 2-D warm-bubble test is `bryan.yaml`, a moist warm bubble on one block ($x_1
 `./bryan.release bryan.yaml`, stops at 1000 s of model time and writes one output frame every 100 s.
 
 **The same example on one GPU.** Rebuild with the `CUDA` option on
-([`CMakeLists.txt:10`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/CMakeLists.txt#L10)),
+([`CMakeLists.txt:10`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/CMakeLists.txt#L10)),
 that is, with `-DCUDA=ON` added to the build command above, then select the device with two environment variables:
 
 ```bash
@@ -110,7 +110,7 @@ DEVICE=cuda DEVICE_ID=0 ./straka.release straka_single.yaml
 ```
 
 `DEVICE` defaults to `cpu`
-([`src/layout/layout.cpp:288`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/layout/layout.cpp#L288));
+([`src/layout/layout.cpp:356`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/layout/layout.cpp#L356));
 with `cuda`, the block runs on `cuda:<DEVICE_ID>`, or on the local rank's GPU when `DEVICE_ID` is unset
 ({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::device_str >}}).
 The driver prints "Running on CUDA" before the first step when it got a GPU
