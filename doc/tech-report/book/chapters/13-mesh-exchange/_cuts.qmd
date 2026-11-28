@@ -1,7 +1,7 @@
 ## Exchange cuts and multi-block capture (`integration: execution`) {#sec-ch13-cuts}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: src/mesh/stage_executor.cpp, src/mesh/stage_executor.hpp, src/mesh/exchange_cut.hpp, src/mesh/meshblock_exchange.cpp, src/layout/seam_register.cpp, src/mesh/mesh.cpp, tests/test_mesh_capture.cpp, tests/test_mesh_capture_moist.py, tests/test_cubed_sphere_capture.py, tests/test_graph_mesh_many_blocks.py, tests/test_mesh_worker_streams.cpp, tests/test_default_execution.py
 status: draft
 author: jihenghu
@@ -23,7 +23,8 @@ of many blocks capture.
 
 **Data.** In: the segment schedule of each block. Out: per segment, a list of steps (graph, host step, graph, ...).
 
-**Placement.** Inside a segment capture of a Mesh with more than one block; at replay the host steps run between
+**Placement.** Inside a segment capture of a Mesh with more than one block, and of a lone block with a split
+source (the radial conduction's temperature checks, @sec-ch07-csdiffusion); at replay the host steps run between
 the graphs.
 
 **Activation.** `integration: execution` (default `auto`, which captures where nothing refuses; `cuda-graph`;

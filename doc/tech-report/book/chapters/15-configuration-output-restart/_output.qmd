@@ -1,7 +1,7 @@
 ## Output writers (`outputs: - type: netcdf` or `pnetcdf`) {#sec-ch15-output}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: src/mesh/meshblock_output.cpp, src/mesh/meshblock.cpp, src/mesh/mesh.cpp, src/output/output_type.{hpp,cpp},
          src/output/writer_core.{hpp,cpp}, src/output/netcdf.cpp, src/output/pnetcdf.cpp,
          src/output/combine_netcdf.cpp, src/output/combine_parts.cpp, src/output/output_utils.{hpp,cpp},
@@ -208,8 +208,9 @@ constructor ({{< code src/output/output_utils.cpp MetadataTable::MetadataTable >
 under the per-process protocol of `combine_on_root` ({{< code src/output/writer_core.cpp combine_on_root >}}):
 the blocks of one process count in under the key `output_dir|basename|out<n>|NNNNN` (`ready_to_combine`,
 {{< code src/output/writer_core.cpp ready_to_combine >}}), and only the last one proceeds; the process group then
-meets at a barrier, the root does the work, and every rank meets again after it, also when the root throws, so
-no rank returns before the combined file exists. The root globs the parts (`glob_block_files`,
+meets at a barrier, the root does the work, and every rank meets again after it in a MAX-reduction of the root's
+failure flag, so no rank returns before the combined file exists and a failure on the root raises on every rank
+("[combine_on_root] combine failed on the root rank"); without a process group the root works alone. The root globs the parts (`glob_block_files`,
 {{< code src/output/writer_core.cpp glob_block_files >}}), deletes any stale combined file, renames a single part,
 or calls `combine_parts`. `combine_parts` ({{< code src/output/combine_parts.cpp combine_parts >}}) takes the
 structure of the joined file from the first part, treats a dimension as split when its coordinate variable

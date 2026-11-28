@@ -1,7 +1,7 @@
 ## The equation-of-state limiter: two passes, floors and marks {#sec-ch08-eoslimiter}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: OUTLINE.md 8.5, 8.6 and 8.7, merged
 status: draft
 -->
@@ -74,7 +74,8 @@ cell's own metric, so the floor is correct on a curved grid and not only in Cart
 
 The primitive pass is `prim` ({{< code src/eos/equation_of_state.cpp EquationOfStateImpl::apply_primitive_limiter_ >}}): NaNs, the density floor at
 {{< code src/eos/equation_of_state.cpp EquationOfStateImpl::apply_primitive_limiter_ >}}, the species clamp at {{< code src/eos/equation_of_state.cpp EquationOfStateImpl::apply_primitive_limiter_ >}} and
-the pressure floor at {{< code src/eos/equation_of_state.cpp EquationOfStateImpl::apply_primitive_limiter_ >}}.
+the pressure floor at {{< code src/eos/equation_of_state.cpp EquationOfStateImpl::apply_primitive_limiter_ >}}; a
+shallow-water state, with no pressure or species row, returns after the density floor.
 
 The floor values are YAML[^rg-34f4f1938638] keys with defaults at `density_floor` ({{< code src/eos/equation_of_state.cpp EquationOfStateOptionsImpl::from_yaml >}}): a density
 floor of $10^{-6}$, a pressure floor of $10^{-3}$ and a temperature floor of $20$ K. They are absolute
