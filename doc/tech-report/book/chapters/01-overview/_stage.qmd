@@ -21,7 +21,8 @@ with the step-start state), and the end-of-stage slots `saturation`, `chemistry`
 the schedule eagerly, or groups the ops into segments and replays each capturable segment as a CUDA graph
 ({{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}}); either way the ops are the same. This section
 follows that schedule and writes out the three small identities the combination and the tracer transfer rest on,
-because later chapters cite them. Capture, the segments and the refusal list are @sec-ch13-cuts and @sec-ch13-agree; the capture sweep is
+because later chapters cite them. The segments, the capture and the refusal list are @sec-ch11-segments, @sec-ch11-capture and
+@sec-ch11-refusals; the Mesh's cuts and agreement are @sec-ch13-cuts and @sec-ch13-agree; the capture sweep is
 @sec-ch16-capture.
 
 ::: {.callout-note title="At a glance"}
