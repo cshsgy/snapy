@@ -76,8 +76,10 @@ register with no free rows, so every tracer row is zero on the wall and solid fa
 ### Code
 
 **How to use.** Nothing is set beyond the face names: a `reflecting` face is prescribed, and an `outflow`,
-`periodic` or `custom` face is not. A conducting $x_1$ wall needs a positive wall temperature in the diffusion
-options. No callback registered at the pin carries a `fixed_temperature` name (@sec-ch14-registry).
+`periodic` or `custom` face is not. From a deck, a conducting $x_1$ wall needs a positive wall temperature in the
+diffusion options, because no callback registered at the pin carries a `fixed_temperature` name (@sec-ch14-registry).
+A callback installed with `set_bfunc` under the name `fixed_temperature_inner` or `fixed_temperature_outer` is a
+wall too, and on $x_1$ it frees the energy row as well.
 
 ```yaml
 boundary-condition:
@@ -142,9 +144,10 @@ No snapy runtime test is executed for this section. Device/rank distinctions and
 
 ::: {.callout-warning title="Limits"}
 Only faces of kind `wall` are prescribed: an outflow, periodic or custom face keeps its computed flux, and a custom
-callback that builds a wall in user code is not prescribed unless it is named `reflecting_inner` or
-`reflecting_outer`. The extra free energy row exists only on $x_1$ walls. No callback at the pin is registered under
-a `fixed_temperature` name, so the conducting wall is reached through the diffusion's wall temperature.
+callback that builds a wall in user code is not prescribed unless it is installed under one of the wall names
+(`reflecting_inner`, `reflecting_outer`, `fixed_temperature_inner`, `fixed_temperature_outer`). The extra free energy
+row exists only on $x_1$ walls. No callback at the pin is registered under a `fixed_temperature` name, so from a deck
+the conducting wall is reached only through the diffusion's wall temperature.
 
 Untested switch combinations remain subject to @sec-ch12-matrix. No new CPU, CUDA or multi-rank solver result
 is claimed.

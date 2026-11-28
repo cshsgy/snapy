@@ -25,7 +25,7 @@ make_fig()
 
 | scheme | switch | default | order | main test |
 |---|---|---|---|---|
-| @sec-ch14-registry | `boundary-condition/external/*` | `reflecting` on every face | exact dispatch; solver order unmeasured | @sec-ch16-ch11 |
+| @sec-ch14-registry | `boundary-condition/external/*` | `reflecting` on every face named in a present `external`[^rg-a3914f7a519f] block | exact dispatch; solver order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-reflecting | `reflecting` | on (the default face name) | exact parity; wall order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-periodic | `periodic` | off | exact permutation; seam order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-extrapolation | `extrapolation` | off; the fallback of `outflow` for scalars and shallow water | $O(h)$ ghost consistency; solver order unmeasured | @sec-ch16-ch11 |
@@ -41,6 +41,8 @@ make_fig()
 
 <!-- reader glossary notes -->
 [^rg-aa1d9fab98ea]: YAML — YAML Ain't Markup Language, the structured input format used for decks
+
+[^rg-a3914f7a519f]: external — boundary-function names for external domain faces
 
 [^rg-5f7fd96723e1]: max-iter — maximum number of iterations
 <!-- end reader glossary notes -->

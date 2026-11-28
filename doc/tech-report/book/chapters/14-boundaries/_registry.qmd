@@ -27,7 +27,8 @@ and "callback present" mean the same thing from then on.
 
 **Placement.** Parse names, then remove layout-owned callbacks at construction.
 
-**Activation.** External faces default to `reflecting`.
+**Activation.** Inside `boundary-condition/external`, a face without a key defaults to `reflecting`; a deck without
+that block installs no callback, and the block then refuses to build.
 
 **Guarantee / limits.** Physical-face and diffusion-wall predicates differ.
 
@@ -99,7 +100,7 @@ make_fig()
 
 This is a configuration fragment, not a standalone simulation deck.
 
-<!-- reader glossary keys -->Keys in this fragment: `boundary-condition`[^rg-01888ad64fad], `external`[^rg-a3914f7a519f], `x1-inner`[^rg-7cca0798643a], `x1-outer`[^rg-ffc56ec72f7b].
+<!-- reader glossary keys -->Keys in this fragment: `boundary-condition`[^rg-01888ad64fad], `x1-inner`[^rg-7cca0798643a], `x1-outer`[^rg-ffc56ec72f7b].
 ```yaml
 boundary-condition:
   external:
@@ -134,7 +135,11 @@ is not defined." Unknown map keys are rejected by `check_keys`; a collapsed dire
       op->bfuncs().push_back(get_bc_func()[name]);
 ```
 
-The default `reflecting` supplies the face name, the suffix names the registry entry, and the lookup refuses a name
+The default `reflecting` applies only inside a present `boundary-condition/external` block: a deck without the
+`boundary-condition` block, or without its `external` map, returns before this loop, installs no callback, and
+`MeshBlockImpl` then stops with "bfuncs size must be at least" for every active direction
+({{< code src/mesh/meshblock.cpp MeshBlockImpl::MeshBlockImpl >}}). Within the block, the default `reflecting` supplies the
+face name, the suffix names the registry entry, and the lookup refuses a name
 that is not registered: the dispatch contract of the Derivation layer.
 
 | what | code link | symbol | switch |
@@ -217,8 +222,6 @@ is claimed.
 [^rg-b6eeb6bec592]: EOS — equation of state
 
 [^rg-01888ad64fad]: boundary-condition — boundary options: `external` boundary-function names for the domain faces and `internal` solid-cell settings
-
-[^rg-a3914f7a519f]: external — boundary-function names for external domain faces
 
 [^rg-7cca0798643a]: x1-inner — boundary name on the inner first-coordinate face
 
