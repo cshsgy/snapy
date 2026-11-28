@@ -18,7 +18,11 @@ Before the bump, `python3 tools/code_anchors.py diff 73c45a7c 0d5caacb` reported
 that do not resolve at the new pin; they were fixed first (next section). `python3 tools/code_anchors.py bump
 0d5caacb...` (Universal Ctags) then resolved every `{{< code >}}` citation: 1155 distinct symbols, 0 unresolved, 154
 with a changed body (147 in the census at `a71bfa1b` plus the replacements), and wrote the new sha into
-`code_pin.yml`; `check` passes with the three legacy chapters (ch14, ch16, appB) skipped as before.
+`code_pin.yml`; `check` passes with the legacy chapters skipped: three (ch14, ch16, appB) before #357 was merged
+in, two (ch16, appB) after it, with ch14 checked in full (0 unresolved). The legacy list is not empty: ch16's 7 and
+appB's 1 unresolved citations (`src/recon/ppm.cpp`, `src/recon/interp_simple.hpp`, `src/recon/interpolation.cpp`,
+`ORDER_OFF` of `tests/test_wb_ref4_order.py`, `flux_positivity_scale_`) did not resolve at `73c45a7c` either; they
+are their owners' content, not the move's.
 
 ## Resolved by hand
 
@@ -191,10 +195,10 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 
 ## Generated fixtures
 
-- `tools/package-pins.json`, `tools/env-pins.json`: kintera `0429d795` (v2.6.13) -> `4eb9b2350be692860c63cd8f0b736ad050762078`
-  (v2.6.14), the floor snapy sets at the pin (`CMakeLists.txt:122`, `.github/workflows/ci.yml:93`), not v2.6.15 as the
-  census first suggested; `tools/kintera_pin_migration.py` found the 67 cited ranges byte-identical and swapped the
-  sha in 16 files (3b565bf1). appE's floor and the preface pip line follow (006d4c61).
+- `tools/package-pins.json`, `tools/env-pins.json`: the kintera pin stays at `0429d795` (v2.6.13). snapy at the pin sets the
+  floor 2.6.14 (`CMakeLists.txt:122`, `.github/workflows/ci.yml:93`), the build and ctest records of this move ran against
+  kintera 2.6.14, and appE says both; moving the kintera citations (67 ranges, byte-identical at v2.6.14 by
+  `tools/kintera_pin_migration.py`) is a separate change, as the thread settled: only the snapy pin moves here.
 - `gen_test_index.py --refresh <CPU build at 0d5caacb>`: 1190 registrations, 252 snapy rows (dd49df61); appC's counts
   and its refresh footnote re-run `[C1]`, `[C3]`, `[C4]`.
 - `gen_deck_keys.py --refresh`: 171 keys, 155 linked (dd49df61).
@@ -253,19 +257,27 @@ did not touch keep their line.
 `reviews/code-anchors-reread.tsv` is the output of `tools/convert_code_links.py` (the link conversion) and is not
 appended to by hand; the per-symbol table above is this move's re-read record.
 
+## The merge of #357 (chapter 14)
+
+`tech-report` `24513bdb` was merged in (`69d4df6c`): ch14 left the legacy list there and is checked in full at the
+pin (0 unresolved); of the changed bodies it cites (`MeshImpl::forward`, `MeshBlockOptionsImpl::from_yaml`,
+`HydroOptionsImpl::from_yaml`, `HydroImpl::forward`, `ImplicitHydroImpl::forward_masked`, `stage_combine`,
+`exchange`, `exchange_ghost_zones`, `build_schedule`) only `MeshImpl::forward` carried a claim, the Mesh timing
+paragraph of `_timing.qmd` (the chemistry in the global phase), rewritten for #382; `gen_boundary_contract.py`
+carries the pin and its fragment was rewritten; the baselines were re-measured as the pin-move update against
+`24513bdb` (offpin 458, provenance 198; ch14's 23 run-tag mentions of `73c45a7c` are off-pin now).
+
 ## Open
 
-- ch14 (legacy, skipped by `code_anchors.py check`): `_outflow.qmd` shows a deck with `gravity-work-fixer: false`
-  (refused as unknown at the pin) and cites `MeshBlockImpl::apply_gravity_work_fixer`; `_solids.qmd` cites
-  `MeshBlockImpl::gravity_work_fixer_sums`; `_timing.qmd` describes the Mesh deferring the fixer. None of these
-  symbols exist at the pin. For the chapter's owner, with the 40 citations the legacy list already records.
+- ch16 and appB stay on the legacy list with 8 citations that resolve at neither pin (above); their owners.
+- The kintera pin (v2.6.13 -> v2.6.14, the floor snapy sets at the pin): its own change.
 - ch09 `redo_check.py` ports the seven-flag logic of `73c45a7c`; its `[C6]` finding is kept as a finding at that sha.
   A re-port to six flags is the chapter owner's.
 - ch05 `_oneoverr`: the remainder run used the cell work form at `6fbb3975`; a re-run at the pin (face work, the only
   form) is not made here.
 - ch13: `test_mesh_executor.cpp`'s new `repeated_local_exchange_reads_current_buffers_after_failure` case (#383) has
   no Tests-table row yet.
-- Every run tag at `73c45a7c` (198 provenance problems, 499 off-pin mentions): chapter owners re-run or re-word after
+- Every run tag at `73c45a7c` (198 provenance problems, 458 off-pin mentions): chapter owners re-run or re-word after
   the merge, as in the previous move.
 - The figure-data gate fails on the base and on the head alike (22 changed series of ch06 and others, 2 broken
   identity links, 28 coverage differences); not touched by this move.
