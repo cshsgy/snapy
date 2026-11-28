@@ -1,6 +1,6 @@
 {
  "repo": "chengcli/snapy",
- "sha": "73c45a7c8c991209924e1137992352c335575062",
+ "sha": "0d5caacbd8e365c87a30af6ce043c39ab30c0959",
  "keys": [
   {
    "path": "geometry",
@@ -266,12 +266,12 @@
    "path": "forcing/body-heat",
    "key": "dTdt",
    "reader": "snapy",
-   "check": "src/options/forcing_body_heat.yaml:7",
+   "check": "src/options/forcing_body_heat.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_body_heat.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "dTdt"
   },
@@ -279,12 +279,12 @@
    "path": "forcing/body-heat",
    "key": "pmin",
    "reader": "snapy",
-   "check": "src/options/forcing_body_heat.yaml:8",
+   "check": "src/options/forcing_body_heat.yaml:7",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_body_heat.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "pmin"
   },
@@ -292,12 +292,12 @@
    "path": "forcing/body-heat",
    "key": "pmax",
    "reader": "snapy",
-   "check": "src/options/forcing_body_heat.yaml:9",
+   "check": "src/options/forcing_body_heat.yaml:8",
    "default": {
     "kind": "fallback",
     "value": "1.0",
     "file": "src/options/forcing_body_heat.yaml",
-    "line": 9
+    "line": 8
    },
    "anchor": "pmax"
   },
@@ -305,12 +305,12 @@
    "path": "forcing/bot-heat",
    "key": "flux",
    "reader": "snapy",
-   "check": "src/options/forcing_bot_heat.yaml:7",
+   "check": "src/options/forcing_bot_heat.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_bot_heat.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "flux"
   },
@@ -318,12 +318,12 @@
    "path": "forcing/bot-heat",
    "key": "depth",
    "reader": "snapy",
-   "check": "src/options/forcing_bot_heat.yaml:8",
+   "check": "src/options/forcing_bot_heat.yaml:7",
    "default": {
     "kind": "fallback",
     "value": "1",
     "file": "src/options/forcing_bot_heat.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "depth"
   },
@@ -331,18 +331,31 @@
    "path": "forcing/bot-heat",
    "key": "thickness",
    "reader": "snapy",
-   "check": "src/options/forcing_bot_heat.yaml:9",
+   "check": "src/options/forcing_bot_heat.yaml:8",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_bot_heat.yaml",
-    "line": 9
+    "line": 8
    },
    "anchor": "thickness"
   },
   {
    "path": "forcing/bot-sponge-lyr",
    "key": "tau",
+   "reader": "snapy",
+   "check": "src/options/forcing_bot_sponge_lyr.yaml:6",
+   "default": {
+    "kind": "fallback",
+    "value": "0.0",
+    "file": "src/options/forcing_bot_sponge_lyr.yaml",
+    "line": 6
+   },
+   "anchor": "tau"
+  },
+  {
+   "path": "forcing/bot-sponge-lyr",
+   "key": "width",
    "reader": "snapy",
    "check": "src/options/forcing_bot_sponge_lyr.yaml:7",
    "default": {
@@ -351,37 +364,50 @@
     "file": "src/options/forcing_bot_sponge_lyr.yaml",
     "line": 7
    },
-   "anchor": "tau"
-  },
-  {
-   "path": "forcing/bot-sponge-lyr",
-   "key": "width",
-   "reader": "snapy",
-   "check": "src/options/forcing_bot_sponge_lyr.yaml:8",
-   "default": {
-    "kind": "fallback",
-    "value": "0.0",
-    "file": "src/options/forcing_bot_sponge_lyr.yaml",
-    "line": 8
-   },
    "anchor": "width"
   },
   {
    "path": "forcing/coriolis",
    "key": "type",
    "reader": "snapy",
-   "check": "src/options/forcing_coriolis.yaml:8",
+   "check": "src/options/forcing_coriolis.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "\"xyz\"",
     "file": "src/options/forcing_coriolis.yaml",
-    "line": 8
+    "line": 6
    },
    "anchor": "type"
   },
   {
    "path": "forcing/coriolis",
    "key": "omega1",
+   "reader": "snapy",
+   "check": "src/options/forcing_coriolis.yaml:7",
+   "default": {
+    "kind": "fallback",
+    "value": "0.0",
+    "file": "src/options/forcing_coriolis.yaml",
+    "line": 7
+   },
+   "anchor": "omega1"
+  },
+  {
+   "path": "forcing/coriolis",
+   "key": "omega2",
+   "reader": "snapy",
+   "check": "src/options/forcing_coriolis.yaml:8",
+   "default": {
+    "kind": "fallback",
+    "value": "0.0",
+    "file": "src/options/forcing_coriolis.yaml",
+    "line": 8
+   },
+   "anchor": "omega2"
+  },
+  {
+   "path": "forcing/coriolis",
+   "key": "omega3",
    "reader": "snapy",
    "check": "src/options/forcing_coriolis.yaml:9",
    "default": {
@@ -390,44 +416,18 @@
     "file": "src/options/forcing_coriolis.yaml",
     "line": 9
    },
-   "anchor": "omega1"
-  },
-  {
-   "path": "forcing/coriolis",
-   "key": "omega2",
-   "reader": "snapy",
-   "check": "src/options/forcing_coriolis.yaml:10",
-   "default": {
-    "kind": "fallback",
-    "value": "0.0",
-    "file": "src/options/forcing_coriolis.yaml",
-    "line": 10
-   },
-   "anchor": "omega2"
-  },
-  {
-   "path": "forcing/coriolis",
-   "key": "omega3",
-   "reader": "snapy",
-   "check": "src/options/forcing_coriolis.yaml:11",
-   "default": {
-    "kind": "fallback",
-    "value": "0.0",
-    "file": "src/options/forcing_coriolis.yaml",
-    "line": 11
-   },
    "anchor": "omega3"
   },
   {
    "path": "forcing/coriolis",
    "key": "traditional",
    "reader": "snapy",
-   "check": "src/options/forcing_coriolis.yaml:12",
+   "check": "src/options/forcing_coriolis.yaml:10",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/forcing_coriolis.yaml",
-    "line": 12
+    "line": 10
    },
    "anchor": "traditional"
   },
@@ -552,12 +552,12 @@
    "path": "forcing/plume-forcing",
    "key": "entrainment",
    "reader": "snapy",
-   "check": "src/options/forcing_plume_forcing.yaml:7",
+   "check": "src/options/forcing_plume_forcing.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.1",
     "file": "src/options/forcing_plume_forcing.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "entrainment"
   },
@@ -565,12 +565,12 @@
    "path": "forcing/plume-forcing",
    "key": "N2",
    "reader": "snapy",
-   "check": "src/options/forcing_plume_forcing.yaml:8",
+   "check": "src/options/forcing_plume_forcing.yaml:7",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_plume_forcing.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "N2"
   },
@@ -578,12 +578,12 @@
    "path": "forcing/relax-bot-comp",
    "key": "tau",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_comp.yaml:7",
+   "check": "src/options/forcing_relax_bot_comp.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_relax_bot_comp.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "tau"
   },
@@ -591,12 +591,12 @@
    "path": "forcing/relax-bot-comp",
    "key": "species",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_comp.yaml:8",
+   "check": "src/options/forcing_relax_bot_comp.yaml:7",
    "default": {
     "kind": "fallback",
     "value": "std::vector<std::string>{}",
     "file": "src/options/forcing_relax_bot_comp.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "species"
   },
@@ -604,12 +604,12 @@
    "path": "forcing/relax-bot-comp",
    "key": "xfrac",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_comp.yaml:9",
+   "check": "src/options/forcing_relax_bot_comp.yaml:8",
    "default": {
     "kind": "fallback",
     "value": "std::vector<double>{}",
     "file": "src/options/forcing_relax_bot_comp.yaml",
-    "line": 9
+    "line": 8
    },
    "anchor": "xfrac"
   },
@@ -617,12 +617,12 @@
    "path": "forcing/relax-bot-temp",
    "key": "tau",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_temp.yaml:7",
+   "check": "src/options/forcing_relax_bot_temp.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_relax_bot_temp.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "tau"
   },
@@ -630,12 +630,12 @@
    "path": "forcing/relax-bot-temp",
    "key": "btemp",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_temp.yaml:8",
+   "check": "src/options/forcing_relax_bot_temp.yaml:7",
    "default": {
     "kind": "required",
     "value": "",
     "file": "src/options/forcing_relax_bot_temp.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "btemp"
   },
@@ -643,18 +643,31 @@
    "path": "forcing/relax-bot-temp",
    "key": "at-face",
    "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_temp.yaml:9",
+   "check": "src/options/forcing_relax_bot_temp.yaml:8",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/forcing_relax_bot_temp.yaml",
-    "line": 9
+    "line": 8
    },
    "anchor": "at-face"
   },
   {
    "path": "forcing/relax-bot-velo",
    "key": "tau",
+   "reader": "snapy",
+   "check": "src/options/forcing_relax_bot_velo.yaml:6",
+   "default": {
+    "kind": "fallback",
+    "value": "0.0",
+    "file": "src/options/forcing_relax_bot_velo.yaml",
+    "line": 6
+   },
+   "anchor": "tau"
+  },
+  {
+   "path": "forcing/relax-bot-velo",
+   "key": "bvx",
    "reader": "snapy",
    "check": "src/options/forcing_relax_bot_velo.yaml:7",
    "default": {
@@ -663,11 +676,11 @@
     "file": "src/options/forcing_relax_bot_velo.yaml",
     "line": 7
    },
-   "anchor": "tau"
+   "anchor": "bvx"
   },
   {
    "path": "forcing/relax-bot-velo",
-   "key": "bvx",
+   "key": "bvy",
    "reader": "snapy",
    "check": "src/options/forcing_relax_bot_velo.yaml:8",
    "default": {
@@ -676,11 +689,11 @@
     "file": "src/options/forcing_relax_bot_velo.yaml",
     "line": 8
    },
-   "anchor": "bvx"
+   "anchor": "bvy"
   },
   {
    "path": "forcing/relax-bot-velo",
-   "key": "bvy",
+   "key": "bvz",
    "reader": "snapy",
    "check": "src/options/forcing_relax_bot_velo.yaml:9",
    "default": {
@@ -689,31 +702,18 @@
     "file": "src/options/forcing_relax_bot_velo.yaml",
     "line": 9
    },
-   "anchor": "bvy"
-  },
-  {
-   "path": "forcing/relax-bot-velo",
-   "key": "bvz",
-   "reader": "snapy",
-   "check": "src/options/forcing_relax_bot_velo.yaml:10",
-   "default": {
-    "kind": "fallback",
-    "value": "0.0",
-    "file": "src/options/forcing_relax_bot_velo.yaml",
-    "line": 10
-   },
    "anchor": "bvz"
   },
   {
    "path": "forcing/top-cool",
    "key": "flux",
    "reader": "snapy",
-   "check": "src/options/forcing_top_cool.yaml:7",
+   "check": "src/options/forcing_top_cool.yaml:6",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_top_cool.yaml",
-    "line": 7
+    "line": 6
    },
    "anchor": "flux"
   },
@@ -721,12 +721,12 @@
    "path": "forcing/top-cool",
    "key": "depth",
    "reader": "snapy",
-   "check": "src/options/forcing_top_cool.yaml:8",
+   "check": "src/options/forcing_top_cool.yaml:7",
    "default": {
     "kind": "fallback",
     "value": "1",
     "file": "src/options/forcing_top_cool.yaml",
-    "line": 8
+    "line": 7
    },
    "anchor": "depth"
   },
@@ -734,18 +734,31 @@
    "path": "forcing/top-cool",
    "key": "thickness",
    "reader": "snapy",
-   "check": "src/options/forcing_top_cool.yaml:9",
+   "check": "src/options/forcing_top_cool.yaml:8",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/forcing_top_cool.yaml",
-    "line": 9
+    "line": 8
    },
    "anchor": "thickness"
   },
   {
    "path": "forcing/top-sponge-lyr",
    "key": "tau",
+   "reader": "snapy",
+   "check": "src/options/forcing_top_sponge_lyr.yaml:6",
+   "default": {
+    "kind": "fallback",
+    "value": "0.0",
+    "file": "src/options/forcing_top_sponge_lyr.yaml",
+    "line": 6
+   },
+   "anchor": "tau"
+  },
+  {
+   "path": "forcing/top-sponge-lyr",
+   "key": "width",
    "reader": "snapy",
    "check": "src/options/forcing_top_sponge_lyr.yaml:7",
    "default": {
@@ -754,31 +767,18 @@
     "file": "src/options/forcing_top_sponge_lyr.yaml",
     "line": 7
    },
-   "anchor": "tau"
-  },
-  {
-   "path": "forcing/top-sponge-lyr",
-   "key": "width",
-   "reader": "snapy",
-   "check": "src/options/forcing_top_sponge_lyr.yaml:8",
-   "default": {
-    "kind": "fallback",
-    "value": "0.0",
-    "file": "src/options/forcing_top_sponge_lyr.yaml",
-    "line": 8
-   },
    "anchor": "width"
   },
   {
    "path": "dynamics",
    "key": "verbose",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:21",
+   "check": "src/options/hydro.yaml:18",
    "default": {
     "kind": "fallback",
     "value": "verbose",
     "file": "src/options/hydro.yaml",
-    "line": 21
+    "line": 18
    },
    "anchor": "verbose"
   },
@@ -786,12 +786,12 @@
    "path": "dynamics",
    "key": "disable-flux-x1",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:22",
+   "check": "src/options/hydro.yaml:19",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 22
+    "line": 19
    },
    "anchor": "disable-flux-x1"
   },
@@ -799,12 +799,12 @@
    "path": "dynamics",
    "key": "disable-flux-x2",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:23",
+   "check": "src/options/hydro.yaml:20",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 23
+    "line": 20
    },
    "anchor": "disable-flux-x2"
   },
@@ -812,12 +812,12 @@
    "path": "dynamics",
    "key": "disable-flux-x3",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:24",
+   "check": "src/options/hydro.yaml:21",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 24
+    "line": 21
    },
    "anchor": "disable-flux-x3"
   },
@@ -825,12 +825,12 @@
    "path": "dynamics",
    "key": "wb-wall-clamp",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:25",
+   "check": "src/options/hydro.yaml:22",
    "default": {
     "kind": "fallback",
     "value": "true",
     "file": "src/options/hydro.yaml",
-    "line": 25
+    "line": 22
    },
    "anchor": "wb-wall-clamp"
   },
@@ -838,12 +838,12 @@
    "path": "dynamics",
    "key": "conversion-order",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:27",
+   "check": "src/options/hydro.yaml:24",
    "default": {
     "kind": "fallback",
     "value": "2",
     "file": "src/options/hydro.yaml",
-    "line": 27
+    "line": 24
    },
    "anchor": "conversion-order"
   },
@@ -851,12 +851,12 @@
    "path": "dynamics",
    "key": "anomaly",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:34",
+   "check": "src/options/hydro.yaml:31",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 34
+    "line": 31
    },
    "anchor": "anomaly"
   },
@@ -864,12 +864,12 @@
    "path": "dynamics",
    "key": "flux-covariance",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:44",
+   "check": "src/options/hydro.yaml:41",
    "default": {
     "kind": "fallback",
     "value": "true",
     "file": "src/options/hydro.yaml",
-    "line": 44
+    "line": 41
    },
    "anchor": "flux-covariance"
   },
@@ -877,12 +877,12 @@
    "path": "dynamics",
    "key": "x1-mass-covariance",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:53",
+   "check": "src/options/hydro.yaml:50",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 53
+    "line": 50
    },
    "anchor": "x1-mass-covariance"
   },
@@ -890,12 +890,12 @@
    "path": "dynamics",
    "key": "perturbation-flux",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:60",
+   "check": "src/options/hydro.yaml:57",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/hydro.yaml",
-    "line": 60
+    "line": 57
    },
    "anchor": "perturbation-flux"
   },
@@ -903,12 +903,12 @@
    "path": "dynamics",
    "key": "precision",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:61",
+   "check": "src/options/hydro.yaml:58",
    "default": {
     "kind": "fallback",
     "value": "\"float64\"",
     "file": "src/options/hydro.yaml",
-    "line": 61
+    "line": 58
    },
    "anchor": "precision"
   },
@@ -916,12 +916,12 @@
    "path": "dynamics",
    "key": "conserve-axial-momentum",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:63",
+   "check": "src/options/hydro.yaml:60",
    "default": {
     "kind": "fallback",
     "value": "\"off\"",
     "file": "src/options/hydro.yaml",
-    "line": 63
+    "line": 60
    },
    "anchor": "conserve-axial-momentum"
   },
@@ -929,12 +929,12 @@
    "path": "dynamics",
    "key": "equation-of-state",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:15",
+   "check": "src/options/hydro.yaml:12",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/options/hydro.yaml",
-    "line": 15
+    "line": 12
    },
    "anchor": "equation-of-state"
   },
@@ -942,12 +942,12 @@
    "path": "dynamics",
    "key": "reconstruct",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:15",
+   "check": "src/options/hydro.yaml:12",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/options/hydro.yaml",
-    "line": 15
+    "line": 12
    },
    "anchor": "reconstruct"
   },
@@ -955,12 +955,12 @@
    "path": "dynamics",
    "key": "riemann-solver",
    "reader": "snapy",
-   "check": "src/options/hydro.yaml:15",
+   "check": "src/options/hydro.yaml:12",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/options/hydro.yaml",
-    "line": 15
+    "line": 12
    },
    "anchor": "riemann-solver"
   },
@@ -1098,18 +1098,31 @@
    "path": "outputs/<fid>",
    "key": "dt",
    "reader": "snapy",
-   "check": "src/options/output.yaml:16",
+   "check": "src/options/output.yaml:15",
    "default": {
     "kind": "fallback",
     "value": "0.0",
     "file": "src/options/output.yaml",
-    "line": 16
+    "line": 15
    },
    "anchor": "dt"
   },
   {
    "path": "outputs/<fid>",
    "key": "output_sumx1",
+   "reader": "snapy",
+   "check": "src/options/output.yaml:16",
+   "default": {
+    "kind": "fallback",
+    "value": "false",
+    "file": "src/options/output.yaml",
+    "line": 16
+   },
+   "anchor": "output_sumx1"
+  },
+  {
+   "path": "outputs/<fid>",
+   "key": "output_sumx2",
    "reader": "snapy",
    "check": "src/options/output.yaml:17",
    "default": {
@@ -1118,11 +1131,11 @@
     "file": "src/options/output.yaml",
     "line": 17
    },
-   "anchor": "output_sumx1"
+   "anchor": "output_sumx2"
   },
   {
    "path": "outputs/<fid>",
-   "key": "output_sumx2",
+   "key": "output_sumx3",
    "reader": "snapy",
    "check": "src/options/output.yaml:18",
    "default": {
@@ -1131,11 +1144,11 @@
     "file": "src/options/output.yaml",
     "line": 18
    },
-   "anchor": "output_sumx2"
+   "anchor": "output_sumx3"
   },
   {
    "path": "outputs/<fid>",
-   "key": "output_sumx3",
+   "key": "include_ghost_zones",
    "reader": "snapy",
    "check": "src/options/output.yaml:19",
    "default": {
@@ -1144,37 +1157,37 @@
     "file": "src/options/output.yaml",
     "line": 19
    },
-   "anchor": "output_sumx3"
-  },
-  {
-   "path": "outputs/<fid>",
-   "key": "include_ghost_zones",
-   "reader": "snapy",
-   "check": "src/options/output.yaml:20",
-   "default": {
-    "kind": "fallback",
-    "value": "false",
-    "file": "src/options/output.yaml",
-    "line": 20
-   },
    "anchor": "include_ghost_zones"
   },
   {
    "path": "outputs/<fid>",
    "key": "double_precision",
    "reader": "snapy",
-   "check": "src/options/output.yaml:22",
+   "check": "src/options/output.yaml:21",
    "default": {
     "kind": "fallback",
     "value": "false",
     "file": "src/options/output.yaml",
-    "line": 22
+    "line": 21
    },
    "anchor": "double_precision"
   },
   {
    "path": "outputs/<fid>",
    "key": "x1_slice",
+   "reader": "snapy",
+   "check": "src/options/output.yaml:29",
+   "default": {
+    "kind": "guarded",
+    "value": "",
+    "file": "src/options/output.yaml",
+    "line": 29
+   },
+   "anchor": "x1_slice"
+  },
+  {
+   "path": "outputs/<fid>",
+   "key": "x2_slice",
    "reader": "snapy",
    "check": "src/options/output.yaml:30",
    "default": {
@@ -1183,11 +1196,11 @@
     "file": "src/options/output.yaml",
     "line": 30
    },
-   "anchor": "x1_slice"
+   "anchor": "x2_slice"
   },
   {
    "path": "outputs/<fid>",
-   "key": "x2_slice",
+   "key": "x3_slice",
    "reader": "snapy",
    "check": "src/options/output.yaml:31",
    "default": {
@@ -1196,31 +1209,18 @@
     "file": "src/options/output.yaml",
     "line": 31
    },
-   "anchor": "x2_slice"
-  },
-  {
-   "path": "outputs/<fid>",
-   "key": "x3_slice",
-   "reader": "snapy",
-   "check": "src/options/output.yaml:32",
-   "default": {
-    "kind": "guarded",
-    "value": "",
-    "file": "src/options/output.yaml",
-    "line": 32
-   },
    "anchor": "x3_slice"
   },
   {
    "path": "outputs/<fid>",
    "key": "type",
    "reader": "snapy",
-   "check": "src/options/output.yaml:34",
+   "check": "src/options/output.yaml:33",
    "default": {
     "kind": "required",
     "value": "",
     "file": "src/options/output.yaml",
-    "line": 34
+    "line": 33
    },
    "anchor": "type"
   },
@@ -1228,12 +1228,12 @@
    "path": "outputs/<fid>",
    "key": "variables",
    "reader": "snapy",
-   "check": "src/options/output.yaml:39",
+   "check": "src/options/output.yaml:38",
    "default": {
     "kind": "guarded",
     "value": "",
     "file": "src/options/output.yaml",
-    "line": 39
+    "line": 38
    },
    "anchor": "variables"
   },
@@ -1241,27 +1241,14 @@
    "path": "outputs/<fid>",
    "key": "combine",
    "reader": "snapy",
-   "check": "src/options/output.yaml:40",
+   "check": "src/options/output.yaml:39",
    "default": {
     "kind": "fallback",
     "value": "true",
     "file": "src/options/output.yaml",
-    "line": 40
+    "line": 39
    },
    "anchor": "combine"
-  },
-  {
-   "path": "outputs/<fid>",
-   "key": "verbose",
-   "reader": "snapy",
-   "check": "src/options/output.yaml:41",
-   "default": {
-    "kind": "fallback",
-    "value": "false",
-    "file": "src/options/output.yaml",
-    "line": 41
-   },
-   "anchor": "verbose"
   },
   {
    "path": "dynamics/equation-of-state",
@@ -1272,7 +1259,7 @@
     "kind": "struct",
     "value": "\"moist-mixture\"",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 47
+    "line": 30
    },
    "anchor": "type"
   },
@@ -1285,7 +1272,7 @@
     "kind": "struct",
     "value": "1.4",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 48
+    "line": 31
    },
    "anchor": "gammad"
   },
@@ -1298,7 +1285,7 @@
     "kind": "struct",
     "value": "29.e-3",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 49
+    "line": 32
    },
    "anchor": "weight"
   },
@@ -1311,7 +1298,7 @@
     "kind": "struct",
     "value": "1.e-6",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 54
+    "line": 37
    },
    "anchor": "density_floor"
   },
@@ -1324,7 +1311,7 @@
     "kind": "struct",
     "value": "1.e-3",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 55
+    "line": 38
    },
    "anchor": "pressure_floor"
   },
@@ -1337,7 +1324,7 @@
     "kind": "struct",
     "value": "20.",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 56
+    "line": 39
    },
    "anchor": "temperature_floor"
   },
@@ -1350,7 +1337,7 @@
     "kind": "struct",
     "value": "false",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 57
+    "line": 40
    },
    "anchor": "limiter"
   },
@@ -1363,7 +1350,7 @@
     "kind": "struct",
     "value": "\"\"",
     "file": "src/eos/equation_of_state.hpp",
-    "line": 58
+    "line": 41
    },
    "anchor": "eos_file"
   },
@@ -1428,7 +1415,7 @@
     "kind": "struct",
     "value": "0.",
     "file": "src/forcing/forcing.hpp",
-    "line": 58
+    "line": 42
    },
    "anchor": "grav1"
   },
@@ -1441,7 +1428,7 @@
     "kind": "struct",
     "value": "0.",
     "file": "src/forcing/forcing.hpp",
-    "line": 59
+    "line": 43
    },
    "anchor": "grav2"
   },
@@ -1454,7 +1441,7 @@
     "kind": "struct",
     "value": "0.",
     "file": "src/forcing/forcing.hpp",
-    "line": 60
+    "line": 44
    },
    "anchor": "grav3"
   },
@@ -1467,46 +1454,20 @@
     "kind": "struct",
     "value": "1.",
     "file": "src/forcing/forcing.hpp",
-    "line": 50
+    "line": 41
    },
    "anchor": "non_hydrostatic"
-  },
-  {
-   "path": "forcing/const-gravity",
-   "key": "gravity-work",
-   "reader": "snapy",
-   "check": "src/forcing/const_gravity.cpp:17",
-   "default": {
-    "kind": "struct",
-    "value": "\"face\"",
-    "file": "src/forcing/forcing.hpp",
-    "line": 55
-   },
-   "anchor": "gravity_work"
-  },
-  {
-   "path": "forcing/const-gravity",
-   "key": "gravity-work-fixer",
-   "reader": "snapy",
-   "check": "src/forcing/const_gravity.cpp:17",
-   "default": {
-    "kind": "struct",
-    "value": "false",
-    "file": "src/forcing/forcing.hpp",
-    "line": 57
-   },
-   "anchor": "gravity_work_fixer"
   },
   {
    "path": "forcing/diffusion/<key>",
    "key": "x1",
    "reader": "snapy",
-   "check": "src/forcing/diffusion.cpp:347",
+   "check": "src/forcing/diffusion.cpp:328",
    "default": {
     "kind": "none",
     "value": "",
     "file": "src/forcing/diffusion.cpp",
-    "line": 347
+    "line": 328
    },
    "anchor": "x1"
   },
@@ -1514,12 +1475,12 @@
    "path": "forcing/diffusion/<key>",
    "key": "scale",
    "reader": "snapy",
-   "check": "src/forcing/diffusion.cpp:347",
+   "check": "src/forcing/diffusion.cpp:328",
    "default": {
     "kind": "none",
     "value": "",
     "file": "src/forcing/diffusion.cpp",
-    "line": 347
+    "line": 328
    },
    "anchor": "scale"
   },
@@ -1527,12 +1488,12 @@
    "path": "forcing",
    "key": "const-gravity",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1540,12 +1501,12 @@
    "path": "forcing",
    "key": "coriolis",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1553,12 +1514,12 @@
    "path": "forcing",
    "key": "diffusion",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1566,12 +1527,12 @@
    "path": "forcing",
    "key": "body-heat",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1579,12 +1540,12 @@
    "path": "forcing",
    "key": "top-cool",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1592,12 +1553,12 @@
    "path": "forcing",
    "key": "bot-heat",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1605,12 +1566,12 @@
    "path": "forcing",
    "key": "relax-bot-comp",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1618,12 +1579,12 @@
    "path": "forcing",
    "key": "relax-bot-temp",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1631,12 +1592,12 @@
    "path": "forcing",
    "key": "relax-bot-velo",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1644,12 +1605,12 @@
    "path": "forcing",
    "key": "top-sponge-lyr",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1657,12 +1618,12 @@
    "path": "forcing",
    "key": "bot-sponge-lyr",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1670,12 +1631,12 @@
    "path": "forcing",
    "key": "plume-forcing",
    "reader": "snapy",
-   "check": "src/hydro/hydro_options.cpp:66",
+   "check": "src/hydro/hydro_options.cpp:63",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/hydro/hydro_options.cpp",
-    "line": 66
+    "line": 63
    },
    "anchor": "check_keys"
   },
@@ -1727,7 +1688,7 @@
     "kind": "struct",
     "value": "\"auto\"",
     "file": "src/implicit/implicit_hydro.hpp",
-    "line": 56
+    "line": 46
    },
    "anchor": "ADD_ARG"
   },
@@ -1740,7 +1701,7 @@
     "kind": "struct",
     "value": "true",
     "file": "src/implicit/implicit_hydro.hpp",
-    "line": 57
+    "line": 47
    },
    "anchor": "ADD_ARG"
   },
@@ -1753,7 +1714,7 @@
     "kind": "struct",
     "value": "\"auto\"",
     "file": "src/mesh/meshblock.hpp",
-    "line": 98
+    "line": 92
    },
    "anchor": "execution"
   },
@@ -1766,7 +1727,7 @@
     "kind": "struct",
     "value": "false",
     "file": "src/mesh/meshblock.hpp",
-    "line": 99
+    "line": 93
    },
    "anchor": "execution_strict"
   },
@@ -1852,12 +1813,12 @@
    "path": "boundary-condition",
    "key": "external",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:91",
+   "check": "src/mesh/meshblock_options.cpp:95",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 91
+    "line": 95
    },
    "anchor": "check_keys"
   },
@@ -1865,12 +1826,12 @@
    "path": "boundary-condition",
    "key": "internal",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:91",
+   "check": "src/mesh/meshblock_options.cpp:95",
    "default": {
     "kind": "block",
     "value": "",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 91
+    "line": 95
    },
    "anchor": "check_keys"
   },
@@ -1878,12 +1839,12 @@
    "path": "boundary-condition/external",
    "key": "x1-inner",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1891,12 +1852,12 @@
    "path": "boundary-condition/external",
    "key": "x1-outer",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1904,12 +1865,12 @@
    "path": "boundary-condition/external",
    "key": "x2-inner",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1917,12 +1878,12 @@
    "path": "boundary-condition/external",
    "key": "x2-outer",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1930,12 +1891,12 @@
    "path": "boundary-condition/external",
    "key": "x3-inner",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1943,12 +1904,12 @@
    "path": "boundary-condition/external",
    "key": "x3-outer",
    "reader": "snapy",
-   "check": "src/mesh/meshblock_options.cpp:96",
+   "check": "src/mesh/meshblock_options.cpp:100",
    "default": {
     "kind": "fallback",
     "value": "\"reflecting\"",
     "file": "src/mesh/meshblock_options.cpp",
-    "line": 116
+    "line": 120
    },
    "anchor": "auto"
   },
@@ -1987,7 +1948,7 @@
     "kind": "struct",
     "value": "false",
     "file": "src/recon/reconstruct.hpp",
-    "line": 128
+    "line": 117
    },
    "anchor": "shock"
   },
@@ -2000,7 +1961,7 @@
     "kind": "struct",
     "value": "\"dc\"",
     "file": "src/recon/reconstruct.hpp",
-    "line": 41
+    "line": 36
    },
    "anchor": "type"
   },
@@ -2013,7 +1974,7 @@
     "kind": "struct",
     "value": "false",
     "file": "src/recon/reconstruct.hpp",
-    "line": 42
+    "line": 37
    },
    "anchor": "scale"
   },
@@ -2026,7 +1987,7 @@
     "kind": "struct",
     "value": "false",
     "file": "src/recon/reconstruct.hpp",
-    "line": 128
+    "line": 117
    },
    "anchor": "shock"
   },
@@ -2039,7 +2000,7 @@
     "kind": "struct",
     "value": "\"dc\"",
     "file": "src/recon/reconstruct.hpp",
-    "line": 41
+    "line": 36
    },
    "anchor": "type"
   },
@@ -2052,7 +2013,7 @@
     "kind": "struct",
     "value": "\"hllc\"",
     "file": "src/riemann/riemann.hpp",
-    "line": 61
+    "line": 55
    },
    "anchor": "type"
   },
@@ -2065,7 +2026,7 @@
     "kind": "struct",
     "value": "\"omni\"",
     "file": "src/riemann/riemann.hpp",
-    "line": 64
+    "line": 58
    },
    "anchor": "dir"
   },
@@ -2078,7 +2039,7 @@
     "kind": "struct",
     "value": "\"hllc\"",
     "file": "src/riemann/riemann.hpp",
-    "line": 61
+    "line": 55
    },
    "anchor": "type"
   },
@@ -2091,7 +2052,7 @@
     "kind": "struct",
     "value": "\"omni\"",
     "file": "src/riemann/riemann.hpp",
-    "line": 64
+    "line": 58
    },
    "anchor": "dir"
   },
@@ -2117,7 +2078,7 @@
     "kind": "struct",
     "value": "0",
     "file": "src/scalar/scalar.hpp",
-    "line": 60
+    "line": 38
    },
    "anchor": "nvar"
   },
@@ -2130,7 +2091,7 @@
     "kind": "struct",
     "value": "-1.",
     "file": "src/scalar/scalar.hpp",
-    "line": 72
+    "line": 50
    },
    "anchor": "upper_bound"
   },
@@ -2221,7 +2182,7 @@
     "kind": "struct",
     "value": "2.827e-10",
     "file": "src/sedimentation/sedimentation.hpp",
-    "line": 59
+    "line": 48
    },
    "anchor": "a_diameter"
   },
@@ -2234,7 +2195,7 @@
     "kind": "struct",
     "value": "8.24e-22",
     "file": "src/sedimentation/sedimentation.hpp",
-    "line": 60
+    "line": 49
    },
    "anchor": "a_epsilon_LJ"
   },
@@ -2247,7 +2208,7 @@
     "kind": "struct",
     "value": "3.34e-27",
     "file": "src/sedimentation/sedimentation.hpp",
-    "line": 61
+    "line": 50
    },
    "anchor": "a_mass"
   },
@@ -2260,7 +2221,7 @@
     "kind": "struct",
     "value": "5.e3",
     "file": "src/sedimentation/sedimentation.hpp",
-    "line": 62
+    "line": 51
    },
    "anchor": "upper_limit"
   }
