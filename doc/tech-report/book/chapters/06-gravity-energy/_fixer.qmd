@@ -1,8 +1,8 @@
-## Gravity-work fixer (`gravity-work-fixer`) {#sec-ch06-fixer}
+## Gravity-work fixer (removed; its key is refused) {#sec-ch06-fixer}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
-sources: src/forcing/const_gravity.cpp, src/hydro/hydro.cpp, tests/test_gravity_work_fixer_removed.py at the pin;
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
+sources: src/forcing/const_gravity.cpp, src/forcing/forcing.hpp, src/input/check_keys.cpp, tests/test_const_gravity_options.py at the pin;
          @sec-ch06-cell
 status: draft
 author: chengcli
@@ -13,22 +13,22 @@ reviewer: zoeyzyhu
 
 The gravity-work fixer repaired the energy budget of the cell form: once per step it removed the defect
 @eq-ch06-cell-defect from the domain's total energy, spreading it over the cells in proportion to their mass. V3
-has neither the cell form nor the fixer. The key `gravity-work-fixer` stays readable so that decks which switch the
-fixer off keep loading; `true` is refused at setup. With the face form, the only form at the pin, there is no
-defect to remove (@sec-ch06-face).
+has neither the cell form nor the fixer, and at the pin it has no key for it either: `const-gravity` refuses
+`gravity-work-fixer` as an unknown key whatever its value, so a deck written for the fixer must drop the key. With
+the face form, the only form at the pin, there is no defect to remove (@sec-ch06-face).
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** None at the pin: the fixer is not in the code; this section records the key and its refusal.
+**Purpose.** None at the pin: the fixer is not in the code; this section records the retired key and its refusal.
 
-**Data.** The boolean key `gravity-work-fixer` of the `const-gravity` block.
+**Data.** None: `gravity-work-fixer` is not a key of the `const-gravity` block at the pin.
 
 **Placement.** Setup only.
 
-**Activation.** `false` or absent loads; `true` is refused.
+**Activation.** The key is refused whatever its value; only its absence loads.
 
 **Guarantee / limits.** The face form's $E_{\mathrm{tot}}+P$ needs no fixer (@sec-ch06-conserves).
 
-**Evidence.** @tbl-ch06-fixer-tests: `test_gravity_work_fixer_removed_python`.
+**Evidence.** @tbl-ch06-fixer-tests: `test_const_gravity_options_python`.
 :::
 
 Local symbols: $\mathcal D$[^rg-b660c0a73eb0] the step's defect of the cell form [J]; $w^{(s)}_{\mathrm{step}}$ the weight of stage $s$
@@ -54,10 +54,11 @@ drops both the cell form and its fixer.
 
 ### Numerical method
 
-None at the pin. Setup reads the key and refuses `true` in two places: the `const-gravity` reader, for a deck, and
-`HydroImpl::reset`, for options built in Python
-({{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}},
-{{< code src/hydro/hydro.cpp HydroImpl::reset >}}).
+None at the pin. The deck reader's key check refuses the key: `check_keys` ({{< code src/input/check_keys.cpp check_keys >}}) in
+`ConstGravityOptionsImpl::from_yaml` ({{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}}) lists `grav1`, `grav2`, `grav3` and
+`non-hydrostatic` and stops at any other. The options object has no fixer member
+({{< code src/forcing/forcing.hpp ConstGravityOptionsImpl >}}), so options built in Python cannot name it and
+`HydroImpl::reset` has nothing to check.
 
 @fig-ch06-fixer-flow shows, for readers of the diagnostics that refer to it, the order of the operations the fixer
 ran in one step: the per-stage defects, their stage weights, and the deposit after the last stage. None of it runs
@@ -74,22 +75,22 @@ make_fig()
 
 ### Code
 
-**A minimal input.** A deck written for the fixer still loads when it switches the fixer off:
+**A minimal input.** A deck written for the fixer loads once the key is dropped:
 
 ```yaml
 forcing:
   const-gravity:
-    grav1: -9.8
-    gravity-work-fixer: false   # the only accepted value; or drop the key
+    grav1: -9.8          # no gravity-work-fixer key: the reader refuses it with any value
 ```
 
-**What is refused, and why.** `gravity-work-fixer: true`, from YAML and from Python options, with a message
-that names the V3 removal and says to set the key false or drop it. There is no defect for it to repair.
+**What is refused, and why.** `gravity-work-fixer` with any value, from YAML, with the message
+`unknown key 'forcing/const-gravity/gravity-work-fixer'. Valid keys: ...`; Python options have no such attribute.
+There is no defect for it to repair.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| deck refusal | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `gravity_work_fixer` | `gravity-work-fixer` |
-| options refusal | {{< code src/hydro/hydro.cpp HydroImpl::reset >}} | `gravity_work_fixer` | `gravity-work-fixer` |
+| deck refusal | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `check_keys` | `const-gravity` |
+| no fixer member | {{< code src/forcing/forcing.hpp ConstGravityOptionsImpl >}} | `ConstGravityOptionsImpl` | none |
 
 : Code map of the refused gravity-work fixer. {#tbl-ch06-fixer-code}
 
@@ -97,12 +98,12 @@ that names the V3 removal and says to set the key false or drop it. There is no 
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| {{< code tests/test_gravity_work_fixer_removed.py refused >}} (`test_gravity_work_fixer_removed_python`) | `gravity-work-fixer: true` is refused from YAML and from Python with a message naming the removal; `false` and no key still load | exact (throws or not) | `assert "removed in V3" in str(e)` |
-| {{< code tests/test_flux_register.cpp GravityWork.the_cell_form_is_refused_and_names_face >}} (`test_flux_register.release`) | `gravity-work-fixer: true` from YAML is refused with a message containing "removed in V3", and `false` loads | exact (throws or not) | `EXPECT_NE(msg.find("removed in V3"), std::string::npos)` |
+| {{< code tests/test_const_gravity_options.py test_removed_gravity_options >}} (`test_const_gravity_options_python`) | the retired keys `gravity-work` and `gravity-work-fixer`, even with their former defaults `face` and `false`, are refused by the deck reader with `unknown key 'forcing/const-gravity/<key>'`, and the loaded gravity options carry no such attribute | exact (throws or not) | `assert f"unknown key 'forcing/const-gravity/{key}'" in str(error)` |
 
 : Tests of the refused fixer. {#tbl-ch06-fixer-tests}
 
-The tests pass at the pin.[^ch06-fixer-run]
+The two tests of the previous pin passed there;[^ch06-fixer-run] at the pin `test_const_gravity_options_python`
+replaces them.
 
 [^ch06-fixer-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own inputs; run: `ctest -j1
     --output-on-failure -R <pattern>` with one anchored pattern over the 19 gravity-work and implicit ctests this
@@ -114,7 +115,7 @@ The tests pass at the pin.[^ch06-fixer-run]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- A deck that sets `gravity-work-fixer: true` does not load; set it `false` or drop the key.
+- A deck that carries `gravity-work-fixer`, with any value, does not load; drop the key.
 - The cycle line has no fixer field at the pin (`print_cycle_line`,
   {{< code src/diagnostics/budget.cpp print_cycle_line >}}); diagnostics written for the fixer's amount have nothing
   to read (@sec-ch06-conserves).
