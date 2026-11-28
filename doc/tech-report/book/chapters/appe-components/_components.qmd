@@ -138,7 +138,7 @@ and its warm-up save list carries the counter and the active-set buffers so that
 
 **kintera: the chemistry step.** The driver installs the reactions from the deck
 ({{< code examples/run_hydro.cpp main >}}; {{< code src/mesh/meshblock.cpp MeshBlockImpl::set_chemistry >}}), and
-the block runs them as the last op of its last stage ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}).
+the block runs them in its last stage, before the `boundaries` op ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}).
 The adapter owns a kintera `Kinetics` and a `ThermoX` ({{< code src/chemistry/chemistry_source.cpp ChemistrySource::ChemistrySource >}}).
 Its step refreshes the primitives after the dynamics and the adjustment, converts mass to mole fractions and to
 concentrations, evaluates the rates with their rate constants, `forward_with_rate_constants`

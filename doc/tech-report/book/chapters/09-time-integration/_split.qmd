@@ -168,7 +168,7 @@ kinetics cards are read and checked by kintera (@sec-appe).
 | `tests/test_wall_saturation.cpp` (`test_wall_saturation.release`) | phase change next to a wall keeps total energy and water | $10^{-12}$ relative | test threshold |
 | `tests/test_check_redo_saturation.py` (`test_check_redo_saturation_python`) | a failed saturation solve rejects the step | logical | contract |
 | `tests/test_sk4_chemistry_source.py` (`test_sk4_chemistry_source_python`) | a block with the chemistry set equals a block stepped by hand with the same update after the stages, `hydro_u` and `hydro_w`, in FP64 and FP32 | bitwise | the same operations in the same order |
-| `tests/test_sk4_mesh_chemistry.py` (`test_sk4_mesh_chemistry_python`) | a two-block Mesh running the chemistry as each block's last-stage op equals one block with the same chemistry; without it they differ | bitwise | as above |
+| `tests/test_sk4_mesh_chemistry.py` (`test_sk4_mesh_chemistry_python`) | a two-block Mesh running the chemistry in each block's last stage (before the boundary fill) equals one block with the same chemistry; without it they differ | bitwise | as above |
 | `tests/test_diffusion_cubed_sphere.cpp` (`test_diffusion_cubed_sphere.release`), radial case | the implicit radial step keeps energy, stays finite, is undone exactly by `restore_split`, and its error falls by more than 3.5 per halving of the step | $10^{-12}$ relative on the energy, $10^{-12}$ absolute on the restored temperature (`allclose(got, restored, 0., 1e-12)`); ratio 3.5 | test thresholds (second order gives 4) |
 | this section's check, `split_check.py` | `[C1]`–`[C4]` | 0.1 in the order; $10^{-14}$; exact | stated in the check |
 

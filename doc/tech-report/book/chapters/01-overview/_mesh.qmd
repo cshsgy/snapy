@@ -53,8 +53,8 @@ kernels thus run on their own streams. `MeshImpl::max_time_step`
 process group, then the Courant factor and the redo halving. `MeshImpl::forward`
 ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) first lets the blocks agree on how they run (Mesh-agree,
 @sec-ch13-agree), refuses a strict block that cannot capture and aligns their captures (@sec-ch13-cuts). It runs
-every block's stage schedule through the pool; a registered chemistry step is the last op of a block's last stage
-there, as on a bare block (@sec-ch11-eagerops). With the axial-momentum closure on, it sums the closure moments of
+every block's stage schedule through the pool; a registered chemistry step runs in a block's last stage there, before
+the `boundaries` op, as on a bare block (@sec-ch11-eagerops). With the axial-momentum closure on, it sums the closure moments of
 the local blocks, reduces them once over the process group, applies each block's increment and refills its physical
 boundaries (@sec-ch07-axial). It then exchanges the ghosts of every block. `MeshImpl::check_redo`
 ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}) combines the blocks' local flags on the device (one

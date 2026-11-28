@@ -125,6 +125,7 @@ whenever the driver calls `print_cycle_info` ({{< code src/mesh/meshblock_output
 |---|---|---|---|
 | `tests/test_cycle_diagnostics.cpp` (`test_cycle_diagnostics.release`), case `cycle_info.positivity_meters_read_their_hand_computed_values` | a six-cell column whose cloud settles at $-2$ m s$^{-1}$ for one step of 1 s: $\Theta = 0.5$ in the five draining cells, so `positivity_min` $= 0.5$, `positivity_severe` $= 5$, `lim_flux` $= 5\cdot 2\,\rho_{\mathrm c}$ and `lim_cut`/`lim_flux` $= 0.5$; the cycle line prints `limcut=0.5`, `thetamin=0.5`, `thetasevere=5` | $10^{-9}$ (relative for the fluxes) on the buffers; $10^{-5}$ on the printed tokens | the hand computation is exact; $10^{-9}$ covers the Riemann flux of the column, about $10^{-15}$ of the settling flux, and $10^{-5}$ the printed precision ({{< code tests/test_cycle_diagnostics.cpp cycle_info.positivity_meters_read_their_hand_computed_values >}}) |
 | `tests/test_graph_positivity_meters_match_eager.py` (`test_graph_positivity_meters_match_eager_python`) | a cuda-graph block and an eager block step the same schedule; after every step every meter, the redo result, the state and the cycle line are equal, in FP64 and FP32, for the moist case and the conversion-order-4 case; the eager meters are nonzero (the case is not vacuous) | bitwise (`torch.equal`; the cycle lines compared as strings) | graph and eager must be the same arithmetic ({{< code tests/test_graph_positivity_meters_match_eager.py assert_meters >}}) |
+| `tests/test_redo_positivity_meters.py` (`test_redo_positivity_meters_python`) | two eager moist blocks with the limiter active step the same $\Delta t$; one is forced into a redo by a NaN planted after its first attempt, repeats the step from the restored state, and its meters equal the other's after the accepted step and after a second one | `torch.equal` (bitwise) | {{< code tests/test_redo_positivity_meters.py >}} |
 | `tests/test_fp32_compute.py` (`test_fp32_compute_python`) | in an FP32 block, `positivity_min`, `lim_cut` and `lim_flux` are among the small diagnostics allowed to stay FP64 | exact (a dtype) | the precision policy's wide dtype |
 
 : Tests of the block status record. {#tbl-ch08-efstatus-tests}
@@ -143,8 +144,9 @@ record did not run.[^ch08-efstatus-run]
    state and copies the `EfStatus` meters back from the snapshot taken at the step's start, after the state backup
    ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}};
    {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}), so `positivity_hits`,
-   `positivity_severe`, `positivity_min`, `lim_cut` and `lim_flux` drop the census of a rejected attempt. This is
-   read from the code at the pin; no test asserts it either way.
+   `positivity_severe`, `positivity_min`, `lim_cut` and `lim_flux` drop the census of a rejected attempt.
+   `test_redo_positivity_meters_python` asserts it: a block forced into one redo ends with every meter bitwise
+   equal to an unforced block's (Tests).
 2. **`kPosSevere` is a count of entries, not of cells.** A cell with two species below the threshold counts twice.
 3. **The scalar census counts hits only.** There is no severe count, minimum or cut meter for the passive scalars.
 4. **The graph = eager equality of the meters is tested on CUDA only.** On MPS the wide dtype is FP32, and no test

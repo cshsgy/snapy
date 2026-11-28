@@ -79,8 +79,8 @@ make_fig()
    @sec-ch07-axial on, it then applies that closure and refills the physical boundaries. The example driver calls
    `forward` once per stage, and its chemistry runs inside the step as the block's `chemistry` operation
    ({{< code examples/run_hydro.cpp main >}}).
-2. `MeshImpl::forward` runs every block's stage on the worker pool, a registered chemistry step included as the
-   last op of the last stage, then the global phase: the axial closure of @sec-ch07-axial across the blocks; then it
+2. `MeshImpl::forward` runs every block's stage on the worker pool, a registered chemistry step included in the
+   last stage before its `boundaries` op, then the global phase: the axial closure of @sec-ch07-axial across the blocks; then it
    exchanges every block
    ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
 

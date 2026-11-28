@@ -61,7 +61,7 @@ exchange first; then `advance`, `forcing`[^rg-51c00aae93ad], `combine`, `saturat
 driver (`MeshBlockImpl::forward`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}) a change made
 between calls reaches the ghosts before reconstruction. A Mesh block's schedule has no exchange op:
 `MeshImpl::forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) runs every block's stage (a registered
-chemistry step is the last op of the last stage there, as on a bare block), then its global phase (the
+chemistry step runs in the last stage there, before the `boundaries` op, as on a bare block), then its global phase (the
 axial-momentum closure, followed by the physical fills), and exchanges the blocks last. Within the stage, `stage_combine` refills the solid hydro cells after the RK[^rg-45f96bd373b5]
 combination, the `saturation` op runs the saturation adjustment on the last stage, and the `boundaries` op
 (`MeshBlockImpl::stage_boundaries`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}})

@@ -228,6 +228,30 @@ byte-identical to the committed output; `tools/tests/test_provenance.py` require
 in the file, at the pin). Run tags kept at `73c45a7c`: every other one, ch07's CUDA ctest record `[^fw-ctest]`
 included; their owners re-run after the merge.
 
+Run tags still off-pin at the head, per chapter, with the owner who re-runs or re-words them (from
+`check_provenance.py --list`; the sha column lists the tags' shas):
+
+| chapter | off-pin tags | shas | owner |
+|---|---|---|---|
+| ch01 | 14 | 73c45a7c | jihenghu |
+| ch02 | 17 | 73c45a7c | chengcli |
+| ch03 | 17 | 73c45a7c | chengcli |
+| ch04 | 23 | 68f4e066, 6fbb3975, 73c45a7c, 919936da, c0c38593 | XinyueWang05 |
+| ch05 | 13 | 68f4e066, 6fbb3975, c0c38593 | XinyueWang05 |
+| ch06 | 12 | 6fbb3975, 73c45a7c, c0c38593, ccf40f95 | chengcli |
+| ch07 | 11 | 73c45a7c | chengcli |
+| ch08 | 18 | 73c45a7c, ccf40f95 | JiachenLiu-Atmos |
+| ch09 | 15 | 73c45a7c | zoeyzyhu |
+| ch10 | 2 | 73c45a7c | JiachenLiu-Atmos |
+| ch12 | 12 | 68f4e066, 73c45a7c, c0c38593 | XinyueWang05 |
+| ch13 | 10 | 73c45a7c | jihenghu |
+| ch14 | 10 | 73c45a7c | XinyueWang05 |
+| ch15 | 4 | 73c45a7c | cshsgy |
+| ch16 | 13 | 6fbb3975, c0c38593, ccf40f95 | gitlinffff |
+
+191 of the 198 counted problems are these off-pin tags; the other 7 are tags that fail for another reason
+(missing fields) and were failing at the base.
+
 The PROVENANCE `pin:` line of every fragment whose claims this move edited was set to `0d5caacb`; fragments the move
 did not touch keep their line.
 
