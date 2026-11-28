@@ -13,7 +13,7 @@ TARGETS = {
     'condensate': 'book/chapters/10-moist-coupling/_howto-condensate.qmd',
 }
 PIN = '0d5caacbd8e365c87a30af6ce043c39ab30c0959'
-KINTERA = ('chengcli/kintera', '4eb9b2350be692860c63cd8f0b736ad050762078')  # kintera v2.6.14
+KINTERA = ('chengcli/kintera', '0429d795f79a0665afeca565e5a05c87ab4ba1e2')  # kintera v2.6.13
 CHECK_KINTERA = '[`kintera c55b13b2`](https://github.com/chengcli/kintera/commit/c55b13b2204997d2d09e04498558ab9495d8ee77)'  # func_table_check.py's own kintera: hand-written tables
 
 

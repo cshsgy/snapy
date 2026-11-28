@@ -45,7 +45,7 @@ def test_contract_drift(tmp_path, key, old, new):
     assert c.check(tmp_path) == 1
 
 
-KINTERA_BLOB = 'https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/'
+KINTERA_BLOB = 'https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/'
 
 
 def _code_lines(text):

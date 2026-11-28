@@ -58,7 +58,7 @@ it, the tool fetches into `SNAPY_REPORT_CACHE` on every run.
 ## The kintera revision
 
 `tools/package-pins.json` (the commit the chapters cite) and `tools/env-pins.json` (the commit
-`setup.sh` installs) name one kintera revision: **v2.6.13, `4eb9b2350be692860c63cd8f0b736ad050762078`**
+`setup.sh` installs) name one kintera revision: **v2.6.13, `0429d795f79a0665afeca565e5a05c87ab4ba1e2`**
 (the tag `v2.6.13` of chengcli/kintera). It is the kintera snapy at `code_pin.yml` builds against:
 its CI installs `kintera==2.6.13` (`.github/workflows/ci.yml:86` and `:162` at the pin), and
 `CMakeLists.txt:120` requires `find_package(Kintera 2.6.13 REQUIRED)`.

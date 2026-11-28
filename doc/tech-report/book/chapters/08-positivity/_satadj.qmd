@@ -83,7 +83,7 @@ Why the write-back changes only the species rows, and what it keeps:
 
 `uv-solver` is the name of the algorithm kintera runs for the fixed-energy solve, `auto` by default, or `kkt` or
 `partition`, read from `dynamics/equation-of-state/uv-solver`; any other name is refused (`uv_solver`,
-[`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_options.cpp#L95-L101)).
+[`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L95-L101)).
 
 @fig-ch08-satadj-order places the adjustment in the step. Each stage is a fixed list of ops that the stage executor
 installs ({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}): `advance`, `forcing`[^rg-ad21c4b4bd61], `combine`,

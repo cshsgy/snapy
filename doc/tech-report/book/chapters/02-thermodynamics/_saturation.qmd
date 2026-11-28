@@ -56,7 +56,7 @@ $$
 $$ {#eq-ch02-saturation-energy}
 
 @eq-ch02-saturation-energy is the temperature loop of `equilibrate_uv` (`temperature_iter` in
-[`kintera equilibrate_uv.h:559-596`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L559-L596)), which re-evaluates
+[`kintera equilibrate_uv.h:559-596`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L559-L596)), which re-evaluates
 $\sum\tilde c_nu_n(T)$ after each update of the extents.
 
 #### What equilibrium means
@@ -99,14 +99,14 @@ Where a required gas is absent on one side only, the KKT path linearizes at its 
 `log_r` from the log saturation balance, clamps it to $\pm\tfrac12\ln$ of the largest float, and uses a signed
 $\exp(-\mathtt{log\_r})$ weight. A reaction within `logsvp_eps` of saturation leaves the active set, and an
 undersaturated reaction is active only with condensate to evaporate. Both sides absent defers the reaction
-(`nu_absent` and `reaction_set` in [`kintera equilibrate_uv.h:404-470`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L404-L470)).
+(`nu_absent` and `reaction_set` in [`kintera equilibrate_uv.h:404-470`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L404-L470)).
 
 #### What the tolerances guarantee
 
 10. *Partition.* The bracketed Newton on the energy stops when $\lvert U(T)-\rho e\rvert\le64\epsilon_{\mathrm m}
     \max(\lvert\rho e\rvert,1,\Xi)$ in J m$^{-3}$, where $\Xi=\sum_n\tilde c_n(\lvert u^{\star}_n\rvert+\lvert u_n-u^{\star}_n\rvert)$
     is the size of the terms summed into $U$ (`tolerance` in
-    [`kintera equilibrate_uv.h:157-172`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L157-L172)). Dividing by $\Psi$, the
+    [`kintera equilibrate_uv.h:157-172`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L157-L172)). Dividing by $\Psi$, the
     temperature is within $64\epsilon_{\mathrm m}\max(\lvert\rho e\rvert,\Xi)/\Psi$ of the root: about
     $64\epsilon_{\mathrm m}T\approx1.4\times10^{-14}T$ when $\rho e\approx\Psi T$, larger when energy zeros dominate.
 11. *KKT.* The temperature loop stops when a step is below $\max(10^{-4}\,\mathrm K,8\epsilon_{\mathrm m}\lvert T\rvert)$.
@@ -136,8 +136,8 @@ not redo causes. The rejection and redo belong to @sec-ch09 and @sec-ch08.
 
 In `auto` mode with disjoint vapour-cloud pairs the partition solve runs first; on failure it restores the input
 and the KKT solve runs. With non-disjoint reactions `auto` goes to KKT directly
-(`uv_partitionable` in [`kintera thermo_y.cpp:280-287`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L280-L287),
-`equilibrate_uv_partition` in [`kintera equilibrate_uv.h:327-337`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L327-L337)).
+(`uv_partitionable` in [`kintera thermo_y.cpp:280-287`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L280-L287),
+`equilibrate_uv_partition` in [`kintera equilibrate_uv.h:327-337`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L327-L337)).
 
 ```{python}
 #| label: fig-ch02-saturation-flow
@@ -176,7 +176,7 @@ dynamics:
 **What is refused, and why.**
 
 1. *An unknown solver name*, at parse time, with "Invalid UV solver: " and the value
-   (`uv_solver` in [`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_options.cpp#L95-L101)).
+   (`uv_solver` in [`kintera thermo_options.cpp:95-101`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L95-L101)).
 2. *`partition` with reactions that are not disjoint pairs*, at the first solve, with "UV partition solver requires
    disjoint vapor-cloud reactions": the partition solve has no meaning when one species sits in two reactions.
 3. *A nonpositive temperature or a negative heat capacity*, per cell, with "Error: Non-positive temperature = …"
@@ -189,10 +189,10 @@ and does not fall back.
 | what | code link | symbol | switch |
 |---|---|---|---|
 | snapy call | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}} | `pthermo` | reactions present |
-| solver dispatch and warm start | [`kintera thermo_y.cpp:225-325`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L225-L325) | `uv_solver` | `uv-solver` |
-| failure counter | [`kintera thermo_y.cpp:104-125`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/thermo_y.cpp#L104-L125) | `failures_` | |
-| active equations | [`kintera equilibrate_uv.h:404-470`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L404-L470) | `weight` | `kkt`, `auto` |
-| diagnostic encoding | [`kintera equilibrate_uv.h:611-614`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/equilibrate_uv.h#L611-L614) | `diag` | |
+| solver dispatch and warm start | [`kintera thermo_y.cpp:225-325`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L225-L325) | `uv_solver` | `uv-solver` |
+| failure counter | [`kintera thermo_y.cpp:104-125`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_y.cpp#L104-L125) | `failures_` | |
+| active equations | [`kintera equilibrate_uv.h:404-470`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L404-L470) | `weight` | `kkt`, `auto` |
+| diagnostic encoding | [`kintera equilibrate_uv.h:611-614`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/equilibrate_uv.h#L611-L614) | `diag` | |
 
 : Code map of the phase equilibrium. {#tbl-ch02-saturation-code}
 
@@ -253,7 +253,7 @@ table pass.[^sat-ctest]
     README CUDA Release build at the pin; CPU, and one CUDA GPU for the CUDA cases, 1 rank; Python 3.11.13, torch
     2.10.0+cu128, numpy 2.4.6, kintera 2.6.13, pyharp 2.8.2]. 15 of 15 ctests passed.
 
-[^sat-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; kintera 4eb9b2350be692860c63cd8f0b736ad050762078;
+[^sat-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; kintera 0429d795f79a0665afeca565e5a05c87ab4ba1e2;
     deck: the check itself; run: `python3 src/snapy_report/ch02/checks/saturation_check.py`, CPU, double, 1 process;
     Python 3.11.13, numpy 2.4.6, sympy 1.14.0; output identical to the committed file]. Output
     `saturation_check.out`, lines `[C1]`–`[C3]`.
