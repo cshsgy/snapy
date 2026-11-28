@@ -1,7 +1,7 @@
 ## Operator-split pieces at the step boundary: saturation adjustment, chemistry and radial conduction (`thermo.reactions`) {#sec-ch09-split}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy)
 sources: OUTLINE.md 7.5; src/mesh/meshblock_advance.cpp; src/mesh/stage_executor.cpp; src/mesh/mesh.cpp;
          src/chemistry/chemistry_source.cpp; src/forcing/diffusion_radial.cpp; examples/run_hydro.cpp
 status: draft
@@ -22,7 +22,7 @@ and half a step after them.
 
 **Data.** Reads the state after the last average; writes the species densities $\rho_n$, with $E$ kept by the phase step.
 
-**Placement.** Last stage, after the average: saturation, chemistry, boundary fill; a Mesh runs the chemistry in its global phase.
+**Placement.** Last stage, after the average: saturation, chemistry, boundary fill; a Mesh's block the same, before the Mesh's global phase.
 
 **Activation.** Saturation adjustment when the thermo card has reactions; chemistry when the driver sets a kinetics model.
 
@@ -113,9 +113,8 @@ make_fig()
    `peos->forward`, evaluates the kinetics rates and their rate constants in one call,
    `forward_with_rate_constants`, forms the Jacobian from that call's rate constants and advances them with
    `evolve_implicit` over the full step ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}};
-   {{< code src/chemistry/chemistry_source.cpp ChemistrySource::forward >}}). A block of a `Mesh` skips it there;
-   the Mesh runs it for each block in its global phase, one block after another, and refills that block's
-   boundaries ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
+   {{< code src/chemistry/chemistry_source.cpp ChemistrySource::forward >}}). A block of a `Mesh` runs it there too, on the
+   worker pool, before the Mesh's global phase ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
 4. The `boundaries` operation fills the physical boundaries, so the wall ghosts carry the adjusted composition
    ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}}).
 5. `check_redo` then decides on the whole step, chemistry included (@sec-ch09-redo).
@@ -169,7 +168,7 @@ kinetics cards are read and checked by kintera (@sec-appe).
 | `tests/test_wall_saturation.cpp` (`test_wall_saturation.release`) | phase change next to a wall keeps total energy and water | $10^{-12}$ relative | test threshold |
 | `tests/test_check_redo_saturation.py` (`test_check_redo_saturation_python`) | a failed saturation solve rejects the step | logical | contract |
 | `tests/test_sk4_chemistry_source.py` (`test_sk4_chemistry_source_python`) | a block with the chemistry set equals a block stepped by hand with the same update after the stages, `hydro_u` and `hydro_w`, in FP64 and FP32 | bitwise | the same operations in the same order |
-| `tests/test_sk4_mesh_chemistry.py` (`test_sk4_mesh_chemistry_python`) | a two-block Mesh running the chemistry in its global phase equals one block with the same chemistry; without it they differ | bitwise | as above |
+| `tests/test_sk4_mesh_chemistry.py` (`test_sk4_mesh_chemistry_python`) | a two-block Mesh running the chemistry as each block's last-stage op equals one block with the same chemistry; without it they differ | bitwise | as above |
 | `tests/test_diffusion_cubed_sphere.cpp` (`test_diffusion_cubed_sphere.release`), radial case | the implicit radial step keeps energy, stays finite, is undone exactly by `restore_split`, and its error falls by more than 3.5 per halving of the step | $10^{-12}$ relative on the energy, $10^{-12}$ absolute on the restored temperature (`allclose(got, restored, 0., 1e-12)`); ratio 3.5 | test thresholds (second order gives 4) |
 | this section's check, `split_check.py` | `[C1]`–`[C4]` | 0.1 in the order; $10^{-14}$; exact | stated in the check |
 
@@ -197,8 +196,8 @@ the radial case tests the order of the radial step, not of the split around the 
 1. **First order.** The moist pieces are split sequentially, first order in $\Delta t$ whatever the order of the
    Runge-Kutta stages; no symmetric split is offered for them. Not measured on a moist case.
 2. **The chemistry is set by the driver.** The chemistry runs only after `set_chemistry`; a driver that applies its
-   own kinetics elsewhere changes the split. On a `Mesh` the blocks' chemistry runs one block after another in the
-   global phase, not on the worker pool ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
+   own kinetics elsewhere changes the split. On a `Mesh` each block's chemistry runs in its own last stage on the
+   worker pool, before the axial closure ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
 3. **Non-convergence.** A phase solve that does not converge within its iteration limit is counted and rejects
    the step (@sec-ch09-redo). The count is drained once per check, so a failure counted between steps is not the
    step's.

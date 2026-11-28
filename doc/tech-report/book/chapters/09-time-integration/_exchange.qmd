@@ -1,7 +1,7 @@
 ## Ghost exchange within a stage: before the stage for a MeshBlock, after it for a Mesh (driver API) {#sec-ch09-exchange}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy)
 sources: OUTLINE.md 7.2; src/mesh/meshblock_advance.cpp; src/mesh/stage_executor.cpp; src/mesh/mesh.cpp;
          examples/run_hydro.cpp
 status: draft
@@ -79,9 +79,9 @@ make_fig()
    @sec-ch07-axial on, it then applies that closure and refills the physical boundaries. The example driver calls
    `forward` once per stage, and its chemistry runs inside the step as the block's `chemistry` operation
    ({{< code examples/run_hydro.cpp main >}}).
-2. `MeshImpl::forward` runs every block's stage on the worker pool, then the global phase: the axial closure of
-   @sec-ch07-axial across the blocks, and at the last stage the chemistry step of each block, one block after another,
-   each followed by a refill of that block's physical boundaries; then it exchanges every block
+2. `MeshImpl::forward` runs every block's stage on the worker pool, a registered chemistry step included as the
+   last op of the last stage, then the global phase: the axial closure of @sec-ch07-axial across the blocks; then it
+   exchanges every block
    ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
 
 The exchange itself (what is filled, in which order, and across which seams) is in @sec-ch03; the physical

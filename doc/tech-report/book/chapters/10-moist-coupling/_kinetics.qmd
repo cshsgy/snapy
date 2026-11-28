@@ -1,7 +1,7 @@
 ## Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`) {#sec-ch10-kinetics}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 3 (old 10's chemistry material goes to 11 and E); src/mesh/meshblock.{hpp,cpp}; src/mesh/stage_executor.cpp; examples/run_hydro.cpp, all at the pin
 status: draft
 -->
@@ -14,8 +14,8 @@ derives nothing.
 At the pin the kinetics is no longer a driver's call between steps. A caller registers the reactions on the block
 with `set_chemistry`, which needs an equation of state with a thermo and builds the block's chemistry source
 ({{< code src/mesh/meshblock.cpp MeshBlockImpl::set_chemistry >}}). The step then runs it after the last stage
-({{< code src/mesh/meshblock.hpp MeshBlockImpl::set_chemistry >}}). On a bare block the stage executor gives it its
-own slot; a Mesh's block defers it to the Mesh's global phase
+({{< code src/mesh/meshblock.hpp MeshBlockImpl::set_chemistry >}}). The stage executor gives it its own slot, on a
+bare block and on a Mesh's block alike
 ({{< code src/mesh/stage_executor.cpp StageExecutor::chemistry_slot >}}). The example driver registers it this way
 ({{< code examples/run_hydro.cpp main >}}). At the pin the chemistry step adds its species increment to the state
 and posts nothing to the register; the code's comment says its register posts are still to come

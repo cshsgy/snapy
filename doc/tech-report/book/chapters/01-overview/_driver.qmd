@@ -1,7 +1,7 @@
 ## Driver loop and accepted steps (`integration:`) {#sec-ch01-driver}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 6, chapter 1; examples/run_hydro.cpp; examples/straka.cpp; src/mesh/meshblock_advance.cpp;
          src/mesh/meshblock_redo.cpp; src/mesh/meshblock_output.cpp; src/mesh/stage_executor.cpp; src/implicit/implicit_hydro.cpp;
          tests/run_restart_cycle_limit.py; tests/test_check_redo_parallel.cpp
@@ -206,9 +206,7 @@ CUDA build (6.0 s and 6.2 s for the restart pair).[^ch01-driver-ctest]
 ::: {.callout-warning title="Limits"}
 The restart writer saves the output counters as they stand when it runs, inside `make_outputs`; together with
 the unconditional initial output of `straka`, this is a code-level reason to check for repeated restart
-outputs, and no overwrite experiment is reported here. A Mesh defers each block's chemistry and runs it over its
-blocks after the axial closure of the last stage (@sec-ch01-mesh), so where chemistry sits in the step differs
-between a bare block and a Mesh block.
+outputs, and no overwrite experiment is reported here.
 :::
 
 <!-- reader glossary notes -->

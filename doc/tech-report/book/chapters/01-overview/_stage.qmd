@@ -1,7 +1,7 @@
 ## Accumulate and combine one stage (`user_stage_forcings`) {#sec-ch01-stage}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/meshblock_advance.cpp; src/mesh/stage_executor.cpp; src/mesh/segment.cpp;
          src/hydro/flux_register.cpp; src/implicit/implicit_dispatch.cpp;
          src/implicit/implicit_dispatch.cu; tests/test_user_output.cpp; tests/test_jit_user_forcing.py;
@@ -144,7 +144,7 @@ a callback result may contain only `hydro_du` and `scalar_ds`, with matching sha
 averages with the integrator, runs the second half of every split source after the last stage's average, applies the
 conserved limiter and refills the solid cells (@sec-ch14-solids). On the last stage `saturation` runs the saturation
 adjustment on the interior cells when a thermodynamics module and a nonempty reaction list exist (@sec-ch08-satadj), and
-`chemistry` runs a registered chemistry step of a bare block (a Mesh defers it, @sec-ch01-mesh). `boundaries` fills the
+`chemistry` runs a registered chemistry step, on a bare block and on a Mesh's block alike (@sec-ch01-mesh). `boundaries` fills the
 physical ghosts last (@sec-ch14-timing). The tendencies are block storage, so `forcing` and the combine op read them across a
 segment boundary. This map asserts algebraic identities, not an observed convergence order.
 
