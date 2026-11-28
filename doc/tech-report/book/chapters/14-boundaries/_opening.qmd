@@ -1,12 +1,14 @@
-This chapter describes how snapy fills the ghost cells of a block and how it treats immersed solids. Three
-mechanisms share that job and are kept apart throughout: the physical face callbacks that a block installs
+This chapter describes how snapy fills the ghost cells of a block, which face fluxes it prescribes, and how it
+treats immersed solids, at the code pin `73c45a7c`. It follows the outline's three parts: the boundary kinds
+(@sec-ch14-registry to @sec-ch14-wb), the prescribed faces (@sec-ch14-prescribed) and the immersed solids
+(@sec-ch14-solids). Three mechanisms fill ghosts and are kept apart throughout: the physical face callbacks that a block installs
 from its YAML[^rg-aa1d9fab98ea] card (reflecting, periodic, extrapolation, outflow, custom, solid), the layout exchange that
 fills the ghosts a neighbouring block owns, and the solid mask that closes fluid faces inside the block. The
 chapter derives, for each callback, the discrete identity it implements (parity, permutation, constant
 extension, characteristic selection and admissibility), the ownership rule that decides which of the two
 fillers writes a ghost and when, the line optimum of the mask rectification, the reflecting closure of the
-implicit system against a solid, and the wall continuation of the hydrostatic reference. Every claim is read
-from the code at the pin named in each scheme's provenance block; no solver run is reported here, and the
+implicit system against a solid, and the wall continuation of the hydrostatic reference. Every claim is read from
+the code at the pin; no solver run is reported here, and the
 solver tests the schemes cite are catalogued, with their assertions, in @sec-ch16-ch11.
 
 @fig-ch14-opening-dependencies shows which scheme needs which. The complete switch matrix is
@@ -23,21 +25,24 @@ make_fig()
 
 | scheme | switch | default | order | main test |
 |---|---|---|---|---|
-| @sec-ch14-registry | `boundary-condition/external/*` | `reflecting` on every face | exact dispatch; solver order unmeasured | @sec-ch16-ch11 |
+| @sec-ch14-registry | `boundary-condition/external/*` | `reflecting` on every face named in a present `external`[^rg-a3914f7a519f] block | exact dispatch; solver order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-reflecting | `reflecting` | on (the default face name) | exact parity; wall order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-periodic | `periodic` | off | exact permutation; seam order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-extrapolation | `extrapolation` | off; the fallback of `outflow` for scalars and shallow water | $O(h)$ ghost consistency; solver order unmeasured | @sec-ch16-ch11 |
 | @sec-ch14-outflow | `outflow` | off | locally linear characteristic selection; reflection fraction below $0.05$ in the pulse test | @sec-ch16-ch11 |
 | @sec-ch14-custom | `custom`, `solid` | off | exact identity and constant fill | @sec-ch16-ch11 |
 | @sec-ch14-timing | `apply_boundaries`, `exchange_ghost_zones` | fixed by the driver | exact ownership; no order of accuracy | @sec-ch16-ch11 |
-| @sec-ch14-exchange | `SyncOptions` | `interpolate` off, `skip_corner` on | exact copy on matched cells; corners averaged | @sec-ch16-ch11 |
-| @sec-ch14-solids | `boundary-condition/internal/*`, `vars["solid"]` | `max-iter`[^rg-5f7fd96723e1] 5, density $10^3$, pressure $10^9$ | line optimum of the mask; closure exact; geometry first order (staircase) | @sec-ch16-ch11 |
+| @sec-ch14-exchange | `SyncOptions` | `interpolate` off, `skip_corner` on | exact copy on matched cells; a corner copied from its diagonal neighbour, else averaged | @sec-ch16-ch11 |
 | @sec-ch14-wb | `dynamics/wb-wall-clamp` | true | $O(h^2)$ reference bias at the wall cells (truncation argument) | @sec-ch16-ch11 |
+| @sec-ch14-prescribed | face kind `wall`, `vars["solid"]` | on for every wall and solid face | exact zero rows; momentum rows free | `test_prescribed_after_sources` |
+| @sec-ch14-solids | `boundary-condition/internal/*`, `vars["solid"]` | `max-iter`[^rg-5f7fd96723e1] 5, density $10^3$, pressure $10^9$ | line optimum of the mask; closure exact; geometry first order (staircase) | @sec-ch16-ch11 |
 
 : Boundary scheme map. {#tbl-ch14-opening-schemes}
 
 <!-- reader glossary notes -->
 [^rg-aa1d9fab98ea]: YAML — YAML Ain't Markup Language, the structured input format used for decks
+
+[^rg-a3914f7a519f]: external — boundary-function names for external domain faces
 
 [^rg-5f7fd96723e1]: max-iter — maximum number of iterations
 <!-- end reader glossary notes -->

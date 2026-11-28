@@ -21,7 +21,7 @@ def test_clean_boundary_contract():
     ("dx1: int", "dx1: float"),
     ("self->bfuncs()[face] = func;", "self->bfuncs()[face] = nullptr;"),
     ("nx1() + 2 * nghost()", "nx1() + nghost()"),
-    ('ix1 += "_inner";', 'ix1 += "_bad";'),
+    ('name += "_" + side;', 'name += "_bad" + side;'),
     ("bc/*.cpp", "bc/*.cc"),
 ])
 def test_boundary_source_drift(monkeypatch, capsys, old, new):
@@ -55,7 +55,7 @@ def test_boundary_recipe_drift(tmp_path):
     'BC_FUNCTION(zero_gradient_inner, var, dim, op)',
     'BC_FUNCTION(zero_gradient_outer, var, dim, op)',
     "Boundary function 'zero_gradient_inner' is not defined.",
-    'src/CMakeLists.txt#L35',
+    '{{< code src/CMakeLists.txt >}}',
     'x1-inner: zero_gradient',
     'name="zero_gradient_inner"',
     '@sec-ch14-registry',

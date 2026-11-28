@@ -68,7 +68,7 @@ conversion, the conserved ghosts reflect exchanged primitives. `MeshImpl::initia
 ({{< code src/mesh/mesh.cpp MeshImpl::initialize >}}) runs the fresh path for every local block through the worker
 pool and the restart path in a plain loop on the caller's thread; either way it ends with the Mesh-agree step that
 lets the blocks' capture decisions see the whole Mesh (@sec-ch13-agree). Initialization introduces no accuracy order;
-interpolation and boundary accuracy belong to @sec-ch03 and @sec-ch14b.
+interpolation and boundary accuracy belong to @sec-ch03 and @sec-ch14.
 
 @fig-ch01-initialization-flow shows the call sequence.
 

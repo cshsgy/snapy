@@ -1,10 +1,11 @@
 ## Order physical fills, exchange and corner refresh (`apply_boundaries; exchange_ghost_zones`) {#sec-ch14-timing}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.7; src/mesh/meshblock.cpp; src/mesh/mesh.cpp; src/scalar/scalar.cpp; src/bc/bc_func.hpp
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/mesh/stage_executor.cpp; src/mesh/meshblock_advance.cpp;
+         src/mesh/meshblock_exchange.cpp; src/hydro/flux_positivity.cpp; src/mesh/meshblock.cpp; src/mesh/mesh.cpp; src/scalar/scalar.cpp; src/bc/bc_func.hpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -12,7 +13,8 @@ reviewer:
 
 Two fillers write ghosts and their footprints overlap at the corners of a block. The physical callbacks own
 the ghost slabs of physical faces, the whole orthogonal extent included; the exchange owns the slabs of
-layout faces, corners excluded when `skip_corner` is on. A corner slab that lies in a physical x1 face's
+layout faces, corners excluded when `skip_corner` is on except an $x_2$–$x_3$ corner under the diagonal corner rule
+(@sec-ch14-exchange). A corner slab that lies in a physical x1 face's
 ghost region and in a tangential layout face's ghost region is written by the exchange with the neighbour's
 column, after which the x1 wall of that column has to be re-imposed. This scheme states the order in which
 the two fillers run and the refresh that keeps the overlap consistent.
@@ -38,7 +40,7 @@ at their overlap: the exchange overwrites a wall corner with the neighbour's int
 the wall map to the newly exchanged strip restores the same parity relation as on the owned strip, provided
 the callback reads only interior values and is idempotent. The registry contract (`BC_FUNCTION`,
 {{< code src/bc/bc_func.hpp BC_FUNCTION >}}) and the `refresh` closure of
-`MeshBlockImpl::exchange_ghost_zones` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}})
+`MeshBlockImpl::exchange_ghost_zones` ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}})
 encode these requirements. Check C1 includes a two-dimensional corner where an exchange overwrites a prior
 mirror and a second fill restricted to the exchanged strip restores parity; this is an exact discrete
 ownership check, not a convergence proof [check `src/snapy_report/ch14/checks/boundary_check.py`, output
@@ -47,33 +49,38 @@ ownership check, not a convergence proof [check `src/snapy_report/ch14/checks/bo
 ### Numerical method
 
 Initialization (`MeshBlockImpl::initialize`, {{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize >}})
-runs `initialize_local`, which captures the outflow background before any physical fill and then fills the
-primitives; exchanges the primitives (and the scalar ratios) with `interpolate` on; and runs
-`finalize_initialization`, which converts to conserved variables, records the solid fill states, and fills
-the conserved fields. The block driver `MeshBlockImpl::forward`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}) exchanges and then advances, so a change the
-driver made between calls reaches the ghosts before reconstruction. `MeshImpl::forward`
-({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) advances every local block and then exchanges; with
-several local blocks it defers the gravity-work fixer, sums its terms over the blocks, applies the shared
-correction, and fills the physical boundaries once more before that exchange. Inside each local advance
-(`MeshBlockImpl::advance_local`, {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}) the order is:
-the RK[^rg-45f96bd373b5] combination; the refill of the solid hydro cells; the saturation adjustment on the last stage when a
-thermodynamics module is present; the gravity-work fixer on the last stage when it is on and not deferred;
-and then the physical fills of `apply_boundaries`.
+runs `initialize_under_mesh` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_under_mesh >}}):
+`initialize_local` captures the outflow background before any physical fill and then fills the primitives;
+`exchange_state` exchanges the primitives and the scalar ratios with `interpolate` on; and
+`finalize_initialization` converts to conserved variables, records the solid fill states and fills the conserved
+fields.
 
-The refresh in `exchange_ghost_zones` uses only the first two callbacks (x1 inner and outer), skips an
-outflow callback, and restricts each call to the tangential ghost slabs whose own face is not physical,
-where "physical" here excludes a callback whose name starts with `periodic`. Each slab is $\min(n_g,
+A stage runs as the list of ops that `StageExecutor::build_schedule`
+({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}) builds: for a bare block, a stage-entry
+exchange first; then `advance`, `forcing`[^rg-51c00aae93ad], `combine`, `saturation`, `chemistry` and `boundaries`. So in the block
+driver (`MeshBlockImpl::forward`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}) a change made
+between calls reaches the ghosts before reconstruction. A Mesh block's schedule has no exchange op:
+`MeshImpl::forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) runs every block's stage (a registered
+chemistry step is the last op of the last stage there, as on a bare block), then its global phase (the
+axial-momentum closure, followed by the physical fills), and exchanges the blocks last. Within the stage, `stage_combine` refills the solid hydro cells after the RK[^rg-45f96bd373b5]
+combination, the `saturation` op runs the saturation adjustment on the last stage, and the `boundaries` op
+(`MeshBlockImpl::stage_boundaries`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}})
+runs the physical fills of `apply_boundaries`.
+
+The refresh in `exchange_ghost_zones` walks every installed callback except outflow. An $x_2$ or $x_3$ callback
+takes part only when its own face is physical, and "physical" here excludes a callback whose name starts with
+`periodic` and, on a cubed-sphere block, the built-in `custom` no-op of an $x_2$ or $x_3$ face. Each callback is
+restricted to the tangential ghost slabs whose face is not physical. Each slab is $\min(n_g,
 \lfloor n/2\rfloor)$ cells wide in the tangential direction, with $n$ that direction's extent. A callback whose name
 starts with `reflecting` is instead called once over the full extent when no tangential face is physical: it mirrors
-each x1 row from that row's own interior, so the one call writes the slabs and rewrites the other ghost rows with
-the values they already hold. The conserved
-hydro state and the scalar densities are refreshed, and the scalar primitive ratios are then recomputed from
-them. Auxiliary fields take the same two-step order: the donor factor of the flux positivity limiter is
-exchanged raw and then passed through every installed callback with scalar type, in `HydroImpl::forward`
-({{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}) for the species and in the `sync_theta` closure
-of `ScalarImpl::forward` ({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}) for the passive scalars. No
-accuracy order follows from this sequence; the wall-rest and phase-change tests are the available assertions.
+each row from that row's own interior, so the one call writes the slabs and rewrites the other ghost rows with the
+values they already hold. The conserved hydro state and the scalar densities are refreshed, and the scalar
+primitive ratios are then recomputed from them. Auxiliary fields take the same two-step order: the donor factor of
+the flux positivity limiter is exchanged raw and then passed through every installed callback with scalar type
+(`flux_positivity_sync_theta_`, {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}}), called by
+`PositivityLimiter::sync_` for the species and by the `sync_theta` closure of `ScalarImpl::forward`
+({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}) for the passive scalars. No accuracy order follows from
+this sequence; the wall-rest and phase-change tests are the available assertions.
 
 @fig-ch14-timing-stencil illustrates the operations, with labelled roles independent of colour.
 
@@ -105,27 +112,33 @@ boundary-condition:
 contract forbids dependence on the full tangential extent. Outflow is deliberately excluded from corner refresh
 because it needs full-size saved backgrounds.
 
-**Read the implementation.** `MeshBlockImpl::forward` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}) contains:
+**Read the implementation.** The schedule builder contains these lines
+({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}):
 
 ```cpp
-exchange_ghost_zones(vars);
-advance_local(vars, dt, stage);
+  if (!block_at(block)->_mesh_executor) {
+    Op exchange;
+    exchange.name = "exchange";
 ```
 
-These lines implement the block-driver ownership order in the Derivation layer. The mesh driver has the different order documented above; this excerpt is not its schedule.
+These lines put the stage-entry exchange first for a bare block, which implements the block-driver ownership
+order in the Derivation layer. A Mesh block has no such op; the Mesh exchanges after the stages, as documented
+above.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
 | init | {{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize >}} | `exchange` | none |
 | initlocal | {{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_local >}} | `boundary_reference_w` | none |
 | finalinit | {{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize_initialization >}} | `fill_solid_hydro_u` | none |
-| block | {{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}} | `exchange_ghost_zones` | none |
-| advance | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `apply_boundaries` | none |
-| mesh | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `advance_local` | none |
-| exchange | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `exchange_ghost_zones` | none |
-| corner | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
+| schedule | {{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}} | `exchange` | none |
+| block | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}} | `run_stage` | none |
+| boundaries | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}} | `apply_boundaries` | none |
+| mesh | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `run_stage` | none |
+| exchange | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}} | `exchange_ghost_zones` | none |
+| corner | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
 | meshex | {{< code src/mesh/mesh.cpp MeshImpl::exchange_ghost_zones >}} | `exchange_ghost_zones` | none |
-| apply | {{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_boundaries >}} | `apply_boundaries` | none |
+| apply | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries >}} | `apply_boundaries` | none |
+| theta | {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}} | `bfuncs` | none |
 | scalartheta | {{< code src/scalar/scalar.cpp ScalarImpl::forward >}} | `sync_theta` | none |
 | registry | {{< code src/bc/bc_func.hpp BC_FUNCTION >}} | `BC_FUNCTION` | none |
 
@@ -135,12 +148,12 @@ These lines implement the block-driver ownership order in the Derivation layer. 
    fields. The anchor `boundary_reference_w` is in
    {{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_local >}}.
 2. Use the order of the selected driver; the two drivers do not place their exchange at the same point. The
-   anchor `advance_local` is in {{< code src/mesh/mesh.cpp MeshImpl::forward >}}.
-3. After a block exchange, refresh the x1 wall corners in the conserved and scalar representations and
+   anchor `run_stage` is in {{< code src/mesh/mesh.cpp MeshImpl::forward >}}.
+3. After a block exchange, refresh the wall corners in the conserved and scalar representations and
    recompute the scalar ratios. The anchor `refresh` is in
-   {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}.
-4. At stage end, fill the physical faces after the solid refill, the saturation adjustment and the gravity
-   correction. The anchor `apply_boundaries` is in {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}.
+   {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}}.
+4. At stage end, fill the physical faces after the solid refill, the saturation adjustment and the chemistry.
+   The anchor `apply_boundaries` is in {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}}.
 
 ### Tests
 
@@ -169,16 +182,18 @@ exactly.[^ch11-timing-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-timing-run]: [sha: snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; deck: the deterministic fixtures in the check;
+[^ch11-timing-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
+    check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.11.13, NumPy 2.4.6, SymPy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports
+    no snapy code.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-Only the x1 callbacks take part in the refresh, and outflow is excluded from it: an outflow x1 face keeps the
-exchanged corner, because its background is sized for the full block and it needs primitives. The public
+Outflow is excluded from the refresh: an outflow face keeps the exchanged corner, because its background is sized
+for the full block and it needs primitives. The public
 `MeshImpl::exchange_ghost_zones` ({{< code src/mesh/mesh.cpp MeshImpl::exchange_ghost_zones >}}) only builds
 the sync options and calls the exchange, so a caller cannot assume it supplies the block method's refresh. A
 custom callback that depends on the full orthogonal shape of its input violates the documented contract and
@@ -189,5 +204,7 @@ is claimed.
 :::
 
 <!-- reader glossary notes -->
+[^rg-51c00aae93ad]: forcing — forcing options block: a map with one sub-block per forcing component
+
 [^rg-45f96bd373b5]: RK — Runge–Kutta
 <!-- end reader glossary notes -->

@@ -1,4 +1,4 @@
-# Boundary conditions and immersed solids {#sec-ch14b}
+# Boundary conditions and immersed solids {#sec-ch14}
 
 {{< include 14-boundaries/_opening.qmd >}}
 
@@ -18,8 +18,10 @@
 
 {{< include 14-boundaries/_exchange.qmd >}}
 
-{{< include 14-boundaries/_solids.qmd >}}
-
 {{< include 14-boundaries/_wb.qmd >}}
+
+{{< include 14-boundaries/_prescribed.qmd >}}
+
+{{< include 14-boundaries/_solids.qmd >}}
 
 The limits this chapter states are collected with those of the other chapters in @sec-ch17-wrong, @sec-ch17-restricted and @sec-ch17-usability.

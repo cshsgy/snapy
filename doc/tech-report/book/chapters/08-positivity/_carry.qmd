@@ -71,7 +71,7 @@ By step 1 of @sec-ch08-theta that leaves the plain factor, $\Theta'_i = \Theta_i
 settling flux in the same cell is still relaxed.
 
 **The settling carry on a prescribed face.** A prescribed face is a face of the register whose flux the boundary
-sets, for example a wall or the face of an immersed solid (@sec-ch10-prescribed, @sec-ch14b). The sweep prescribes those faces
+sets, for example a wall or the face of an immersed solid (@sec-ch10-prescribed, @sec-ch14-prescribed). The sweep prescribes those faces
 before the limiter runs, so the advected part of the species flux is already the prescribed value there. The settling
 buffer is the sedimentation's own, written before that, and a prescribed face can still carry a settling flux
 $F_{\mathrm{sed}}$ in it. On such a face the net species flux is the prescribed value, write it $F_{\mathrm p}$, so the

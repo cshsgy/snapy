@@ -1,10 +1,10 @@
 ## Reserve a face or fill a solid mask (`custom; solid`) {#sec-ch14-custom}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.6; src/bc/bc_func.cpp; src/bc/rectify_solid.cpp; src/mesh/meshblock_options.cpp; src/mesh/meshblock.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/bc/bc_func.cpp; src/bc/rectify_solid.cpp; src/mesh/meshblock_options.cpp; src/mesh/meshblock.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -30,7 +30,7 @@ Neither callback introduces a PDE[^rg-1666298f7b80] discretization.
 
 **Guarantee / limits.** Custom is identity; solid is constant fill, not a hydro wall.
 
-**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run at the pin.
+**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run.
 :::
 
 ### Derivation
@@ -40,9 +40,9 @@ replaces every entry of the ghost slab by one. Reapplying either map returns the
 idempotent and satisfy the registry contract. For a Boolean mask, one denotes solid; for a hydro state vector
 it is merely the number one in every row and is not a physical state construction.
 `custom_inner` and `custom_outer`
-([`bc_func.cpp:7-8`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L7-L8))
+({{< code src/bc/bc_func.cpp >}})
 have empty bodies; `solid_inner` and `solid_outer`
-([`bc_func.cpp:68-87`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L68-L87))
+({{< code src/bc/bc_func.cpp >}})
 assign one to the width-$n_g$ slab. Check C1 verifies the identity and the constant-one ghost fill without
 assuming a thermodynamic meaning [check `src/snapy_report/ch14/checks/boundary_check.py`, output
 `src/snapy_report/ch14/checks/boundary_check.out`]. The checks do not call a snapy kernel.
@@ -102,8 +102,8 @@ The assignment is the constant map in the Derivation layer. On a Boolean mask it
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| custom | [`bc_func.cpp:7-8`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L7-L8) | `custom_inner` | `custom` |
-| solidbc | [`bc_func.cpp:68-87`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L68-L87) | `solid_inner` | `solid` |
+| custom | {{< code src/bc/bc_func.cpp >}} | `custom_inner` | `custom` |
+| solidbc | {{< code src/bc/bc_func.cpp >}} | `solid_inner` | `solid` |
 | rectify | {{< code src/bc/rectify_solid.cpp InternalBoundaryImpl::rectify_solid >}} | `rectify_solid` | `boundary-condition/internal/max-iter` |
 | classify | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::is_wall_boundary >}} | `is_wall_boundary` | none |
 | no-op by identity | {{< code src/bc/bc_func.cpp is_custom_noop >}} | `is_custom_noop` | `custom` on $x_2$/$x_3$, cubed sphere |
@@ -111,9 +111,9 @@ The assignment is the constant map in the Derivation layer. On a Boolean mask it
 : Implementation sites for custom. {#tbl-ch14-custom-code}
 
 1. Leave the tensor unchanged for custom. The anchor `custom_inner` is in
-   [`bc_func.cpp:7-8`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L7-L8).
+   {{< code src/bc/bc_func.cpp >}}.
 2. For solid, assign one to the requested ghost slab. The anchor `solid_inner` is in
-   [`bc_func.cpp:68-87`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L68-L87).
+   {{< code src/bc/bc_func.cpp >}}.
 3. Use solid on a mask; do not infer a hydro wall from the function name. The anchor `rectify_solid` is in
    {{< code src/bc/rectify_solid.cpp InternalBoundaryImpl::rectify_solid >}}.
 
@@ -143,10 +143,12 @@ exactly.[^ch11-custom-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-custom-run]: [sha: snapy@68f4e066974ede87e4379285c4fba895b970b7f1; deck: the deterministic fixtures in the check;
+[^ch11-custom-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
+    check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.11.13, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports
+    no snapy code.
 
 ### Limits
 

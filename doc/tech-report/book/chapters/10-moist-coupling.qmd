@@ -20,7 +20,7 @@ The register is `FluxRegister` ({{< code src/hydro/flux_register.hpp FluxRegiste
 module's `F1`, `F2`, `F3` buffers ({{< code src/hydro/hydro.cpp HydroImpl::reset >}}), and the scalar module's
 ({{< code src/scalar/scalar.cpp ScalarImpl::reset >}}). The two share one wall batch
 ({{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}). Which faces are prescribed, and with what, is the
-boundary chapter's (@sec-ch14b in this book, chapter 14 in the V3 outline); this chapter says how the register books
+boundary chapter's (@sec-ch14); this chapter says how the register books
 them.
 
 ```{python}

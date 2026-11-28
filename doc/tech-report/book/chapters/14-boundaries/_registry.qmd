@@ -1,11 +1,11 @@
 ## Register and classify block faces (`boundary-condition/external/*`) {#sec-ch14-registry}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.1; src/bc/bc_func.hpp; src/bc/bc.hpp; src/mesh/meshblock_options.cpp; src/mesh/meshblock.cpp;
-         src/hydro/hydro.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14.1; src/bc/bc_func.hpp; src/bc/bc.hpp; src/mesh/meshblock_options.cpp;
+         src/mesh/meshblock.cpp; src/layout/exchange.hpp; src/layout/exchange.cpp; src/hydro/hydro.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -27,7 +27,8 @@ and "callback present" mean the same thing from then on.
 
 **Placement.** Parse names, then remove layout-owned callbacks at construction.
 
-**Activation.** External faces default to `reflecting`.
+**Activation.** Inside `boundary-condition/external`, a face without a key defaults to `reflecting`; a deck without
+that block installs no callback, and the block then refuses to build.
 
 **Guarantee / limits.** Physical-face and diffusion-wall predicates differ.
 
@@ -44,11 +45,18 @@ match winning in x3, x2, x1 order. A face is a *diffusion wall* when it is physi
 of `reflecting_inner`, `reflecting_outer`, `fixed_temperature_inner` or `fixed_temperature_outer`:
 `MeshBlockOptionsImpl::is_wall_boundary` ({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::is_wall_boundary >}})
 is a whitelist, and a physical face whose name was not recorded (a callback installed programmatically without
-a name) warns once and is not a wall. The hydro predicate `HydroImpl::is_x1_wall`
-({{< code src/hydro/hydro.cpp HydroImpl::is_x1_wall >}}) is a third, different set: a physical x1 face whose
-name does not start with `periodic`. The three sets are nested but not equal: an outflow face is physical and
-an x1 wall for the hydro, but not a diffusion wall; an in-block periodic x1 face (slab layout) is physical but
-neither kind of wall.
+a name) warns once and is not a wall.
+
+Both predicates read one classification. `MeshBlockOptionsImpl::face_kind`
+({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::face_kind >}}) gives a face with a callback one
+`FaceKind` ({{< code src/layout/exchange.hpp FaceKind >}}): `periodic` for a name starting with `periodic`, `wall`
+for the four whitelisted names, `outflow` for the outflow callback, and `custom` for everything else, including an
+unnamed callback. A face without a callback is `interior`, and `Exchange::kind`
+({{< code src/layout/exchange.cpp Exchange::kind >}}) then refines it from the layout into `seam_x1`, `panel`,
+`periodic` or `interior`. The hydro predicate `HydroImpl::is_x1_wall`
+({{< code src/hydro/hydro.cpp HydroImpl::is_x1_wall >}}) is a third set: an x1 face of kind `wall`, `outflow` or
+`custom`. The sets are nested but not equal: an outflow face is physical and an x1 wall for the hydro, but not a
+diffusion wall; an in-block periodic x1 face (slab layout) is physical but neither kind of wall.
 
 A repeated fill must reproduce the same ghost values from the owned slab. This idempotence is a contract on the
 callback, not a property of every tensor map; the registry asks for it because the corner refresh of
@@ -92,7 +100,7 @@ make_fig()
 
 This is a configuration fragment, not a standalone simulation deck.
 
-<!-- reader glossary keys -->Keys in this fragment: `boundary-condition`[^rg-01888ad64fad], `external`[^rg-a3914f7a519f], `x1-inner`[^rg-7cca0798643a], `x1-outer`[^rg-ffc56ec72f7b].
+<!-- reader glossary keys -->Keys in this fragment: `boundary-condition`[^rg-01888ad64fad], `x1-inner`[^rg-7cca0798643a], `x1-outer`[^rg-ffc56ec72f7b].
 ```yaml
 boundary-condition:
   external:
@@ -108,13 +116,31 @@ of its faces (@sec-ch14-periodic), and $x_1$[^rg-e4c312927e59] is the vertical (
 **Refusals and prerequisites.** An unregistered name such as `typo` is refused as "Boundary function 'typo_inner'
 is not defined." Unknown map keys are rejected by `check_keys`; a collapsed direction does not read its face names.
 
-**Read the implementation.** `MeshBlockOptionsImpl::from_yaml` ({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}}) contains:
+**Read the implementation.** `MeshBlockOptionsImpl::from_yaml` reads every face name in one loop over `side`
+([`src/mesh/meshblock_options.cpp:114-126`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_options.cpp#L114-L126)), verbatim at the pin:
 
 ```cpp
-auto ix1 = external_bc["x1-inner"].as<std::string>("reflecting");
+    for (std::string side : {"inner", "outer"}) {
+      auto key = "x" + std::to_string(d + 1) + "-" + side;
+      auto name = external_bc[key].as<std::string>("reflecting");
+      if (name == "periodic") {
+        if (d == 0 && op->layout()->type() == "cubed")
+          op->layout()->periodic_z(true);
+        if (d == 1) op->layout()->periodic_x(true);
+        if (d == 2) op->layout()->periodic_y(true);
+      }
+      name += "_" + side;
+      TORCH_CHECK(get_bc_func().find(name) != get_bc_func().end(),
+                  "Boundary function '", name, "' is not defined.");
+      op->bfuncs().push_back(get_bc_func()[name]);
 ```
 
-The default supplies the face name; the following registry lookup realizes the dispatch contract in the Derivation layer.
+The default `reflecting` applies only inside a present `boundary-condition/external` block: a deck without the
+`boundary-condition` block, or without its `external` map, returns before this loop, installs no callback, and
+`MeshBlockImpl` then stops with "bfuncs size must be at least" for every active direction
+({{< code src/mesh/meshblock.cpp MeshBlockImpl::MeshBlockImpl >}}). Within the block, the default `reflecting` supplies the
+face name, the suffix names the registry entry, and the lookup refuses a name
+that is not registered: the dispatch contract of the Derivation layer.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
@@ -126,6 +152,7 @@ The default supplies the face name; the following registry lookup realizes the d
 | physical | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::is_physical_boundary >}} | `is_physical_boundary` | none |
 | classify | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::is_wall_boundary >}} | `is_wall_boundary` | none |
 | null | {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}} | `bfuncs` | layout periodic flags |
+| kind | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::face_kind >}} | `FaceKind` | none |
 | x1wall | {{< code src/hydro/hydro.cpp HydroImpl::is_x1_wall >}} | `is_x1_wall` | none |
 
 : Implementation sites for registry. {#tbl-ch14-registry-code}
@@ -169,11 +196,12 @@ exactly.[^ch11-registry-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU[^rg-0ab3aad6818c], CUDA[^rg-7d5758f753ba] or multi-rank solver results.
 
-[^ch11-registry-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the deterministic fixtures in the
+[^ch11-registry-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.13.15, numpy 2.5.3, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports no
+    snapy code.
 
 ### Limits
 
@@ -194,8 +222,6 @@ is claimed.
 [^rg-b6eeb6bec592]: EOS — equation of state
 
 [^rg-01888ad64fad]: boundary-condition — boundary options: `external` boundary-function names for the domain faces and `internal` solid-cell settings
-
-[^rg-a3914f7a519f]: external — boundary-function names for external domain faces
 
 [^rg-7cca0798643a]: x1-inner — boundary name on the inner first-coordinate face
 

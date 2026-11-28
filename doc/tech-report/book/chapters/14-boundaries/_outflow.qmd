@@ -1,11 +1,12 @@
 ## Select outgoing acoustic and advected perturbations (`outflow`) {#sec-ch14-outflow}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.5; src/bc/bc_func.cpp; src/mesh/meshblock.cpp; tests/test_radiating_boundary.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/bc/bc_func.cpp; src/mesh/meshblock.cpp; src/mesh/meshblock_exchange.cpp;
+         src/hydro/hydro_forward.cpp; tests/test_radiating_boundary.cpp;
          tests/test_radiating_boundary_python.py
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -124,7 +125,7 @@ do not call a snapy kernel.
 `MeshBlockImpl::initialize_local` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_local >}})
 clones the primitive state, ghosts included, into `boundary_reference_w` (and the scalar ratios into
 `boundary_reference_r`) before the first physical fill, whenever `has_radiating_boundary`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::has_radiating_boundary >}}) finds an outflow callback on a
+({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::has_radiating_boundary >}}) finds an outflow callback on a
 face with more than one cell and the EOS is not shallow water. The callback first takes the scalar and
 shallow-water fallback, then requires the EOS, the coordinate and a saved background of the same shape as
 its input, a supported EOS type, primitive input, finite input, and an admissible background
@@ -140,11 +141,14 @@ modes, limits each ghost, transforms back, and writes only the ghosts; with trac
 tracer-ratio ghosts as background plus `alpha` times the selected ratio perturbation.
 
 Conserved calls go through `MeshBlockImpl::apply_boundaries`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_boundaries >}}): consecutive outflow faces share one
+({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries >}}): consecutive outflow faces share one
 primitive conversion of the block and are recorded as pending; before any other callback runs, and at the
 end, the pending ghost slabs are converted back and copied into the conserved tensor. The tracer densities
 written back are the ratios times the conserved dry density, as in the scalar primitive conversion, not the
-primitive total density. The cartoon shows the mode directions and the convex contraction separately. No
+primitive total density. With `dynamics/conversion-order: 4` the hydro step refills the primitive ghosts itself before the conversion, and
+there it calls an outflow callback only when the saved background is present (`HydroImpl::forward`,
+{{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}). The cartoon shows the mode directions and the convex
+contraction separately. No
 coupled wall/seam convergence or reflection measurement is reported here.
 
 @fig-ch14-outflow-stencil illustrates the operations, with labelled roles independent of colour.
@@ -166,22 +170,18 @@ primitives; the saved background must survive a restart.
 
 This is a configuration fragment, not a standalone simulation deck.
 
-<!-- reader glossary keys -->Keys in this fragment: `forcing`[^rg-51c00aae93ad], `const-gravity`[^rg-8f4d48c36ab6], `gravity-work-fixer`[^rg-2ba7d79124f9].
 ```yaml
 boundary-condition:
   external:
     x1-inner: outflow
     x1-outer: outflow
-forcing:
-  const-gravity:
-    gravity-work-fixer: false
 ```
 
 **Refusals and prerequisites.** `radiating` refuses missing context with "outflow requires EOS, coordinate and
 saved initial background" and unsupported EOS types with "Unsupported outflow EOS: ". It refuses a direct
 non-primitive call with "outflow: prepare primitive context with apply_boundaries". Shape mismatch, nonfinite
-inputs and invalid background density, pressure or composition are also checked there. Set
-`forcing/const-gravity/gravity-work-fixer` to `false` to avoid using a closed-column energy correction on open x1 faces.
+inputs and invalid background density, pressure or composition are also checked there. `apply_boundaries` refuses
+a missing saved background with "outflow: missing initial boundary reference".
 
 **Read the implementation.** `radiating` ({{< code src/bc/bc_func.cpp radiating >}}) contains:
 
@@ -196,14 +196,13 @@ auto entropy = torch::where(advect, d[IDN] - d[IPR] / c0.square(), 0.);
 | what | code link | symbol | switch |
 |---|---|---|---|
 | init | {{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_local >}} | `boundary_reference_w` | `outflow` |
-| detect | {{< code src/mesh/meshblock.cpp MeshBlockImpl::has_radiating_boundary >}} | `has_radiating_boundary` | `outflow` |
+| detect | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::has_radiating_boundary >}} | `has_radiating_boundary` | `outflow` |
 | background | {{< code src/bc/bc_func.cpp check_background >}} | `check_background` | `outflow` |
 | radiating | {{< code src/bc/bc_func.cpp radiating >}} | `radiating` | `outflow` |
 | split | {{< code src/bc/bc_func.cpp radiating >}} | `plus` | `outflow` |
 | alpha | {{< code src/bc/bc_func.cpp radiating >}} | `alpha` | `outflow` |
 | outflow | {{< code src/bc/bc_func.cpp is_outflow >}} | `is_outflow` | `outflow` |
-| apply | {{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_boundaries >}} | `apply_boundaries` | none |
-| fixer | {{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_gravity_work_fixer >}} | `wall` | `forcing/const-gravity/gravity-work-fixer` |
+| apply | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries >}} | `apply_boundaries` | none |
 
 : Implementation sites for outflow. {#tbl-ch14-outflow-code}
 
@@ -218,7 +217,7 @@ auto entropy = torch::where(advect, d[IDN] - d[IPR] / c0.square(), 0.);
 4. Validate the tracer background's shape, finiteness and nonnegativity; reduce the shared factor and verify
    that the reconstructed ghosts are finite. The anchor `alpha` is in {{< code src/bc/bc_func.cpp radiating >}}.
 5. Flush the pending conserved faces in face order with the dry-density tracer conversion. The anchor
-   `apply_boundaries` is in {{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_boundaries >}}.
+   `apply_boundaries` is in {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries >}}.
 
 ### Tests
 
@@ -272,21 +271,18 @@ limiter fixtures satisfy the independent bounds with one shared scale.[^ch11-out
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-outflow-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the deterministic fixtures in the
+[^ch11-outflow-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.13.15, numpy 2.5.3, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C2]`, `[C3]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C2]`, `[C3]`; the check imports
+    no snapy code.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 Outflow is skipped by the tangential corner refresh
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}). The gravity-work fixer is not an
-open-boundary energy budget: `MeshBlockImpl::apply_gravity_work_fixer`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_gravity_work_fixer >}}) refuses a step in which more
-than a round-off bound of mass crossed an x1 wall face, and the error text directs the user to
-`gravity-work-fixer: false` for open x1 boundaries. The implicit closure of @sec-ch14-solids stays
+({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}}). The implicit closure of @sec-ch14-solids stays
 reflecting at the column ends, so a characteristic ghost fill does not establish a characteristic implicit
 boundary. Saved backgrounds are fixed initialization data; no adaptive exterior evolution is implemented by
 this callback.
@@ -303,12 +299,6 @@ is claimed.
 [^rg-91a96c0f7810]: $y_n$ — mass fraction of species $n$ **per unit total mass**, $\rho_n = \rho y_n$, dimensionless [-]; this is snapy's composition variable and the only one the state vector carries
 
 [^rg-589b9dd4f344]: $r_n$ — mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch08-drycarry). Never written $r$ without its species subscript, because $r$ alone is the radius (§1)
-
-[^rg-51c00aae93ad]: forcing — forcing options block: a map with one sub-block per forcing component
-
-[^rg-8f4d48c36ab6]: const-gravity — constant-gravity forcing component
-
-[^rg-2ba7d79124f9]: gravity-work-fixer — retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone
 
 [^rg-b87260aaaa6b]: PLM — piecewise-linear method
 

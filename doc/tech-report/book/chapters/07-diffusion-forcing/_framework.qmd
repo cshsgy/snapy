@@ -285,7 +285,7 @@ skips them on a block that does not own that physical $x_1$ boundary (`on_block`
 {{< code src/hydro/register_forcing_modules.cpp HydroImpl::_register_forcings_module >}}). They are the three
 relaxations, the two sponges, and `top-cool` and `bot-heat` when the layer is given in cells (`depth`[^rg-87531eb32068]); a layer given
 as an $x_1$ length (`thickness`[^rg-fe78e3763b4a]) is `interior` and runs on every block of the column. Increments a module writes into
-ghost cells do not survive, because the ghosts are refilled after the stage (@sec-ch14b).
+ghost cells do not survive, because the ghosts are refilled after the stage (@sec-ch14).
 
 ### Code
 

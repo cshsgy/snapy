@@ -284,6 +284,8 @@
 
 *condensation equilibrium*, see **saturation, phase equilibrium**.
 
+*conducting wall*, see **prescribed faces, boundary side**.
+
 *conduction on the sphere*, see **viscosity and heat conduction, cubed sphere**.
 
 *configuration file*, see **input file, how it is read**.
@@ -1612,6 +1614,8 @@
 
 **prescribed faces**: Prescribed faces and their reapplication, @sec-ch10-prescribed.
 
+**prescribed faces, boundary side**: Which faces are prescribed, and with what, @sec-ch14-prescribed.
+
 **`pressure-floor`**: EOS interface and dispatch, @sec-ch02-interface.
 
 *pressure floor*, see **floors, density and pressure**.
@@ -1993,6 +1997,8 @@
 *snapy_cuda_test_enabled*, see **CUDA tests, when they run**.
 
 **`solid-density`**: Rectify a mask and close fluid faces against solids, @sec-ch14-solids.
+
+*solid faces*, see **prescribed faces, boundary side**.
 
 *solid mask*, see **immersed solids**.
 

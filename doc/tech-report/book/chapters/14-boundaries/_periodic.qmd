@@ -1,11 +1,11 @@
 ## Wrap values through a callback or the layout (`periodic`) {#sec-ch14-periodic}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.3; src/bc/bc_func.cpp; src/mesh/meshblock_options.cpp; src/mesh/meshblock.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/bc/bc_func.cpp; src/mesh/meshblock_options.cpp; src/mesh/meshblock.cpp;
          src/layout/slab_layout.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -45,7 +45,7 @@ q_{n_1+l}&=q_l.
 $$ {#eq-ch14-periodic-copy}
 
 `periodic_inner` and `periodic_outer`
-([`bc_func.cpp:36-50`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L36-L50))
+({{< code src/bc/bc_func.cpp >}})
 implement @eq-ch14-periodic-copy as one slab copy each, with no sign change for any row.
 For several blocks the donor is the wrapped neighbour that `SlabLayoutImpl::neighbor_rank`
 ({{< code src/layout/slab_layout.cpp SlabLayoutImpl::neighbor_rank >}}) selects by adding the block count
@@ -107,7 +107,7 @@ The last owned slab becomes the lower ghosts, implementing the first row of @eq-
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| periodic | [`bc_func.cpp:36-50`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L36-L50) | `periodic_inner` | `periodic` |
+| periodic | {{< code src/bc/bc_func.cpp >}} | `periodic_inner` | `periodic` |
 | yaml | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}} | `periodic_z` | `boundary-condition/external/x1-*` |
 | yamlxy | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}} | `periodic_x` | `boundary-condition/external/x2-*`, `x3-*` |
 | null | {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}} | `bfuncs` | layout periodic flags |
@@ -121,7 +121,7 @@ The last owned slab becomes the lower ghosts, implementing the first row of @eq-
    {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}.
 3. Copy the opposite owned slab in the callback, or obtain the wrapped neighbour through the layout. The
    anchor `periodic_inner` is in
-   [`bc_func.cpp:36-50`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L36-L50);
+   {{< code src/bc/bc_func.cpp >}};
    the anchor `periodic_x` of the wrap is in {{< code src/layout/slab_layout.cpp SlabLayoutImpl::neighbor_rank >}}.
 
 ### Tests
@@ -145,11 +145,12 @@ exactly.[^ch11-periodic-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-periodic-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the deterministic fixtures in the
+[^ch11-periodic-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.13.15, numpy 2.5.3, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports
+    no snapy code.
 
 ### Limits
 
