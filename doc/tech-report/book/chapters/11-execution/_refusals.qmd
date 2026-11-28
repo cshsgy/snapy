@@ -1,7 +1,7 @@
 ## The refusal list and the allow-lists {#sec-ch11-refusals}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: src/mesh/stage_executor.{hpp,cpp} (config_reasons, vars_reasons, capture_reasons, capability,
          Capability), python/csrc/pymesh.cpp (execution_capability), tests/test_execution_capability.py,
          tests/test_graph_capture_lifts.py, tests/test_graph_outflow_refused.py, tests/test_graph_user_forcing.py,
@@ -56,7 +56,7 @@ at the pin, with its width and the message it logs.
 | integration type is *type*, not rk3 | case | only rk3 is covered |
 | more than one process | case | a rank's exchanges run on the host between segments |
 | an $x_1$ split (pz > 1) | case | its relays inside the stage are not cut into segments |
-| forcing is not const-gravity alone | case | any Coriolis, diffusion, heating, cooling, relaxation, sponge or plume block |
+| a forcing source declares itself not capturable | case | `plume-forcing` is the one such source at the pin; the ten built-in registry sources capture (`SourceRegistry::capture_reasons`, {{< code src/forcing/source_term.hpp SourceRegistry >}}; @sec-ch07-framework) |
 | an outflow boundary is set with conversion-order 4 | case | the hydro step refills its primitive ghosts with it |
 | the state is not on a CUDA device | case | from the variables |
 | a solid mask is set | case | from the variables |
@@ -66,7 +66,8 @@ at the pin, with its width and the message it logs.
 | a chemistry step is registered | op `chemistry` | eager FP64 kinetics that build tables on first use (@sec-ch11-eagerops) |
 
 : The refusals at the pin: the case-wide ones from `StageExecutor::config_reasons`
-({{< code src/mesh/stage_executor.cpp StageExecutor::config_reasons >}}) and `StageExecutor::vars_reasons`
+({{< code src/mesh/stage_executor.cpp StageExecutor::config_reasons >}}, which appends the sources' own reasons,
+"*name* does not support CUDA graph capture") and `StageExecutor::vars_reasons`
 ({{< code src/mesh/stage_executor.cpp StageExecutor::vars_reasons >}}), the Mesh rule from
 `StageExecutor::capture_reasons` ({{< code src/mesh/stage_executor.cpp StageExecutor::capture_reasons >}}), and the
 per-op ones from `StageExecutor::build_schedule`. {#tbl-ch11-refusals}

@@ -1,7 +1,7 @@
 ## The equation-of-state and positivity status of a block (`EfStatus`) {#sec-ch08-efstatus}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md 8.6; src/eos/ef_status.hpp, src/hydro/hydro.cpp, src/scalar/scalar.cpp, src/hydro/flux_positivity.cpp,
          src/eos/equation_of_state.cpp, src/eos/ideal_moist.cpp, src/mesh/meshblock_advance.cpp, src/mesh/meshblock_redo.cpp,
          src/mesh/stage_executor.cpp, src/diagnostics/budget.cpp and the tests named in the Tests layer, at the pin
@@ -29,7 +29,7 @@ those warm-up runs and restores it afterwards; a warm-up therefore leaves no cou
 
 **Activation.** Always present; a slot exists once its writer has run or its module has bound it.
 
-**Guarantee / limits.** A record, not a repair. The meters are not rolled back by a redo (Limits).
+**Guarantee / limits.** A record, not a repair. A redo restores the meters to their values at the step's start (Limits).
 
 **Evidence.** @tbl-ch08-efstatus-tests.
 :::
@@ -139,10 +139,12 @@ record did not run.[^ch08-efstatus-run]
 
 ### Limits
 
-1. **The meters count rejected attempts.** A redo rolls back the flux register and its monitor and restores the
-   state ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}}), but nothing restores the
-   `EfStatus` meters, so `positivity_hits`, `positivity_severe`, `positivity_min`, `lim_cut` and `lim_flux` include
-   the census of attempts that were then redone. This is read from the code at the pin; no test asserts it either way.
+1. **The meters count accepted attempts only.** A redo rolls back the flux register and its monitor, restores the
+   state and copies the `EfStatus` meters back from the snapshot taken at the step's start, after the state backup
+   ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}};
+   {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}), so `positivity_hits`,
+   `positivity_severe`, `positivity_min`, `lim_cut` and `lim_flux` drop the census of a rejected attempt. This is
+   read from the code at the pin; no test asserts it either way.
 2. **`kPosSevere` is a count of entries, not of cells.** A cell with two species below the threshold counts twice.
 3. **The scalar census counts hits only.** There is no severe count, minimum or cut meter for the passive scalars.
 4. **The graph = eager equality of the meters is tested on CUDA only.** On MPS the wide dtype is FP32, and no test

@@ -1,7 +1,7 @@
 ## The ghost exchange and the same-process waits (`blocks_per_process`) {#sec-ch13-ghost}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: src/mesh/meshblock_exchange.cpp, src/mesh/mesh.cpp, src/layout/layout.cpp, src/layout/layout.hpp, src/layout/exchange.cpp, tests/test_exchange.cpp, tests/test_mesh_exchange.py, tests/test_cubed_sphere_exchange.cpp, tests/test_periodic_corners.py, tests/test_mesh_block_job_failure.py
 status: draft
 author: jihenghu
@@ -62,7 +62,10 @@ is re-applied on the slabs the exchange owns in the other directions, so a corne
 - *The rendezvous* (`_prepare_local_exchange`): each block records an arrival event on its stream and counts
   itself in; the last block to arrive orders its stream after every arrival, copies all the blocks' buffers,
   records a completion event, and releases the others, who order their streams after it. A generation counter
-  separates one round from the next.
+  separates one round from the next. The copy plan (which slab of which block goes where) is built on the first
+  round and kept with the blocks' layouts; on a CUDA device the last block runs its copies for all the blocks, on
+  the CPU each block copies its own incoming slabs once all have arrived, in parallel, and a round ends only when
+  every receiver has read.
 - *Mail* (`post_to_local_block`, `take_from_local_block`): the panel-seam reconcile posts one tensor per
   (sender, receiver, tag); a post waits until the previous message with that key was taken, a take waits until
   it is posted. Both waits are capped at five minutes.
@@ -75,8 +78,8 @@ condition variable until its condition holds or, on a worker thread of a Mesh, u
 a failed job's error (`g_local_job_failed`, which reads the pool's stored error under the pool's lock). In the
 second case it throws "same-process wait left: a block job failed", so the waiting block's job ends too. The pool
 stores the first error, releases its lock and wakes every wait (`wake_local_exchanges`). When every job has
-ended it orders the caller's stream after each worker's last work, drops the Mesh's mail, x1 anchors and column
-boards (`clear_local_exchange`), which no block will take any more, and rethrows the first error. A run without
+ended it orders the caller's stream after each worker's last work, drops the Mesh's mail, x1 anchors, column
+boards and rendezvous states (`clear_local_exchange`), which no block will take any more, and rethrows the first error. A run without
 an error does none of this. @fig-ch13-wait-abort shows the sequence.
 
 ```{python}
@@ -138,12 +141,15 @@ and the device-only tests of this table.
 
 ### Limits
 
-**The rendezvous state is never erased.** The rendezvous state map ({{< code src/layout/layout.cpp g_local_exchange_states >}})
-gains one entry per Mesh and kind of exchange on first use and keeps it for the life of the process;
-`clear_local_exchange` drops mail, anchors and boards but not this map. A later Mesh cannot read a stale entry:
-each Mesh takes a new id from a process-wide counter when it is built or reset ({{< code src/mesh/mesh.cpp MeshImpl::reset >}}),
-ids are never reused, and the id leads the key. A new Mesh built after a failed one, stepped in eager and default
-execution, matched a freshly built Mesh bitwise, and 30 entries were left in the map at exit.[^ghost-stale]
+**The rendezvous state lives as long as its Mesh.** The rendezvous state map ({{< code src/layout/layout.cpp g_local_exchange_states >}})
+gains one entry per Mesh and kind of exchange on first use; `clear_local_exchange`
+({{< code src/layout/layout.cpp clear_local_exchange >}}) erases the Mesh's entries together with its mail,
+anchors and boards, after a failed job and from the worker pool's destructor. A later Mesh cannot read a stale
+entry in any case: each Mesh takes a new id from a process-wide counter when it is built or reset
+({{< code src/mesh/mesh.cpp MeshImpl::reset >}}), ids are never reused, and the id leads the key. At the previous
+pin, where the map kept its entries for the life of the process, a new Mesh built after a failed one, stepped in
+eager and default execution, matched a freshly built Mesh bitwise, and 30 entries were left in the map at
+exit;[^ghost-stale] not repeated at the pin.
 **Re-stepping the same Mesh after a failure is not supported.** With its state restored from a copy taken before
 the failed stage, the failed Mesh raised "local exchange size mismatch" in 8 of 12 runs and matched a freshly built
 Mesh bitwise in the other 4.[^ghost-restep] The cause is a hypothesis, not checked: arrival counts left in the

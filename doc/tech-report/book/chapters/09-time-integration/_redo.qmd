@@ -1,7 +1,7 @@
 ## Step acceptance and redo: six causes, one collective decision, halving up to `max_redo` (`check_redo`) {#sec-ch09-redo}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy); pyharp@4721715855e937c1e8b218e964c0655f46e56e29
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy); pyharp@4721715855e937c1e8b218e964c0655f46e56e29
 sources: OUTLINE.md 7.4; src/mesh/meshblock_redo.cpp; src/mesh/meshblock_advance.cpp; src/mesh/meshblock_output.cpp;
          src/mesh/mesh.cpp; src/eos/equation_of_state.cpp; src/input/check_keys.cpp; examples/run_hydro.cpp;
          tests/test_check_redo_vapor_deficit.cpp; tests/test_fix_vapor_stale_count.py;
@@ -54,9 +54,9 @@ $$ {#eq-ch09-redo-dt}
    (`[C2]`), and an acceptance sets $n_{\mathrm{redo}}=0$ again (`[C3]`).
 2. **One decision.** Each rank stacks eight entries on the device: the floor test, the clamp, the two limiter
    marks, the saturation count, the VIC failure (the step's column status, @sec-ch09-vic-reject), the step's vapour-repair failure count and the heat-capacity
-   latch. It reads them back once into seven flags (a nonzero vapour count or heat latch sets the limiter flag,
-   `[C5]`, `[C6]`), `MAX`-reduces the seven flags, and encodes the result as a bit mask with bits 1, 2, 4, 8, 16, 32
-   for floor, clamp, limiter, NaN, saturation and VIC solve, and 64 for the seventh flag. For 0/1 flags `MAX` is
+   latch. It reads them back once into six flags (a nonzero vapour count or heat latch sets the limiter flag,
+   `[C5]`, `[C6]`), `MAX`-reduces the six flags, and encodes the result as a bit mask with bits 1, 2, 4, 8, 16, 32
+   for floor, clamp, limiter, NaN, saturation and VIC solve. For 0/1 flags `MAX` is
    OR, so every rank sees the same mask and takes the same branch (`[C1]`).
 3. **Full restore.** A redo rolls back the flux register's step sums, copies the step-start state back into
    `hydro_u`, undoes the step-start half of each operator-split source (@sec-ch09-split), restores the saturation
@@ -199,7 +199,7 @@ rank; `[C2]` tries a failing step 6 times, at factors 1 down to 0.03125, then st
 after an acceptance; `[C4]` restores 6 of 6 attempts for the VIC cause and 5 of 6 for a floor; `[C5]` turns a vapour
 failure alone into the cause 4 and a redo, and with a floor on the same rank into 5; `[C6]` turns the heat-capacity
 latch alone into the cause 4, and finds that the eight entries the block stacks give at most the mask 63, never
-bit 64.
+bit 64 (the seventh flag of the check's sha; the pin reads six flags, Limits item 6).
 
 [^ch09-redo-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062 and
     pyharp@4721715855e937c1e8b218e964c0655f46e56e29; deck: the check itself;
@@ -225,12 +225,11 @@ state.
    ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}).
 5. **No gradual recovery.** An accepted step resets $n_{\mathrm{redo}}$ to 0, so the step after a redo goes straight back to the
    full bound.
-6. **A seventh cause that nothing sets.** `read_redo_flags` maps a ninth device entry to the seventh flag (bit 64,
-   marked for the radial diffusion solve in a comment), but `local_redo_flag_tensor` stacks eight entries, so the
-   bit is never set at the pin; `apply_redo`'s cause message also names only bits 1 to 32
-   ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::read_redo_flags >}};
-   {{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}}; `[C6]`). A failure of the radial diffusion
-   solve instead raises at once, "[Diffusion] Radial SDIRK step produced nonpositive/nonfinite temperature; reduce
+6. **Six causes.** `read_redo_flags` reads six flags from the eight entries, and `apply_redo`'s cause message
+   names bits 1 to 32 ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::read_redo_flags >}};
+   {{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}}); the seventh flag that `[C6]` found
+   unreachable at its sha (bit 64, a ninth entry marked for the radial diffusion solve) is gone at the pin. A failure
+   of the radial diffusion solve raises at once, "[Diffusion] Radial SDIRK step produced nonpositive/nonfinite temperature; reduce
    dt." ({{< code src/forcing/diffusion_radial.cpp DiffusionImpl::radial_conduction_step >}}), so it stops the run
    rather than redoing the step. Not measured on a run.
 7. **The heat-capacity cause is silent.** A heat-capacity failure redoes the step as a limiter cause with no

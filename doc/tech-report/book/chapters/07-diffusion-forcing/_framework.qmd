@@ -1,7 +1,7 @@
 ## The forcing loop: parsing, registration and the stage increment (`forcing:`) {#sec-ch07-framework}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md 7.4; src/forcing/source_term.hpp, src/hydro/register_forcing_modules.cpp,
          src/hydro/hydro_options.cpp, src/hydro/hydro.cpp, src/hydro/hydro_forward.cpp,
          src/mesh/meshblock_advance.cpp, tests/test_source_registry.cpp at the pin
@@ -248,9 +248,11 @@ increment goes to the integrator.
 
 **Runs.** The registry keeps the modules of each phase in registration order and cuts them into maximal runs of
 equal `capturable` flag; a run is either recorded into a CUDA[^rg-2238129cb896] graph or executed eagerly, and the runs never
-reorder the modules ({{< code src/forcing/source_term.hpp SourceRegistry >}}). `diffusion` and `relax-bot-comp`
-are not capturable (host reads of the profiles, and kintera's state conversion), so a deck with all ten registry
-modules has five pre-implicit runs.
+reorder the modules ({{< code src/forcing/source_term.hpp SourceRegistry >}}). Every built-in registry module is
+capturable at the pin (`diffusion` checks its profiles on the host only outside a capture, and the kintera tables of
+`relax-bot-comp` are built before the capture, in `StageExecutor::build_schedule`), so a deck with all ten registry
+modules has one pre-implicit run. A source that declares itself not capturable, `plume-forcing` at the pin, forms its
+own eager run and refuses the capture of the whole block (`SourceRegistry::capture_reasons`, @sec-ch11-refusals).
 
 **Split sources.** A module that declares `split` is not run in the stages. `MeshBlockImpl::stage_advance` calls
 its `begin_split` at the start of the step, before the backup of the step-entry state, and its `finish_split` after
@@ -368,7 +370,7 @@ the dry-density row. The post-implicit phase, run only under the $x_1$ mass-flux
 | {{< code tests/test_hydro_options.cpp hydro_options.reject_removed_and_unknown_forcing_keys >}} (`test_hydro_options.release`) | a `const-gravity` block parses; `fric-heat` and an unknown key throw | exact (throws) | a parser contract |
 | the twelve `*_refuses_an_unknown_key` cases of `tests/test_yaml_keys.cpp` (`test_yaml_keys.release`) | a misspelt key inside any forcing block throws "unknown key" | exact (throws) | a parser contract |
 | {{< code tests/test_forcing.cpp forcing.meshblock_registers_parent_dependent_modules >}} (`test_forcing.release`) | a MeshBlock with `body-heat` and the three relaxations constructs | exact (no throw) | a registration contract |
-| {{< code tests/test_source_registry.cpp SourceRegistry.a_deck_declares_its_sources_in_deck_order >}} (`test_source_registry.release`) | a deck with the ten registry keys runs them in registration order, in five runs; Coriolis is the one post-implicit module; no split module | exact | a registration contract |
+| {{< code tests/test_source_registry.cpp SourceRegistry.a_deck_declares_its_sources_in_deck_order >}} (`test_source_registry.release`) | a deck with the ten registry keys runs them in registration order, in one capturable run; Coriolis is the one post-implicit module; no split module | exact | a registration contract |
 | {{< code tests/test_source_registry.cpp SourceRegistry.budgets_on_give_the_budgets_off_du >}} (`test_source_registry.release`) | the same `du` with and without the per-module scratch, and the scratches sum to the increment | bitwise (`torch::equal`); sum $10^{-12}$ | `torch::allclose(..., 1.e-12, 1.e-12)` |
 | {{< code tests/test_source_registry.cpp SourceRegistry.wall_sources_skip_a_block_without_that_wall >}} (`test_source_registry.release`) | with no top wall, `top-cool` and `top-sponge-lyr` are skipped | exact | a registration contract |
 | `framework_check.py` `[C1]`–`[C3]` (this report) | order independence, linearity in $\Delta t$, `_forcing_dry` | per claim | stated in the check |

@@ -1,7 +1,7 @@
 ## Viscosity and heat conduction on the cubed sphere (`diffusion` keys on `gnomonic-equiangle`) {#sec-ch07-csdiffusion}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: src/forcing/diffusion_cubed_sphere.cpp, src/forcing/diffusion_radial.cpp, src/forcing/diffusion.cpp,
          src/forcing/forcing.hpp, src/mesh/meshblock_advance.cpp, src/mesh/meshblock_redo.cpp, tests/test_diffusion_cubed_sphere.cpp,
          tests/test_diffusion_cubed_sphere.yaml, tests/test_stage2_cubed_stretched.yaml, tests/test_diffusion_cubed_sphere_two_gpu.cpp, tests/CMakeLists.txt,
@@ -178,8 +178,9 @@ to both panel axes, so no radial derivative enters a horizontal heat flux.
 
 #### Block edges
 
-A face on a block edge is computed by both blocks, each with its own one-sided stencil. The exchange sends each
-side's outward flux times the face area; each side then replaces its face flux by the mean of its own and the
+A face on a block edge is computed by both blocks, each with its own one-sided stencil. `share_fluxes` posts the
+slabs of all four angular sides, then takes the neighbours' in one seam exchange (`Exchange::seam_exchange`), with
+send buffers it keeps across graph replays; the exchange sends each side's outward flux times the face area; each side then replaces its face flux by the mean of its own and the
 negated neighbour's, `0.5 * (f - sign * other / area)` (`share_fluxes`,
 {{< code src/forcing/diffusion_cubed_sphere.cpp share_fluxes >}}). Both sides then hold the same flux with opposite
 outward signs, so the face contributes equal and opposite amounts to the two cells, and momentum and energy are
@@ -282,9 +283,9 @@ face centre; fluxes are face-averaged by multiplication with the face area in `d
 interior cells of the block only. The face coefficient of this explicit operator inside the block is the two-cell mean weighted by the $x_1$ widths,
 $(h_rq_l+h_lq_r)/(h_l+h_r)$ for the cells $l$[^rg-f9214ac13e08] and $r$ of a radial face, and the plain average on $x_2$ and $x_3$ faces.
 At every block edge it is the linear extrapolation $(1+g)q_0-gq_1$ from the two nearest cells with $g=h_0/(h_0+h_1)$,
-$\tfrac32q_0-\tfrac12q_1$ on equal widths, falling back to $q_0$ when the extrapolation is negative. Angular block edges are joined by `share_fluxes`, which calls the scalar block exchange
-four times, once per side, through one 12-channel buffer (outward flux, trace, coefficients and distance); radial
-edges are walls. It runs in every stage of the explicit Runge–Kutta scheme, in the forcing loop
+$\tfrac32q_0-\tfrac12q_1$ on equal widths, falling back to $q_0$ when the extrapolation is negative. Angular block edges are joined by `share_fluxes`, which posts the 12-channel slab
+(outward flux, trace, coefficients and distance) of each of its four sides and takes the neighbours' in one seam
+exchange; radial edges are walls. It runs in every stage of the explicit Runge–Kutta scheme, in the forcing loop
 (@sec-ch07-framework). The implicit radial step runs as a half step at the start of stage 0, before the stage's
 boundary fill and exchange, and as a half step after the last stage's averaging; a rejected step restores the state
 from before the first half step (`begin_split`, `finish_split`, `restore_split`,

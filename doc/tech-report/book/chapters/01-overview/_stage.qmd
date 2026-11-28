@@ -233,7 +233,7 @@ auto w2dt = dt.scaled(_w2);  // V3 D: on the device in a captured stage
 for (int d = 0; d < 3; ++d) {
   if (!_step[d].defined()) continue;
   // in FP64 (FP32 on MPS), whatever the flux dtype: S <- w1 S + w2 dt T
-  if (!_direct[d].defined()) {
+  if (!_split_posted[d]) {
     axpy_(_step[d].mul_(_w1), _total[d].to(_step[d].scalar_type()), w2dt);
     continue;
   }

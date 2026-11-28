@@ -1,7 +1,7 @@
 ## Bottom relaxation of temperature, velocity and composition (`relax-bot-temp`, `relax-bot-velo`, `relax-bot-comp`) {#sec-ch07-relax}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final); kintera@c55b13b2204997d2d09e04498558ab9495d8ee77
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final); kintera@c55b13b2204997d2d09e04498558ab9495d8ee77
 sources: STRUCTURE.md 7.4; src/forcing/relax_bot_temp.cpp, relax_bot_velo.cpp, relax_bot_comp.cpp, src/forcing/forcing.hpp,
          src/options/forcing_relax_bot_temp.yaml, forcing_relax_bot_comp.yaml, tests/test_forcing.cpp at the pin
 status: draft
@@ -179,7 +179,9 @@ The modules read the bottom row of interior cells and, for `at-face`, the row ab
 $n_g\ge2$ and throws otherwise ({{< code src/forcing/relax_bot_temp.cpp RelaxBotTempImpl::add >}}). They run in
 every stage, explicit, in the forcing loop, and only on a block that owns the lower physical $x_1$ boundary: their
 shared base `BottomSlab` declares the region `bottom` ({{< code src/forcing/forcing.hpp BottomSlab >}},
-@sec-ch07-framework). `relax-bot-comp` is not capturable in a CUDA graph, because kintera's `VT->U` is not.
+@sec-ch07-framework). `relax-bot-comp` is capturable in a CUDA graph: the kintera tables its `VT->U` conversion
+needs are built before the capture, in `StageExecutor::build_schedule`
+({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}).
 
 ### Code
 

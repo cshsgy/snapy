@@ -1,7 +1,7 @@
 ## Amounts, step fields and the stage fold (`RegisterMonitor::fold_`) {#sec-ch10-amounts}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md 10.4; src/hydro/flux_register.{hpp,cpp}; src/mesh/meshblock.cpp; src/implicit/implicit_hydro.cpp; src/forcing/axial_momentum.cpp; tests/test_flux_register.cpp and tests/test_graph_monitor_amounts.cpp, all at the pin
 status: draft
 -->
@@ -113,7 +113,7 @@ direction (@sec-ch10-budget); radial conduction requests $x_1$ ({{< code src/hyd
 | the fold | {{< code src/hydro/flux_register.cpp RegisterMonitor::fold_ >}} | `cpost`, `crate` | |
 | the wide dtype | {{< code src/mesh/precision_policy.hpp PrecisionPolicy::wide >}} | `wide` | MPS |
 | step-field recursion | {{< code src/hydro/flux_register.cpp FluxRegister::end_stage >}} | `axpy_` | requested direction |
-| split posts | {{< code src/hydro/flux_register.cpp FluxRegister::post_split >}} | `_direct` | requested direction |
+| split posts | {{< code src/hydro/flux_register.cpp FluxRegister::post_split >}} | `_split_posted` | requested direction |
 
 : Code map of the amounts and step fields. {#tbl-ch10-amounts-code}
 
