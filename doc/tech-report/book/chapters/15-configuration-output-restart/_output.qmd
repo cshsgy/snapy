@@ -1,7 +1,7 @@
 ## Output writers (`outputs: - type: netcdf` or `pnetcdf`) {#sec-ch15-output}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: src/mesh/meshblock_output.cpp, src/mesh/meshblock.cpp, src/mesh/mesh.cpp, src/output/output_type.{hpp,cpp},
          src/output/writer_core.{hpp,cpp}, src/output/netcdf.cpp, src/output/pnetcdf.cpp,
          src/output/combine_netcdf.cpp, src/output/combine_parts.cpp, src/output/output_utils.{hpp,cpp},
@@ -208,8 +208,9 @@ constructor ({{< code src/output/output_utils.cpp MetadataTable::MetadataTable >
 under the per-process protocol of `combine_on_root` ({{< code src/output/writer_core.cpp combine_on_root >}}):
 the blocks of one process count in under the key `output_dir|basename|out<n>|NNNNN` (`ready_to_combine`,
 {{< code src/output/writer_core.cpp ready_to_combine >}}), and only the last one proceeds; the process group then
-meets at a barrier, the root does the work, and every rank meets again after it, also when the root throws, so
-no rank returns before the combined file exists. The root globs the parts (`glob_block_files`,
+meets at a barrier, the root does the work, and every rank meets again after it in a MAX-reduction of the root's
+failure flag, so no rank returns before the combined file exists and a failure on the root raises on every rank
+("[combine_on_root] combine failed on the root rank"); without a process group the root works alone. The root globs the parts (`glob_block_files`,
 {{< code src/output/writer_core.cpp glob_block_files >}}), deletes any stale combined file, renames a single part,
 or calls `combine_parts`. `combine_parts` ({{< code src/output/combine_parts.cpp combine_parts >}}) takes the
 structure of the joined file from the first part, treats a dimension as split when its coordinate variable
@@ -390,11 +391,11 @@ cover the callback's acceptance and refusal, not a new field
 |---|---|---|---|
 | `test_user_output.release` `OutputSlice.*` | a slice selects the cell whose upper face is first above the position and collapses the axis; several axes combine; a block missed by every plane writes nothing; reduced grids keep their axes; uneven lists are combined across blocks; a scalar or invalid list is refused; a slice with a sum on the same axis is refused | `EXPECT_EQ` on shapes and indices, `EXPECT_THROW` | the `OutputSlice` suite ({{< code tests/test_user_output.cpp >}}) |
 | `test_user_output.release` `OutputScheduleKey.precise_cadences_do_not_collide` | two intervals that differ below $10^{-6}$ share the legacy schedule key and differ in the exact one | `EXPECT_EQ`, `EXPECT_NE` on the keys | {{< code tests/test_user_output.cpp OutputScheduleKey.precise_cadences_do_not_collide >}} |
-| `test_user_output.release` `OutputPrecision.yaml_double_precision_defaults_off_and_is_reported` | `double_precision` is off by default, read from the deck, and reported | `EXPECT_FALSE`/`TRUE`, string containment | {{< code tests/test_user_output.cpp OutputPrecision.yaml_double_precision_defaults_off_and_is_reported >}} |
+| `test_user_output.release` `OutputPrecision.yaml_double_precision_defaults_off_and_accepts_override` | `double_precision` is off for `{type: netcdf}` and on with `double_precision: true` | `EXPECT_FALSE`/`TRUE` | {{< code tests/test_user_output.cpp OutputPrecision.yaml_double_precision_defaults_off_and_accepts_override >}} |
 | `test_user_output.release` `OutputSlice.netcdf_writes_selected_coordinate_and_collapsed_dimension` | the file holds the selected coordinate and the collapsed dimension | `EXPECT_EQ` (exact) | {{< code tests/test_user_output.cpp OutputSlice.netcdf_writes_selected_coordinate_and_collapsed_dimension >}} |
 | `test_user_output.release` `OutputPrecision.netcdf_float_output_keeps_nonfinite` | with the default float storage a planted $+\infty$ and NaN survive, every other value is $\mathrm{fl}_{32}(1/3)$, and the file holds the interior only (72 values of a $6 \times 3 \times 4$ interior) | `EXPECT_EQ` to `float(1.0/3.0)`; `isinf`, `isnan`; 6 special values | {{< code tests/test_user_output.cpp OutputPrecision.netcdf_float_output_keeps_nonfinite >}} |
 | `test_user_output.release` `OutputPrecision.netcdf_double_precision_reads_back_exactly` | with `double_precision: true` the field reads back bit for bit (steps of $1/3$) and `time` is exactly $1/3$ | `torch::equal` (bitwise), `EXPECT_EQ` on `time` | {{< code tests/test_user_output.cpp OutputPrecision.netcdf_double_precision_reads_back_exactly >}} |
-| `test_user_output.release` `OutputPrecision.netcdf_output_without_netcdf_writes_nothing` (NETCDF=OFF builds only) | a netcdf output writes no file | file absence | {{< code tests/test_user_output.cpp OutputPrecision.netcdf_output_without_netcdf_writes_nothing >}} |
+| `test_user_output.release` `OutputPrecision.netcdf_output_without_netcdf_warns_once` (NETCDF=OFF builds only) | two writes of a netcdf output throw nothing and create no output directory, and the line `netcdf output requested but this build has NETCDF=OFF` is printed once, not twice | `EXPECT_NO_THROW`, file absence, one occurrence of the line | {{< code tests/test_user_output.cpp OutputPrecision.netcdf_output_without_netcdf_warns_once >}} |
 | `test_user_output.release` `OutputSelection.*` | the hydro fields depend on the EOS and on `prim`/`cons`; scalar fields follow the same requests; `prim_stat` and `scalar_stat` are written only when named | `EXPECT_EQ` on field lists (exact) | the `OutputSelection` suite ({{< code tests/test_user_output.cpp >}}) |
 | `test_user_output.release` `OutputStatistics.*` | the primitive and scalar statistics are time-weighted and reset at a write: mean $13/3$ and deviation $\sqrt{8/9}$ for the test's three states, and mean $10^9 + 2$ with deviation 1 for the offset case | `EXPECT_NEAR` $10^{-12}$ (mean, deviation), $10^{-6}$ (the $10^9$ mean) | {{< code tests/test_user_output.cpp OutputStatistics.primitive_statistics_are_time_weighted_and_reset >}}, {{< code tests/test_user_output.cpp OutputStatistics.scalar_statistics_are_time_weighted_and_reset >}} |
 | `test_user_output.release` `OutputDiagnostics.*` | `theta_v` uses the dry gas constant; the divergence of a uniform Cartesian velocity is zero; the curl of solid-body rotation; gnomonic diagnostics are finite | `EXPECT_NEAR` $10^{-10}$ (`theta_v`), the test's bounds for `div` and `curl` | the `OutputDiagnostics` suite ({{< code tests/test_user_output.cpp >}}) |
@@ -405,13 +406,20 @@ cover the callback's acceptance and refusal, not a new field
 
 : Tests of the output writers and the tolerance each uses. {#tbl-ch15-output-tests}
 
-Every ctest entry of this table passed at the pin on a serial CPU run with NetCDF and PnetCDF built in: 16 of
+`test_user_output.release` passes at the pin on a serial CPU run of a build without NetCDF, which is the build
+that compiles and runs the `netcdf_output_without_netcdf_warns_once` case.[^ch15-output-run-pin] Every ctest entry of
+this table passed, at the sha its footnote names, on a serial CPU run with NetCDF and PnetCDF built in: 16 of
 the 16 tests selected for this chapter, among them `test_user_output.release`, `test_combine_parts.release`,
 `test_netcdf_axis_attrs` (both writers) and `test_netcdf_cubed_lonlat_python`.[^ch15-output-run] The
-`netcdf_output_without_netcdf_writes_nothing` case is compiled only without NetCDF and so did not run in
+without-NetCDF case is compiled only without NetCDF and so did not run in
 that build. The termination test ran at the pin on the same kind of build: `test_uranus_cycle1_abort.release`
 passed, with `test_user_output.release` beside it, in a serial run of the two entries (`ctest -j 1`, one run,
 one host).
+
+[^ch15-output-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own decks; run: `ctest -j 1 --timeout 1800
+    --output-on-failure -R '^(test_input_report\.release|test_options_table\.release|test_user_output\.release)$'` in the
+    build directory of a CPU Release build at the pin (`-DCUDA=OFF -DNETCDF=OFF -DPNETCDF=OFF -DUCX=ON`); Linux x86-64, Python 3.12.6, torch 2.10.0+cu128 on CPU, numpy 2.5.5, kintera 2.6.14, pyharp 2.7.17, pydisort 1.8.13, commux 0.2.1, g++ 11.4.0, CMake 3.26.2].
+    3 of 3 ctests passed (one run, one host).
 
 [^ch15-output-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own decks; run: `ctest -j 1 --timeout 1800 -R 'test_options_table|test_options_defaults|test_yaml_keys|test_user_output|test_combine_parts|test_restart_bundle|test_netcdf_cubed_lonlat|test_fp32_restart|test_restart_resume_schedule|test_restart_|test_netcdf_axis_attrs'` from the build directory of a CPU build (`-DCUDA=OFF -DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Release`), one process, the driver tests through `torchrun`; torch 2.10.0+cu128, kintera 2.6.13, pyharp 2.7.17, snapy 2.14.4] All 16 passed. The statistics recurrence @eq-ch15-output-stats has no committed independent check at the pin; adding one
 (the two-pass weighted mean and deviation against the recurrence over unequal steps) is a to-do of this section.

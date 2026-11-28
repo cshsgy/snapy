@@ -1,9 +1,9 @@
-## Constant gravity and the cell form of the gravity work (`gravity-work: cell`) {#sec-ch06-cell}
+## Constant gravity and the cell form of the gravity work (no `gravity-work` key) {#sec-ch06-cell}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
-sources: src/forcing/const_gravity.cpp, src/hydro/hydro_forward.cpp, tests/test_forcing.cpp,
-         tests/test_gravity_work_fixer_removed.py at the pin; chapter 6 preamble
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
+sources: src/forcing/const_gravity.cpp, src/forcing/forcing.hpp, src/input/check_keys.cpp, src/hydro/hydro_forward.cpp,
+         tests/test_forcing.cpp, tests/test_const_gravity_options.py at the pin; chapter 6 preamble
 status: draft
 author: chengcli
 reviewer: zoeyzyhu
@@ -13,10 +13,13 @@ reviewer: zoeyzyhu
 
 The constant-gravity forcing, `const-gravity`[^rg-cf144a647361], adds the body force $\rho g_1$ to the $x_1$ momentum and, in the same
 cell, the work $\rho v_1g_1$ to the energy: the cell form of the gravity work. At the pin the cell form is not a
-choice. `gravity-work`[^rg-72cdee3ac795] accepts only `face`, and the face form of @sec-ch06-face replaces the cell work in every
-stage. The cell work is still computed, because the forcing that adds the body force adds its work with it; the
+choice, and no key selects it: the `gravity-work` key is gone from the deck, and the face form of @sec-ch06-face
+replaces the cell work in every stage. The cell work is still computed, because the forcing that adds the body force adds its work with it; the
 hydro then subtracts it and adds the face work. This section states the forcing, the refusal, and why the cell form
 is not offered: its work is exact in each cell but its budget does not close, @eq-ch06-cell-defect.
+
+`gravity-work` and `gravity-work-fixer` are the retired `const-gravity` keys: the deck reader refuses them as
+unknown, with any value.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** The body force of constant gravity and its cell work, @eq-ch06-cell-work; the cell form as a booking is refused.
@@ -25,7 +28,7 @@ is not offered: its work is exact in each cell but its budget does not close, @e
 
 **Placement.** Each stage, in the forcing loop; the energy part is replaced later in the same stage (@sec-ch06-face).
 
-**Activation.** `forcing: const-gravity`; `gravity-work: cell` is refused at setup.
+**Activation.** `forcing: const-gravity`; no key selects the cell form, and a `gravity-work` key is refused as unknown.
 
 **Guarantee / limits.** The momentum source is exact per cell; the energy is booked by the face form.
 
@@ -40,8 +43,6 @@ density of @sec-ch05 [N m$^{-3}$]; $W^{\mathrm{cell}}_i$[^rg-c40954ec43ff] and $
 |---|---|---|
 | `const-gravity` | the constant-gravity forcing block of `forcing`[^rg-f239edda6399]: $(g_1,g_2,g_3)$ in m s$^{-2}$ | absent: no gravity |
 | `non-hydrostatic` | the factor $\alpha_{\mathrm{nh}}\in[0,1]$ on the $x_1$ body force and its work | 1 |
-| `gravity-work` | where the $x_1$ gravity work is booked; only `face` is accepted | `face` |
-| `gravity-work-fixer` | the global gravity-work fixer; only `false` is accepted (@sec-ch06-fixer) | `false` |
 
 : Keys of the `const-gravity` block. {#tbl-ch06-cell-keys}
 
@@ -103,7 +104,7 @@ make_fig()
 
 ### Code
 
-**A minimal input.** The gravity block; `gravity-work` may be left out, since `face` is its default and its only value:
+**A minimal input.** The gravity block; it has no key for the work, which is booked by the face form:
 
 ```yaml
 forcing:
@@ -114,22 +115,22 @@ forcing:
 
 **What is refused, and why.** `ConstGravityOptionsImpl::from_yaml`
 ({{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}}) checks the keys of the
-`const-gravity` block (`grav1`, `grav2`, `grav3`, `non-hydrostatic`, `gravity-work`, `gravity-work-fixer`) and refuses:
+`const-gravity` block (`grav1`, `grav2`, `grav3`, `non-hydrostatic`) with `check_keys` ({{< code src/input/check_keys.cpp check_keys >}}) and refuses:
 
 1. a `non-hydrostatic` factor outside $[0,1]$;
-2. any `gravity-work` other than `face`, with the message `forcing/const-gravity/gravity-work: 'cell' is not supported:
-   the cell form was removed (V3 I-7); use gravity-work: face`, because the cell form's budget does not close
-   (@eq-ch06-cell-defect);
-3. `gravity-work-fixer: true` (@sec-ch06-fixer).
+2. any other key, among them the retired `gravity-work` and `gravity-work-fixer`, with the message
+   `unknown key 'forcing/const-gravity/<key>'. Valid keys: ...`, whatever the value. The cell form's budget does not
+   close (@eq-ch06-cell-defect), so no key offers it, and the fixer that repaired that budget went with it (@sec-ch06-fixer).
 
-`HydroImpl::reset` ({{< code src/hydro/hydro.cpp HydroImpl::reset >}}) repeats the second and third checks for
-options built in Python, with the same reasons.
+The options object has no member for the work form (`ConstGravityOptionsImpl`,
+{{< code src/forcing/forcing.hpp ConstGravityOptionsImpl >}}), so `HydroImpl::reset`
+({{< code src/hydro/hydro.cpp HydroImpl::reset >}}) has nothing to re-check for options built in Python.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| keys, defaults and refusals | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `gravity_work` | `gravity-work` |
+| keys, defaults and refusals | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `check_keys` | `const-gravity` |
 | body force and cell work | {{< code src/forcing/const_gravity.cpp ConstGravityImpl::forward_split >}} | `non_hydrostatic` | `const-gravity` |
-| cell work replaced by the face work | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `original_gravity_work` | `gravity-work` |
+| cell work replaced by the face work | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `original_gravity_work` | none: always |
 
 : Code map of the constant gravity and the refused cell form. {#tbl-ch06-cell-code}
 
@@ -138,12 +139,18 @@ options built in Python, with the same reasons.
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_forcing.release`, `vertical_gravity_work_uses_continuity_mass_flux` | one stage's change of $\sum_iV_i(E_i+\phi_i\rho_i)$, less the corrected-PE work, equals the energy and potential-energy flux through the two end faces: the booked work is the face work of the continuity mass flux, not the cell work | $10^{-9}$ abs. | `EXPECT_NEAR(..., 1.e-9)` |
-| `test_gravity_work_fixer_removed_python` | the gravity block loads with the fixer off or absent and refuses it on | exact (loads or throws) | a setup contract |
-| {{< code tests/test_flux_register.cpp GravityWork.the_cell_form_is_refused_and_names_face >}} (`test_flux_register.release`) | `gravity-work: cell`, from YAML[^rg-20d0ad55a777] and from code (`gravity_work("cell")`), is refused with a message that names `gravity-work: face`; `gravity-work-fixer: true` is refused with "removed in V3" and `false` loads | exact (throws or not) | `EXPECT_NE(msg.find("gravity-work: face"), std::string::npos)` |
+| {{< code tests/test_const_gravity_options.py test_removed_gravity_options >}} (`test_const_gravity_options_python`) | the retired keys `gravity-work` and `gravity-work-fixer`, even with their former defaults `face` and `false`, are refused by the deck reader with `unknown key 'forcing/const-gravity/<key>'`, and the loaded gravity options carry no such attribute | exact (throws or not) | `assert f"unknown key 'forcing/const-gravity/{key}'" in str(error)` |
 
 : Tests of the constant gravity forcing at the pin. {#tbl-ch06-cell-tests}
 
-The three ctests pass at the pin.[^ch06-cell-run]
+Both ctests pass at the pin.[^ch06-cell-run-pin] `test_const_gravity_options_python` is new there and replaces the two
+refusal tests that went with the keys; the run of the chapter's 19 gravity-work and implicit ctests at the sha its
+tag names is kept for the record.[^ch06-cell-run]
+
+[^ch06-cell-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own inputs; run: `ctest -j 1 --timeout 1800
+    --output-on-failure -R '^(test_forcing\.release|test_const_gravity_options_python)$'` in the build directory of a
+    CPU Release build at the pin (`-DCUDA=OFF -DNETCDF=OFF -DPNETCDF=OFF -DUCX=ON`); Linux x86-64, Python 3.12.6, torch 2.10.0+cu128 on CPU, numpy 2.5.5, kintera 2.6.14, pyharp 2.7.17, pydisort 1.8.13, commux 0.2.1, g++ 11.4.0, CMake 3.26.2]. 2 of 2 ctests passed
+    (one run, one host).
 
 [^ch06-cell-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own inputs; run: `ctest -j1
     --output-on-failure -R <pattern>` with one anchored pattern over the 19 gravity-work and implicit ctests this
@@ -155,7 +162,8 @@ The three ctests pass at the pin.[^ch06-cell-run]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- `gravity-work: cell` is refused; a deck that names it must change to `face` (or drop the key).
+- `gravity-work` and `gravity-work-fixer` are the retired `const-gravity` keys: the deck reader refuses them as unknown,
+  with any value, so a deck that still carries them does not load; drop the keys.
 - The $x_2$ and $x_3$ components of gravity book cell work only; only the $x_1$ work is replaced by the face form.
 :::
 
@@ -163,8 +171,6 @@ Combinations with the study switches: @sec-ch12-matrix.
 
 <!-- reader glossary notes -->
 [^rg-cf144a647361]: const-gravity — constant-gravity forcing component
-
-[^rg-72cdee3ac795]: gravity-work — form of the $x_1$ gravity work; only `face` (the default) is accepted
 
 [^rg-88e66223cc5e]: grav1 — gravity component along the first coordinate
 
@@ -179,8 +185,6 @@ Combinations with the study switches: @sec-ch12-matrix.
 [^rg-f239edda6399]: forcing — forcing options block: a map with one sub-block per forcing component
 
 [^rg-7034ba898e85]: CPU — central processing unit
-
-[^rg-20d0ad55a777]: YAML — YAML Ain't Markup Language, the structured input format used for decks
 
 [^rg-dd629466f3e7]: CUDA — NVIDIA's parallel computing platform
 

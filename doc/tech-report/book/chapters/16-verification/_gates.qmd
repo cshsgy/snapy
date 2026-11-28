@@ -1,7 +1,7 @@
 ## The bitwise gates {#sec-ch16-gates}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: on cshsgy/snapy branch v3/closing-dryrun-plan at be267b70: docs/v3/closing/tools/harness348/README.md,
          harness348/h348.py, harness348/decks/, tools/dumpset349/README.md, dumpset349/dumpset349.py,
          dumpset349/compare.py, tools/gates.sh; tests/test_straka.py and tests/CMakeLists.txt at the pin
@@ -70,15 +70,15 @@ also prints, for information, the largest relative difference of the energy row 
 | axis | values |
 |---|---|
 | implicit matrix | `full` (`implicit-scheme: 9`), `partial` (`implicit-scheme: 1`) |
-| gravity work | `face` (`gravity-work-fixer: false`); `cell` (removed at the pin: `const-gravity`[^rg-b743ab6e7970] refuses it) |
+| gravity work | `face` (no key); `cell` (removed at the pin: `const-gravity`[^rg-b743ab6e7970] refuses the key as unknown) |
 | geometry | `cartesian`, `stretched` ($x_1$ ratio 1.05), `spherical-polar`, `gnomonic-equiangle` |
 
 : The 2 × 2 × 4 decks of the face-deck harness; the deck files are written by `h348.py --write-decks`, whose
 `config()` is their one source. {#tbl-ch16-harness}
 
 At the code pin only the 8 `face` decks run. The `cell` form of the gravity work was removed (V3 I-7), and
-`const-gravity` refuses it, and a `gravity-work-fixer: true` too, when the deck is read
-({{< code src/forcing/const_gravity.cpp >}}); `h348.py` does not catch that error, so a run of the tool as
+`const-gravity` refuses the `gravity-work`[^rg-9d4a892bae32] and `gravity-work-fixer`[^rg-97a50c1d5fe6] keys as unknown, with any value, when the deck
+is read ({{< code src/forcing/const_gravity.cpp >}}); `h348.py` does not catch that error, so a run of the tool as
 committed stops at the first `cell` deck and writes no manifest. A gate at the pin needs the `cell` decks removed
 from `config()` first.
 
@@ -167,6 +167,10 @@ the review that ran it.
 [^rg-01fadbe6e8ea]: $x_1, x_2, x_3$ — the three coordinate directions; $x_1$ is always the vertical (radial) direction
 
 [^rg-b743ab6e7970]: const-gravity — constant-gravity forcing component
+
+[^rg-9d4a892bae32]: gravity-work — retired `const-gravity` key; refused as unknown at the pin, where the face form is the only form
+
+[^rg-97a50c1d5fe6]: gravity-work-fixer — retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone
 
 [^rg-1d6fbd595d86]: WENO3 — third-order weighted essentially non-oscillatory reconstruction
 

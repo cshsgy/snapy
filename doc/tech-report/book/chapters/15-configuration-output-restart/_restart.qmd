@@ -1,7 +1,7 @@
 ## Restart (`outputs: - type: restart`, `-r` or `--restart`) {#sec-ch15-restart}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: src/output/restart.{hpp,cpp}, src/output/restart_metadata.hpp, src/mesh/meshblock_restart.cpp,
          src/mesh/meshblock.{hpp,cpp}, src/output/output_type.cpp, examples/straka.cpp, python/csrc/pymesh.cpp,
          python/csrc/snapy.cpp, tests/test_restart_bundle.cpp, tests/test_fp32_restart.py,
@@ -94,7 +94,7 @@ of the block its file number and next time, advanced when the output fires in th
 outputs' carries (the budget interval; @sec-ch10), and the two key lists. It saves the map as a tensor archive
 `<basename>.block<r>.<NNNNN>.part`, or `.final.part` on the final call. A restart output is always combined: its
 constructor `RestartOutput::RestartOutput` ({{< code src/output/restart.cpp RestartOutput::RestartOutput >}})
-sets `combine` on.
+refuses a deck that turns `combine` off ("restart: combine must stay on").
 
 **Bundle.** `RestartOutput::combine_blocks` ({{< code src/output/restart.cpp RestartOutput::combine_blocks >}})
 runs under the same per-process protocol as the gridded writers (`combine_on_root`,

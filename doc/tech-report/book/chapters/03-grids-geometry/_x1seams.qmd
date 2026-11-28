@@ -1,7 +1,7 @@
 ## $x_1$ seams between blocks (`layout: cubed`, `nb1` > 1) {#sec-ch03-x1seams}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: src/layout/exchange.hpp, src/layout/exchange.cpp, src/layout/layout.cpp, src/hydro/hydro.cpp,
          src/hydro/hydro_forward.cpp, src/recon/x1_reference.cpp, src/mesh/stage_executor.cpp,
          src/eos/equation_of_state.cpp, tests/test_pref_local_seam.cpp, tests/test_x1_seam_split.cpp,
@@ -18,7 +18,7 @@ each block passing its bottom face value to the block below. (b) The reference g
 neighbour's interior rows. (c) Switch-specific ghost rows past the seam are the neighbour's: the primitive ghost
 layers under `dynamics.conversion-order: 4`, the plain-mean ghost cells under `SNAP_X1_CENTROID_EXACT`, the face
 pressures, the $x_2$ and $x_3$ face states one row past the seam under the face-flux covariance (on by default), for
-the hydro and for the scalars, and the density increment one row past it under `gravity-work: face`. (d) On every
+the hydro and for the scalars, and the density increment one row past it under the face gravity work. (d) On every
 $x_1$ seam the seam-face flux, with its face pressure and pressure base, is replaced by the mean of the two sides.
 Wall reconstructions and wall mirroring are gated on a physical face, so they never act at a seam; column-wide
 EOS[^rg-b43b7aad09b4] repairs gather the whole column. Every relay is one call of the one seam transport: the column's
@@ -208,7 +208,7 @@ The reference cases are `local_blocks_restart_the_reference_at_the_seam` ({{< co
 `in_process_split_matches_one_block_after_200_steps` ({{< code tests/test_pref_local_seam.cpp HydroRefX1.in_process_split_matches_one_block_after_200_steps >}}). The arms run one
 gtest each with their environment through the CMake function `seam_arm` ({{< code tests/CMakeLists.txt >}}); the
 comparisons are in `split_gap` and its callers ({{< code tests/test_x1_seam_split.cpp split_gap >}}). With
-`gravity-work: face`, `radial_exact_split_gap` ({{< code tests/test_x1_seam_split.cpp radial_exact_split_gap >}})
+the face gravity work, `radial_exact_split_gap` ({{< code tests/test_x1_seam_split.cpp radial_exact_split_gap >}})
 bounds both the split column's gap to one block and its drift of $\mathcal E=\sum_iV_iE_i+P$ (appendix A, notation
 group 5) by $10^{-13}$, for 32, 64 and 128 cells. The seam-side case is `the_x1_relays_are_seam_sides`
 ({{< code tests/test_x1_seam_split.cpp X1SeamSplit.the_x1_relays_are_seam_sides >}}). CUDA twins of three arms

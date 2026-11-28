@@ -9,7 +9,8 @@ a `MeshBlock` or a `Mesh` (@sec-ch01-driver). Each stage is a schedule of named 
 executor: the stage-entry exchange of a bare block, the hydro and scalar increments, the user forcings, the
 integrator's combine, and the end-of-stage slots for saturation, chemistry and the physical ghosts (@sec-ch01-stage).
 The executor runs the schedule eagerly, or groups the ops into segments and replays the capturable ones as CUDA[^rg-28386113293d] graphs
-(@sec-ch13-cuts, @sec-ch13-agree, @sec-ch16-capture). Every face flux goes through the block's flux register, which keeps the stage's totals and the step's
+(the segments, the capture and the refusal list: @sec-ch11-segments, @sec-ch11-capture, @sec-ch11-refusals; the Mesh's cuts
+and agreement: @sec-ch13-cuts, @sec-ch13-agree; the capture sweep: @sec-ch16-capture). Every face flux goes through the block's flux register, which keeps the stage's totals and the step's
 sums (@sec-ch01-stage). A `Mesh` runs the stages of its blocks through one executor, then its global phase, then the
 exchange between its blocks (@sec-ch01-mesh, @sec-ch13). It makes no new numerical claim of its own. The
 physics of each operator belongs to its own chapter, which the map points at. The directories and modules of the repository, with the chapter

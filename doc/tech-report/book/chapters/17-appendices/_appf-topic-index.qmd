@@ -424,7 +424,7 @@
 
 **deck switches, flux covariance**: Lateral face covariance and centroid correction, @sec-ch12-flux-covariance.
 
-**deck switches, gravity work**: Corrected potential-energy face work, @sec-ch12-radial-exact.
+**deck switches, gravity work**: Corrected potential-energy face work (no switch), @sec-ch12-radial-exact.
 
 **deck switches, mass covariance**: Radial velocity mean correction, @sec-ch12-mass-covariance.
 
@@ -602,13 +602,13 @@
 
 **energy conservation with gravity, face form**: Face form of the gravity work, @sec-ch06-face.
 
-**energy conservation with gravity, fixer**: Gravity-work fixer, @sec-ch06-fixer.
+**energy conservation with gravity, fixer**: Gravity-work fixer (removed; its key is refused), @sec-ch06-fixer.
 
 **energy conservation with gravity, implicit**: Gravity work inside the vertical implicit operator, @sec-ch06-vic.
 
 **energy equation and EOS consistency**: EOS and solver consistency, @sec-ch02-consistency.
 
-**energy fixer, gravity**: Gravity-work fixer, @sec-ch06-fixer.
+**energy fixer, gravity**: Gravity-work fixer (removed; its key is refused), @sec-ch06-fixer.
 
 **environment for ranks and devices**: Layout and communication environment, @sec-ch12-layout.
 

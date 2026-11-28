@@ -169,8 +169,8 @@ member of the block; `MeshBlockImpl::advance_local` runs all but the exchange
 6. at the last stage only, `saturation` applies the conserved-variable limiter again and the saturation adjustment
    when the thermodynamics has reactions ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}}),
    and `chemistry` runs the chemistry step of a single block when one is set
-   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}); a `Mesh` runs it over its blocks
-   after their stages (@sec-ch09-exchange);
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}); a `Mesh`'s block runs it in its own
+   last stage the same way (@sec-ch09-exchange);
 7. `boundaries` fills the physical ghosts, `apply_boundaries`
    ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}}).
 

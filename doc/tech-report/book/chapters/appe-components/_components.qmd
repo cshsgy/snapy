@@ -1,7 +1,7 @@
 ## External component interfaces {#sec-appe-components}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml);
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml);
      kintera@0429d795f79a0665afeca565e5a05c87ab4ba1e2 (tools/package-pins.json, the v2.6.13 tag);
      pyharp@4721715855e937c1e8b218e964c0655f46e56e29 (tools/package-pins.json, the v2.7.1 tag)
 sources: CMakeLists.txt, pyproject.toml, setup.py, cmake/modules/Find{Kintera,Harp,Disort}.cmake, cmake/parameters.cmake,
@@ -29,7 +29,7 @@ constraints, and the tables keep the two apart.
 ::: {.callout-note title="At a glance"}
 **Purpose.** The dependency and call-site inventory of snapy's external components at the pin.
 
-**Data.** Five packages besides PyTorch: kintera, pyharp, pydisort, commux, pinc; one version floor, kintera 2.6.13.
+**Data.** Five packages besides PyTorch: kintera, pyharp, pydisort, commux, pinc; one version floor, kintera 2.6.14.
 
 **Placement.** Build time (CMake locators, `pip` metadata), import time (`import snapy`) and run time (the EOS, the
 saturation adjustment, the chemistry step, the stage combination, the UCX process group).
@@ -40,12 +40,13 @@ off Apple.
 
 **Guarantee / limits.** The floor is enforced for kintera alone; pyharp and pydisort are accepted at any version.
 
-**Evidence.** @tbl-appe-checks: the pinned build of this report configures and builds against kintera 2.6.13.
+**Evidence.** @tbl-appe-checks: the pinned build of this report configures and builds against kintera 2.6.14. The
+book's kintera citations stay at the v2.6.13 pin of `tools/package-pins.json`; that pin moves in its own change.
 :::
 
 | component | use in snapy | required version at the snapy pin |
 |---|---|---|
-| kintera | moist EOS, saturation adjustment, the chemistry step | at least 2.6.13 in CMake (`find_package(Kintera 2.6.13 REQUIRED)`) and in the Python build and runtime metadata (`kintera>=2.6.13`) |
+| kintera | moist EOS, saturation adjustment, the chemistry step | at least 2.6.14 in CMake (`find_package(Kintera 2.6.14 REQUIRED)`) and in the Python build and runtime metadata (`kintera>=2.6.14`) |
 | pyharp / CMake Harp | integrator options, stage weights and stage combination | required by CMake; no version minimum |
 | pydisort / CMake Disort | C++ shared-library link and Python package import | required by CMake; no version minimum |
 | commux | the process group over UCX (`BACKEND=ucx`, @sec-ch12-layout) | `commux>=0.1.4` on Linux in the Python build and runtime metadata; CMake links `commux::commux` when UCX is found |
@@ -54,16 +55,16 @@ off Apple.
 
 : Requirements, distinct from the package pins and from any tested combination. {#tbl-appe-requirements}
 
-`find_package` declares the CMake requirements: `Torch`, `Disort` and `Harp` with no version, `Kintera 2.6.13`
+`find_package` declares the CMake requirements: `Torch`, `Disort` and `Harp` with no version, `Kintera 2.6.14`
 ({{< code CMakeLists.txt >}}). `FindKintera` enforces the floor at configure time: it reads `kintera.__version__`
-and stops with "snapy requires kintera >= 2.6.13 (...)" below it ({{< code cmake/modules/FindKintera.cmake >}}); the
+and stops with "snapy requires kintera >= 2.6.14 (...)" below it ({{< code cmake/modules/FindKintera.cmake >}}); the
 message names the five kintera features the floor stands for. The comment above the `find_package` line records
 the steps of that floor: 2.5.8 for `SpeciesThermo` `names()`, `mu()` and `populate_thermo`; 2.5.13 for the
 saturation-failure counter; 2.6.2 for the `h2o_bryan` liquid beta that `examples/bryan.yaml` needs; 2.6.3 for the
 same-call rate constants of the kinetics Jacobian; 2.6.9 for the constant-$c_v$ perturbation-pressure helper;
-2.6.11 for `compute_into`, which writes the moist-mixture EOS's fixed buffers. The floor itself, 2.6.13, carries
-no comment of its own. The Python `[build-system] requires` and `[project] dependencies` both contain
-`kintera>=2.6.13` ({{< code pyproject.toml >}}).
+2.6.11 for `compute_into`, which writes the moist-mixture EOS's fixed buffers; and 2.6.14, the floor itself, for
+the per-call log-SVP state that lets the blocks of a Mesh run their chemistry concurrently (@sec-ch10-kinetics). The Python `[build-system] requires` and `[project] dependencies` both contain
+`kintera>=2.6.14` ({{< code pyproject.toml >}}).
 
 Neither Python list declares pyharp or pydisort, and the runtime list declares no torch. They are required all
 the same, and the version a build accepts is not bounded, in four steps:
@@ -136,7 +137,7 @@ and its warm-up save list carries the counter and the active-set buffers so that
 
 **kintera: the chemistry step.** The driver installs the reactions from the deck
 ({{< code examples/run_hydro.cpp main >}}; {{< code src/mesh/meshblock.cpp MeshBlockImpl::set_chemistry >}}), and
-the block runs them as the last op of its last stage ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}).
+the block runs them in its last stage, before the `boundaries` op ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}}).
 The adapter owns a kintera `Kinetics` and a `ThermoX` ({{< code src/chemistry/chemistry_source.cpp ChemistrySource::ChemistrySource >}}).
 Its step refreshes the primitives after the dynamics and the adjustment, converts mass to mole fractions and to
 concentrations, evaluates the rates with their rate constants, `forward_with_rate_constants`
@@ -179,12 +180,12 @@ make_fig()
 
 ### Code
 
-**What to install.** For a CPU build on Linux: PyTorch 2.10.0, `kintera>=2.6.13`, pyharp, pydisort, and, for the UCX
+**What to install.** For a CPU build on Linux: PyTorch 2.10.0, `kintera>=2.6.14`, pyharp, pydisort, and, for the UCX
 process group and PnetCDF output, `commux>=0.1.4` and `pinc>=0.2.0`. The versions are those of the build metadata
 above; for pyharp and pydisort none is declared.
 
 ```bash
-python -m pip install "torch==2.10.0" "kintera>=2.6.13" pyharp pydisort "commux>=0.1.4" "pinc>=0.2.0"
+python -m pip install "torch==2.10.0" "kintera>=2.6.14" pyharp pydisort "commux>=0.1.4" "pinc>=0.2.0"
 ```
 
 These metadata requirements do not establish a tested compatible combination; use the preface recipe for a complete
@@ -208,8 +209,8 @@ detect Torch GLIBCXX ABI" ({{< code CMakeLists.txt >}}).
    determine PEP 440 version of ..." stop, run only after the library is found (`if(KINTERA_LIBRARY)`), so that
    message means a found library whose Python package does not import. The C++ library is located from the Python
    package.
-3. *kintera is older than 2.6.13.* Once the Kintera library is found, `FindKintera` reads the version and stops
-   with "snapy requires kintera >= 2.6.13 (...), found ...".
+3. *kintera is older than 2.6.14.* Once the Kintera library is found, `FindKintera` reads the version and stops
+   with "snapy requires kintera >= 2.6.14 (...), found ...".
 4. *`UCX=ON` without commux.* `cmake/ucx.cmake`, included after the Kintera locator, probes for the package and
    stops with a message that UCX support requires the Python package `commux` in the interpreter's environment.
    `UCX` is on by default off Apple.
@@ -225,7 +226,7 @@ At import time, `import snapy` fails if `torch`, `pydisort`, `pyharp` or `kinter
 find_package(Torch REQUIRED)
 find_package(Disort REQUIRED)
 find_package(Harp REQUIRED)
-find_package(Kintera 2.6.13 REQUIRED)
+find_package(Kintera 2.6.14 REQUIRED)
 ```
 
 The Torch line is covered by the ABI probe that runs before the refusal list; the Disort and Harp lines are the
@@ -265,16 +266,16 @@ to it; rows 1 and 2 are posted to the monitor by the adjustment and are not retr
 |---|---|---|---|
 | local anchor audit | every snapy citation resolves at the pin; every kintera and pyharp link names its package pin and its anchor symbol | exact text | `python3 tools/code_anchors.py check`, `python3 tools/check_citations.py` |
 | source math-span check | the appendix has valid math delimiters | exact syntax | `python3 tools/check_math_spans.py` |
-| configure and build at the pin against kintera 2.6.13 | the floor passes, the library and the Python extension build, `import snapy` succeeds | exact: exit 0 | the CPU build of this report at the pin, exit 0 at every step[^appe-build] |
+| configure and build at the pin against kintera 2.6.14 | the floor passes, the library and the Python extension build, `import snapy` succeeds | exact: exit 0 | the CPU build of this report at the pin, exit 0 at every step[^appe-build] |
 | dependency runtime compatibility across versions | not run | not measured | no other kintera, pyharp or pydisort version was built with this snapy pin |
 
 : Documentation validation and one pinned build. {#tbl-appe-checks}
 
 [^appe-build]: snapy at the pin configured with `cmake -DCUDA=OFF -DCMAKE_BUILD_TYPE=Release -DNETCDF=OFF -DPNETCDF=OFF
     -DUCX=ON`, built with `cmake --build`, installed with `pip install --no-build-isolation --no-deps`, then
-    `import snapy`: every step exit 0, against kintera 2.6.13 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
-    torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64; the same tree with `-DNETCDF=ON
-    -DPNETCDF=ON -DBUILD_EXAMPLES=ON` for the NetCDF arm of @sec-appd. One run, one host.
+    `import snapy`: every step exit 0, against kintera 2.6.14 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
+    torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64. One run, one host. The
+    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at 73c45a7c8c991209924e1137992352c335575062 (the appD record) and is not repeated here.
 
 No numerical result is claimed for any component version on CUDA, MPS or more than one rank. The appendix's C++
 link statement follows the build definition, not an inspected linked binary; a platform linker may omit unused

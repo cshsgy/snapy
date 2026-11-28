@@ -656,14 +656,14 @@
     {
       "kind": "key",
       "term": "gravity-work",
-      "meaning": "form of the $x_1$ gravity work; only `face` (the default) is accepted",
+      "meaning": "retired `const-gravity` key; refused as unknown at the pin, where the face form is the only form",
       "section": "sec-ch06-cell",
       "not_defined_here": false
     },
     {
       "kind": "key",
       "term": "gravity-work-fixer",
-      "meaning": "removed in V3: only `false` (the default) is accepted",
+      "meaning": "retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone",
       "section": "sec-ch06-cell",
       "not_defined_here": false
     },

@@ -1,7 +1,7 @@
 ## Cell-consistent face reference (`dynamics/conversion-order: 4`) {#sec-ch12-wb-reference}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
 sources: src/options/hydro.yaml; src/hydro/hydro.cpp; src/recon/x1_reference.cpp; src/recon/x1_rows.cpp;
          tests/test_x1_seam_split.cpp; tests/test_wb_ref4_order.py; tests/CMakeLists.txt
 status: draft
@@ -75,7 +75,7 @@ make_fig()
 
 **How to use it.** Set the key in the deck, and merge this fragment into a complete input card:
 
-<!-- reader glossary keys -->Keys in this fragment: `geometry`[^rg-d507df17a90e], `cells`[^rg-3ae5045adadc], `nghost`[^rg-2629ff7b5445], `dynamics`[^rg-01ca350389d0], `forcing`[^rg-a13a781de491], `const-gravity`[^rg-138bbf245f63], `grav1`[^rg-96f8ca6235cd], `gravity-work`[^rg-334e37910182].
+<!-- reader glossary keys -->Keys in this fragment: `geometry`[^rg-d507df17a90e], `cells`[^rg-3ae5045adadc], `nghost`[^rg-2629ff7b5445], `dynamics`[^rg-01ca350389d0], `forcing`[^rg-a13a781de491], `const-gravity`[^rg-138bbf245f63], `grav1`[^rg-96f8ca6235cd].
 ```yaml
 geometry:
   cells:
@@ -85,7 +85,6 @@ dynamics:
 forcing:
   const-gravity:
     grav1: -9.8     # m s^-2
-    gravity-work: face
 ```
 
 With radial gravity, `HydroImpl::reset` refuses a thinner halo. For two ghosts the message is
@@ -182,6 +181,4 @@ The complete switch inventory is @sec-ch12-matrix.
 [^rg-138bbf245f63]: const-gravity — constant-gravity forcing component
 
 [^rg-96f8ca6235cd]: grav1 — gravity component along the first coordinate
-
-[^rg-334e37910182]: gravity-work — form of the $x_1$ gravity work; only `face` (the default) is accepted
 <!-- end reader glossary notes -->

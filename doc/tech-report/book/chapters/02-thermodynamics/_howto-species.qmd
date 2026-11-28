@@ -53,7 +53,7 @@ def one_stage(block, nvar, vapour, pressure):
     return before[..., 3:-3], variables["hydro_u"][..., 3:-3]
 ```
 
-1. Write the species entry. Its values are those of the deck (`H2O` in [`examples/bryan.yaml:15-18`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.yaml#L15-L18)).
+1. Write the species entry. Its values are those of the deck (`H2O` in [`examples/bryan.yaml:15-18`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/examples/bryan.yaml#L15-L18)).
 
 ```python
 vapour = {
@@ -95,7 +95,7 @@ torch.testing.assert_close(after[snapy.kICY], before[snapy.kICY],
 print("N6 species: H2O with phase gas adds state row", snapy.kICY)
 ```
 
-- **Contract.** Reading: the EOS builds its species table from the same YAML card (`from_yaml` in [`src/eos/equation_of_state.cpp:129`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/equation_of_state.cpp#L129)):
+- **Contract.** Reading: the EOS builds its species table from the same YAML card (`from_yaml` in [`src/eos/equation_of_state.cpp:129`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/eos/equation_of_state.cpp#L129)):
 
   ```cpp
   op->thermo() = kintera::ThermoOptionsImpl::from_yaml(filename, op->verbose());
@@ -107,13 +107,13 @@ print("N6 species: H2O with phase gas adds state row", snapy.kICY)
 - Reference species: the first entry is always a state species (`vapor_set` in [`kintera src/thermo/thermo_options.cpp:109`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L109)); the dry air goes first.
 - State rows: a species is a row when a reaction names it or when it declares a phase (`vapor_set` in [`kintera src/thermo/thermo_options.cpp:177-180`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/thermo/thermo_options.cpp#L177-L180));
   a listed species with neither is in kintera's table but not in the state.
-- Row count: the five hydro rows plus one per species after the first (`nvar` in [`src/eos/moist_base.hpp:43`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/moist_base.hpp#L43)):
+- Row count: the five hydro rows plus one per species after the first (`nvar` in [`src/eos/moist_base.hpp:43`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/eos/moist_base.hpp#L43)):
 
   ```cpp
   int nvar() const override { return 4 + nspecies() + 1; }
   ```
 
-  The first species row is `kICY` ([`python/csrc/snapy.cpp:40`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/python/csrc/snapy.cpp#L40)).
+  The first species row is `kICY` ([`python/csrc/snapy.cpp:43`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/python/csrc/snapy.cpp#L43)).
 - One table per process: each card clears kintera's species table and loads its own (`clear_species_registry` in [`kintera src/species.cpp:153-155`](https://github.com/chengcli/kintera/blob/0429d795f79a0665afeca565e5a05c87ab4ba1e2/src/species.cpp#L153-L155));
   `kintera.species_names()` lists the card loaded last, as step 5 checks.
 

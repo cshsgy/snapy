@@ -3,4 +3,4 @@ from ..flow import make_flow
 
 
 def make_fig():
-    return make_flow(['agree and align', 'per-block workers run the stages', 'global phase: closure, chemistry', 'exchange'])
+    return make_flow(['agree and align', 'per-block workers run the stages', 'global phase: closure', 'exchange'])

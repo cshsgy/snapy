@@ -1,7 +1,7 @@
 ## Order physical fills, exchange and corner refresh (`apply_boundaries; exchange_ghost_zones`) {#sec-ch14-timing}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
 sources: STRUCTURE.md section 6 chapter 14; src/mesh/stage_executor.cpp; src/mesh/meshblock_advance.cpp;
          src/mesh/meshblock_exchange.cpp; src/hydro/flux_positivity.cpp; src/mesh/meshblock.cpp; src/mesh/mesh.cpp; src/scalar/scalar.cpp; src/bc/bc_func.hpp
 status: draft
@@ -60,9 +60,9 @@ A stage runs as the list of ops that `StageExecutor::build_schedule`
 exchange first; then `advance`, `forcing`[^rg-51c00aae93ad], `combine`, `saturation`, `chemistry` and `boundaries`. So in the block
 driver (`MeshBlockImpl::forward`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}) a change made
 between calls reaches the ghosts before reconstruction. A Mesh block's schedule has no exchange op:
-`MeshImpl::forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) runs every block's stage, then its global
-phase (the axial-momentum closure and, on the last stage, the chemistry, each followed by the physical fills),
-and exchanges the blocks last. Within the stage, `stage_combine` refills the solid hydro cells after the RK[^rg-45f96bd373b5]
+`MeshImpl::forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) runs every block's stage (a registered
+chemistry step runs in the last stage there, before the `boundaries` op, as on a bare block), then its global phase (the
+axial-momentum closure, followed by the physical fills), and exchanges the blocks last. Within the stage, `stage_combine` refills the solid hydro cells after the RK[^rg-45f96bd373b5]
 combination, the `saturation` op runs the saturation adjustment on the last stage, and the `boundaries` op
 (`MeshBlockImpl::stage_boundaries`, {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}})
 runs the physical fills of `apply_boundaries`.

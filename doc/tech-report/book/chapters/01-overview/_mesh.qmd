@@ -1,7 +1,7 @@
 ## Advance several blocks in one process (`distribute.blocks_per_process`) {#sec-ch01-mesh}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/mesh.cpp; src/mesh/meshblock_redo.cpp; src/layout/layout.cpp;
          src/options/layout.yaml; tests/test_mesh_multi_block.cpp; tests/test_mesh_exchange.py; tests/test_mesh_executor.cpp
 status: draft
@@ -14,8 +14,7 @@ reviewer: JiachenLiu-Atmos
 A `Mesh` holds several blocks in one process. It clones the block options for each, gives each block its own piece of
 the grid, and runs their stages through one stage executor shared by all the blocks and a small worker pool. On a
 CUDA device every worker has its own stream. The mesh also does once what each block would otherwise do alone: the
-time-step reduction, the redo decision and the stage's global phase (the axial-momentum closure and, on the last
-stage, the chemistry step).
+time-step reduction, the redo decision and the stage's global phase (the axial-momentum closure).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** N/A, a code map: clone and repartition the options, run the blocks' stages, the global phase, then exchange.
@@ -53,11 +52,11 @@ kernels thus run on their own streams. `MeshImpl::max_time_step`
 ({{< code src/mesh/mesh.cpp MeshImpl::max_time_step >}}) takes the minimum of the local bounds, then one MIN over the
 process group, then the Courant factor and the redo halving. `MeshImpl::forward`
 ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) first lets the blocks agree on how they run (Mesh-agree,
-@sec-ch13-agree), refuses a strict block that cannot capture, defers each block's chemistry and aligns their captures
-(@sec-ch13-cuts). It runs every block's stage schedule through the pool. With the axial-momentum closure on, it sums
-the closure moments of the local blocks, reduces them once over the process group, applies each block's increment and
-refills its physical boundaries (@sec-ch07-axial). On the last stage it runs each block's chemistry step, one block
-after another, and refills the physical boundaries. It then exchanges the ghosts of every block. `MeshImpl::check_redo`
+@sec-ch13-agree), refuses a strict block that cannot capture and aligns their captures (@sec-ch13-cuts). It runs
+every block's stage schedule through the pool; a registered chemistry step runs in a block's last stage there, before
+the `boundaries` op, as on a bare block (@sec-ch11-eagerops). With the axial-momentum closure on, it sums the closure moments of
+the local blocks, reduces them once over the process group, applies each block's increment and refills its physical
+boundaries (@sec-ch07-axial). It then exchanges the ghosts of every block. `MeshImpl::check_redo`
 ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}) combines the blocks' local flags on the device (one
 device-to-host read when they share a device) before the one reduction
 ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::decide_retry >}}). Stream assignment is an execution policy, not
@@ -68,7 +67,7 @@ evidence of numerical equivalence between decompositions.
 ```{python}
 #| label: fig-ch01-mesh-flow
 #| fig-cap: "Advance several blocks in one process. Labelled green boxes name operations or owners; black arrows show the reading sequence, not a timing measurement."
-#| fig-alt: "Sequence: agree and align; per-block workers run the stages; global phase: closure, chemistry; exchange."
+#| fig-alt: "Sequence: agree and align; per-block workers run the stages; global phase: closure; exchange."
 #| echo: false
 from snapy_report.ch01.figures.fig_mesh_flow import make_fig
 make_fig()
@@ -136,19 +135,17 @@ non-positive `blocks_per_process`; `backend` is accepted and ignored, the enviro
   if (stage == 0)
     for (auto& b : blocks) b->step_dt = dt;
 
-  for (auto& b : blocks) b->defer_chemistry = true;
   // B3: a segment one block must (re)capture is captured by all of them (its
   // exchanges meet at the same-process rendezvous)
   executor_->align_captures(vars, dt, stage);
   run_block_jobs(
       [&](size_t i) { executor_->run_stage(i, vars[i], dt, stage); });
-// ... the global phase: the axial closure over the blocks; on the last stage, each block's chemistry ...
+// ... the global phase: the axial closure over the blocks ...
   run_block_jobs([&](size_t i) { blocks[i]->exchange_ghost_zones(vars[i]); });
 ```
 
 `agree`, `check_strict` and `align_captures` decide, for all the blocks together, whether the stages capture
-(@sec-ch13-agree, @sec-ch13-cuts); the deferral line moves the chemistry step out of each block's schedule into the
-global phase; the two `run_block_jobs` calls are steps 2 and 3 of the walk-through. A one-block Mesh runs its job on
+(@sec-ch13-agree, @sec-ch13-cuts); the two `run_block_jobs` calls are steps 2 and 3 of the walk-through. A one-block Mesh runs its job on
 the caller's thread ({{< code src/mesh/mesh.cpp MeshImpl::run_block_jobs >}}).
 
 ### Tests

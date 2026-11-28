@@ -1,7 +1,7 @@
 ## Accumulate and combine one stage (`user_stage_forcings`) {#sec-ch01-stage}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/meshblock_advance.cpp; src/mesh/stage_executor.cpp; src/mesh/segment.cpp;
          src/hydro/flux_register.cpp; src/implicit/implicit_dispatch.cpp;
          src/implicit/implicit_dispatch.cu; tests/test_user_output.cpp; tests/test_jit_user_forcing.py;
@@ -21,7 +21,8 @@ with the step-start state), and the end-of-stage slots `saturation`, `chemistry`
 the schedule eagerly, or groups the ops into segments and replays each capturable segment as a CUDA graph
 ({{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}}); either way the ops are the same. This section
 follows that schedule and writes out the three small identities the combination and the tracer transfer rest on,
-because later chapters cite them. Capture, the segments and the refusal list are @sec-ch13-cuts and @sec-ch13-agree; the capture sweep is
+because later chapters cite them. The segments, the capture and the refusal list are @sec-ch11-segments, @sec-ch11-capture and
+@sec-ch11-refusals; the Mesh's cuts and agreement are @sec-ch13-cuts and @sec-ch13-agree; the capture sweep is
 @sec-ch16-capture.
 
 ::: {.callout-note title="At a glance"}
@@ -144,7 +145,7 @@ a callback result may contain only `hydro_du` and `scalar_ds`, with matching sha
 averages with the integrator, runs the second half of every split source after the last stage's average, applies the
 conserved limiter and refills the solid cells (@sec-ch14-solids). On the last stage `saturation` runs the saturation
 adjustment on the interior cells when a thermodynamics module and a nonempty reaction list exist (@sec-ch08-satadj), and
-`chemistry` runs a registered chemistry step of a bare block (a Mesh defers it, @sec-ch01-mesh). `boundaries` fills the
+`chemistry` runs a registered chemistry step, on a bare block and on a Mesh's block alike (@sec-ch01-mesh). `boundaries` fills the
 physical ghosts last (@sec-ch14-timing). The tendencies are block storage, so `forcing` and the combine op read them across a
 segment boundary. This map asserts algebraic identities, not an observed convergence order.
 
@@ -233,7 +234,7 @@ auto w2dt = dt.scaled(_w2);  // V3 D: on the device in a captured stage
 for (int d = 0; d < 3; ++d) {
   if (!_step[d].defined()) continue;
   // in FP64 (FP32 on MPS), whatever the flux dtype: S <- w1 S + w2 dt T
-  if (!_direct[d].defined()) {
+  if (!_split_posted[d]) {
     axpy_(_step[d].mul_(_w1), _total[d].to(_step[d].scalar_type()), w2dt);
     continue;
   }

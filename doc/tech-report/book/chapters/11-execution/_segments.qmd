@@ -1,7 +1,7 @@
 ## The execution model: segments and the stage schedule {#sec-ch11-segments}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (code_pin.yml)
 sources: src/mesh/segment.{hpp,cpp} (SegmentKind, Op, Segment, StageSchedule), src/mesh/stage_executor.{hpp,cpp}
          (build_schedule, run_stage, run_segments, run_eager), src/mesh/meshblock_advance.cpp (forward),
          src/mesh/mesh.cpp (forward), tests/test_stage_schedule.cpp, tests/test_stage_segments.cpp,
@@ -78,7 +78,8 @@ ops, and whether any of its ops reads the host step (@sec-ch11-graphsafe).
 3. `forcing`[^rg-c2adbe6bd0b3]: the user stage forcings; not capturable when one is set (@sec-ch11-eagerops);
 4. `combine`: the Runge–Kutta combine and the register's end of stage;
 5. `saturation`: the saturation adjustment;
-6. `chemistry`: the registered chemistry step; not capturable on a bare block with one (@sec-ch11-eagerops);
+6. `chemistry`: the registered chemistry step; not capturable when one is registered, on a bare block and on a
+   Mesh's block alike (@sec-ch11-eagerops);
 7. `boundaries`: the ghost fill; not capturable when an outflow boundary is set.
 
 With none of these set, a bare block's stage is two segments: the exchange, then one compute segment holding the
@@ -96,7 +97,8 @@ make_fig()
 **Running a stage.** `StageExecutor::run_stage` ({{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}})
 runs the whole schedule eagerly when the block's mode is eager, or when the case has a refusal
 (@sec-ch11-refusals). Otherwise `StageExecutor::run_segments`
-({{< code src/mesh/stage_executor.cpp StageExecutor::run_segments >}}) walks the segments: a host segment and an
+({{< code src/mesh/stage_executor.cpp StageExecutor::run_segments >}}) first checks the diffusion profiles and,
+with an implicit radial step, that the step is finite and non-negative, then walks the segments: a host segment and an
 eager segment run their ops eagerly, and every other segment is captured if it has no graph yet (or its graph's
 key moved) and then replayed (@sec-ch11-capture). `StageExecutor::run_eager`
 ({{< code src/mesh/stage_executor.cpp StageExecutor::run_eager >}}) is the one eager loop, over a whole stage or

@@ -1,7 +1,7 @@
 ## External tabulated EOS interface (`aneos`) {#sec-ch02-aneos}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md section 6, chapter 2.4; src/eos/aneos.cpp, src/eos/aneos/aneos_thermo.hpp,
          src/eos/aneos/aneos_thermo_dummy.cpp, tests/test_aneos_gamma.cpp at the pin
 status: draft
@@ -55,7 +55,9 @@ the heat capacity is constant.
 `_cons2prim` applies the conserved floors, divides the momenta by $\rho$, subtracts the kinetic energy and calls
 `DU->PTL`; it caches the returned $T$ in the provider. `W->T` and `W->I` call `DP->TUL` again. `_prim2cons` multiplies and adds the kinetic energy back
 after `DP->TUL`. The temperature floor calls `DT->PUL`. Every call is cell-local; no interpolation stencil is
-shipped. There is no metric raise or lower, so on a nonorthogonal grid the kinetic energy is wrong.
+shipped. `_cons2prim` raises the velocity with the cell cosine (`coord_vec_raise_`) after the division, and
+`_prim2cons` lowers the momentum, so on a nonorthogonal grid the kinetic energy and the momenta carry the metric
+(`test_aneos_metric.release`, below).
 
 ```{python}
 #| label: fig-ch02-aneos-flow
@@ -103,6 +105,7 @@ prim[IDN] = cons[IDN];
 
 auto out = prim.narrow(0, IVX, 3);
 torch::div_out(out, cons.narrow(0, IVX, 3), prim[IDN]);
+coord_vec_raise_(out, phydro->pmb->pcoord->cosine_cell_kj);
 
 auto ke = kinetic_energy_(prim, cons.narrow(0, IVX, 3));
 auto ie = cons[IPR] - ke;
@@ -115,14 +118,15 @@ pthermo->cache["temp"] = T;
 apply_primitive_limiter_(prim);
 ```
 
-`ie` is $\rho e$; the `compute` line is provider call 1 of the Derivation; there is no raise between `div_out` and
-`ke`, which is the nonorthogonal limit of the Numerical method.
+`ie` is $\rho e$; the `compute` line is provider call 1 of the Derivation; the raise between `div_out` and `ke`
+is the metric step of the Numerical method.
 
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | {{< code tests/test_aneos_gamma.cpp AneosGamma.implicit_index_takes_the_solved_state >}} (`test_aneos_gamma.release`) | the implicit solve takes its sound speed (`DP->TUL`) from the solid-filled state it solves | exact | `rho.masked_select(solid) == 2.` and `EXPECT_GT(checked, 0)` |
+| {{< code tests/test_aneos_metric.cpp AneosMetric.gnomonic_momentum_and_energy_use_the_metric >}} (`test_aneos_metric.release`) | on a gnomonic block with an off-diagonal metric, `prim2cons` lowers the momenta with the cell cosine and the energy carries the metric kinetic energy; `cons2prim` returns the primitives | `allclose` rtol $10^{-12}$, atol $10^{-12}$ (momenta) and $10^{-9}$ (energy, round trip) | test constants |
 | none | the behaviour of a real ANEOS table | missing evidence | no real provider is linked in any test |
 | `aneos_check.py` `[I1]` (this report) | an illustration of @eq-ch02-aneos-gamma | none | labelled as an illustration |
 
@@ -153,5 +157,4 @@ $c_s=500$ m s$^{-1}$, $\rho=2$ kg m$^{-3}$ and $p=10^5$ Pa give $\gamma=5.0$.
    claimed; the one ctest uses a stand-in provider.
 2. **No capture.** A CUDA graph refuses `aneos` (@sec-ch02-other-eos).
 3. **Partial API.** No moist species; no `W->A`; the base heat-capacity method returns zero.
-4. **Nonorthogonal grids.** No metric raise or lower (Numerical method).
 5. **Untested combinations.** Switch-combination coverage is in @sec-ch12-matrix.

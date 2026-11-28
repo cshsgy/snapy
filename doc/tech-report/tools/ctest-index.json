@@ -1,22 +1,28 @@
 {
- "configure": "-DBUILD_EXAMPLES=OFF -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DFULL_TESTS=OFF -DNETCDF=ON -DUCX=ON",
+ "configure": "-DBUILD_EXAMPLES=OFF -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DFULL_TESTS=OFF -DNETCDF=OFF -DUCX=ON",
  "ctest_version": "3.22.1",
  "external": {
   "eigen": 938
  },
  "format": "snapy-report ctest index 1",
- "pin": "73c45a7c8c991209924e1137992352c335575062",
- "registered": 1176,
+ "pin": "0d5caacbd8e365c87a30af6ce043c39ab30c0959",
+ "registered": 1190,
  "repository": "chengcli/snapy",
  "tests": [
   {
-   "defined_at": "tests/CMakeLists.txt:9",
+   "defined_at": "tests/CMakeLists.txt:11",
    "name": "test_aneos_gamma.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:431",
+   "defined_at": "tests/CMakeLists.txt:15",
+   "name": "test_aneos_metric.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:446",
    "name": "test_anomaly_storage_python",
    "properties": {
     "LABELS": [
@@ -30,13 +36,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:255",
+   "defined_at": "tests/CMakeLists.txt:265",
    "name": "test_axial_momentum.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:397",
+   "defined_at": "tests/CMakeLists.txt:407",
    "name": "test_axial_momentum_flux_form_python",
    "properties": {
     "LABELS": [
@@ -50,13 +56,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:37",
+   "defined_at": "tests/CMakeLists.txt:45",
    "name": "test_backward_substitution.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:109",
+   "defined_at": "tests/CMakeLists.txt:119",
    "name": "test_balance_column.release",
    "properties": {
     "LABELS": [
@@ -66,7 +72,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:557",
+   "defined_at": "tests/CMakeLists.txt:579",
    "name": "test_balance_column_order4_python",
    "properties": {
     "LABELS": [
@@ -78,7 +84,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:173",
+   "defined_at": "tests/CMakeLists.txt:183",
    "name": "test_balance_column_x1_centroid.release",
    "properties": {
     "LABELS": [
@@ -88,7 +94,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:757",
+   "defined_at": "tests/CMakeLists.txt:779",
    "name": "test_bryan_balance_ic",
    "properties": {
     "TIMEOUT": 21.0
@@ -96,13 +102,13 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:187",
+   "defined_at": "tests/CMakeLists.txt:197",
    "name": "test_budget.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:188",
+   "defined_at": "tests/CMakeLists.txt:198",
    "name": "test_budget_cuda.release",
    "properties": {
     "DISABLED": true
@@ -110,7 +116,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:419",
+   "defined_at": "tests/CMakeLists.txt:430",
    "name": "test_check_redo_floor_python",
    "properties": {
     "LABELS": [
@@ -123,13 +129,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:277",
+   "defined_at": "tests/CMakeLists.txt:287",
    "name": "test_check_redo_parallel.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:420",
+   "defined_at": "tests/CMakeLists.txt:431",
    "name": "test_check_redo_saturation_python",
    "properties": {
     "LABELS": [
@@ -143,37 +149,50 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:227",
+   "defined_at": "tests/CMakeLists.txt:237",
    "name": "test_check_redo_vapor_deficit.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:251",
+   "defined_at": "tests/CMakeLists.txt:261",
    "name": "test_cloud_parent_slots.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:179",
+   "defined_at": "tests/CMakeLists.txt:189",
    "name": "test_combine_parts.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:223",
+   "defined_at": "tests/CMakeLists.txt:808",
+   "name": "test_combine_root_throw",
+   "properties": {
+    "LABELS": [
+     "examples",
+     "output"
+    ],
+    "SKIP_RETURN_CODE": 125,
+    "TIMEOUT": 300.0
+   },
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:233",
    "name": "test_condensate_conservation.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:256",
+   "defined_at": "tests/CMakeLists.txt:266",
    "name": "test_conservation_budget.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:257",
+   "defined_at": "tests/CMakeLists.txt:267",
    "name": "test_conservation_budget_cuda.release",
    "properties": {
     "DISABLED": true
@@ -181,7 +200,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:262",
+   "defined_at": "tests/CMakeLists.txt:272",
    "name": "test_conservation_budget_mp.release",
    "properties": {
     "TIMEOUT": 120.0
@@ -189,7 +208,20 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:556",
+   "defined_at": "tests/CMakeLists.txt:425",
+   "name": "test_const_gravity_options_python",
+   "properties": {
+    "LABELS": [
+     "gravity",
+     "hydro",
+     "python"
+    ],
+    "TIMEOUT": 60.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:578",
    "name": "test_conversion_order_python",
    "properties": {
     "LABELS": [
@@ -201,7 +233,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:43",
+   "defined_at": "tests/CMakeLists.txt:52",
    "name": "test_coordinate.release",
    "properties": {
     "LABELS": [
@@ -211,13 +243,13 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:48",
+   "defined_at": "tests/CMakeLists.txt:57",
    "name": "test_cp5_nghost.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:496",
+   "defined_at": "tests/CMakeLists.txt:514",
    "name": "test_cubed_sphere_capture_python",
    "properties": {
     "LABELS": [
@@ -230,7 +262,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:455",
+   "defined_at": "tests/CMakeLists.txt:473",
    "name": "test_cubed_sphere_cell_volume_python",
    "properties": {
     "LABELS": [
@@ -243,19 +275,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:42",
+   "defined_at": "tests/CMakeLists.txt:51",
    "name": "test_cubed_sphere_exchange.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:45",
+   "defined_at": "tests/CMakeLists.txt:54",
    "name": "test_cubed_sphere_seams.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:378",
+   "defined_at": "tests/CMakeLists.txt:388",
    "name": "test_cubed_sphere_vertical_velocity_exchange_python",
    "properties": {
     "LABELS": [
@@ -268,31 +300,31 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:67",
+   "defined_at": "tests/CMakeLists.txt:76",
    "name": "test_cycle_diagnostics.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:278",
+   "defined_at": "tests/CMakeLists.txt:288",
    "name": "test_cycle_diagnostics_parallel.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:50",
+   "defined_at": "tests/CMakeLists.txt:59",
    "name": "test_deck_x1_wiring.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:52",
+   "defined_at": "tests/CMakeLists.txt:61",
    "name": "test_deck_x1_wiring_x1_centroid.release",
    "properties": {},
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:506",
+   "defined_at": "tests/CMakeLists.txt:526",
    "name": "test_default_execution_python",
    "properties": {
     "LABELS": [
@@ -305,7 +337,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:573",
+   "defined_at": "tests/CMakeLists.txt:595",
    "name": "test_density_ref_width_jump_python",
    "properties": {
     "LABELS": [
@@ -317,13 +349,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:193",
+   "defined_at": "tests/CMakeLists.txt:203",
    "name": "test_diffusion.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:194",
+   "defined_at": "tests/CMakeLists.txt:204",
    "name": "test_diffusion_cubed_sphere.release",
    "properties": {
     "TIMEOUT": 120.0
@@ -331,7 +363,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:196",
+   "defined_at": "tests/CMakeLists.txt:206",
    "name": "test_diffusion_cubed_sphere_mp.release",
    "properties": {
     "LABELS": [
@@ -343,7 +375,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:202",
+   "defined_at": "tests/CMakeLists.txt:212",
    "name": "test_diffusion_cubed_sphere_two_gpu.release",
    "properties": {
     "DISABLED": true,
@@ -356,19 +388,19 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:221",
+   "defined_at": "tests/CMakeLists.txt:231",
    "name": "test_diffusion_moist.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:222",
+   "defined_at": "tests/CMakeLists.txt:232",
    "name": "test_diffusion_x1_scale.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:474",
+   "defined_at": "tests/CMakeLists.txt:492",
    "name": "test_diffusion_x1_scale_python",
    "properties": {
     "LABELS": [
@@ -380,7 +412,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:472",
+   "defined_at": "tests/CMakeLists.txt:490",
    "name": "test_dry_carry_zero_base_python",
    "properties": {
     "LABELS": [
@@ -403,13 +435,13 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:11",
+   "defined_at": "tests/CMakeLists.txt:13",
    "name": "test_eos_io_core.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:469",
+   "defined_at": "tests/CMakeLists.txt:487",
    "name": "test_eos_species_registry_python",
    "properties": {
     "LABELS": [
@@ -421,7 +453,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:429",
+   "defined_at": "tests/CMakeLists.txt:444",
    "name": "test_eos_species_sum_layout_python",
    "properties": {
     "LABELS": [
@@ -433,7 +465,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:427",
+   "defined_at": "tests/CMakeLists.txt:442",
    "name": "test_eos_temp2inteng_python",
    "properties": {
     "LABELS": [
@@ -445,7 +477,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:690",
+   "defined_at": "tests/CMakeLists.txt:712",
    "name": "test_example_ic_stretched_python",
    "properties": {
     "LABELS": [
@@ -458,7 +490,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:85",
+   "defined_at": "tests/CMakeLists.txt:95",
    "name": "test_example_species_composition",
    "properties": {
     "LABELS": [
@@ -470,13 +502,13 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:267",
+   "defined_at": "tests/CMakeLists.txt:277",
    "name": "test_exchange.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:839",
+   "defined_at": "tests/CMakeLists.txt:876",
    "name": "test_exchange_decomp",
    "properties": {
     "LABELS": [
@@ -490,7 +522,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:309",
+   "defined_at": "tests/CMakeLists.txt:319",
    "name": "test_exchange_ucx",
    "properties": {
     "LABELS": [
@@ -501,7 +533,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:493",
+   "defined_at": "tests/CMakeLists.txt:511",
    "name": "test_execution_capability_python",
    "properties": {
     "LABELS": [
@@ -514,19 +546,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:168",
+   "defined_at": "tests/CMakeLists.txt:178",
    "name": "test_face_floor.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:173",
+   "defined_at": "tests/CMakeLists.txt:183",
    "name": "test_face_floor_x1_centroid.release",
    "properties": {},
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:391",
+   "defined_at": "tests/CMakeLists.txt:401",
    "name": "test_fix_vapor_counts_every_column_python",
    "properties": {
     "LABELS": [
@@ -539,13 +571,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:226",
+   "defined_at": "tests/CMakeLists.txt:236",
    "name": "test_fix_vapor_deficit.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:389",
+   "defined_at": "tests/CMakeLists.txt:399",
    "name": "test_fix_vapor_reports_failure_python",
    "properties": {
     "LABELS": [
@@ -558,7 +590,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:390",
+   "defined_at": "tests/CMakeLists.txt:400",
    "name": "test_fix_vapor_stale_count_python",
    "properties": {
     "LABELS": [
@@ -572,19 +604,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:225",
+   "defined_at": "tests/CMakeLists.txt:235",
    "name": "test_fix_vapor_volume.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:41",
+   "defined_at": "tests/CMakeLists.txt:50",
    "name": "test_flip_zero_count.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:476",
+   "defined_at": "tests/CMakeLists.txt:494",
    "name": "test_flux_covariance_rows_python",
    "properties": {
     "LABELS": [
@@ -597,7 +629,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:481",
+   "defined_at": "tests/CMakeLists.txt:499",
    "name": "test_flux_covariance_rowset_python",
    "properties": {
     "LABELS": [
@@ -609,7 +641,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:478",
+   "defined_at": "tests/CMakeLists.txt:496",
    "name": "test_flux_covariance_seams_python",
    "properties": {
     "LABELS": [
@@ -622,13 +654,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:68",
+   "defined_at": "tests/CMakeLists.txt:77",
    "name": "test_flux_positivity_carry.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:440",
+   "defined_at": "tests/CMakeLists.txt:455",
    "name": "test_flux_positivity_cubedsphere_cov_off_python",
    "properties": {
     "LABELS": [
@@ -641,7 +673,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:447",
+   "defined_at": "tests/CMakeLists.txt:462",
    "name": "test_flux_positivity_cubedsphere_flux_covariance_python",
    "properties": {
     "LABELS": [
@@ -654,7 +686,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:451",
+   "defined_at": "tests/CMakeLists.txt:466",
    "name": "test_flux_positivity_cubedsphere_moist_python",
    "properties": {
     "LABELS": [
@@ -667,7 +699,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:436",
+   "defined_at": "tests/CMakeLists.txt:451",
    "name": "test_flux_positivity_cubedsphere_python",
    "properties": {
     "LABELS": [
@@ -680,7 +712,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:434",
+   "defined_at": "tests/CMakeLists.txt:449",
    "name": "test_flux_positivity_python",
    "properties": {
     "LABELS": [
@@ -692,19 +724,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:228",
+   "defined_at": "tests/CMakeLists.txt:238",
    "name": "test_flux_register.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:253",
+   "defined_at": "tests/CMakeLists.txt:263",
    "name": "test_forcing.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:471",
+   "defined_at": "tests/CMakeLists.txt:489",
    "name": "test_forcing_species_clip_python",
    "properties": {
     "LABELS": [
@@ -717,7 +749,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:549",
+   "defined_at": "tests/CMakeLists.txt:571",
    "name": "test_fp32_compute_1000_python",
    "properties": {
     "LABELS": [
@@ -730,7 +762,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:487",
+   "defined_at": "tests/CMakeLists.txt:505",
    "name": "test_fp32_compute_python",
    "properties": {
     "LABELS": [
@@ -744,7 +776,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:395",
+   "defined_at": "tests/CMakeLists.txt:405",
    "name": "test_fp32_face_floor_counts_python",
    "properties": {
     "LABELS": [
@@ -757,7 +789,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:488",
+   "defined_at": "tests/CMakeLists.txt:506",
    "name": "test_fp32_horizontal_sweep_python",
    "properties": {
     "LABELS": [
@@ -771,7 +803,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:547",
+   "defined_at": "tests/CMakeLists.txt:569",
    "name": "test_fp32_implicit_python",
    "properties": {
     "LABELS": [
@@ -785,7 +817,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:551",
+   "defined_at": "tests/CMakeLists.txt:573",
    "name": "test_fp32_jupiter_python",
    "properties": {
     "LABELS": [
@@ -798,7 +830,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:546",
+   "defined_at": "tests/CMakeLists.txt:568",
    "name": "test_fp32_policy_python",
    "properties": {
     "LABELS": [
@@ -812,7 +844,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:545",
+   "defined_at": "tests/CMakeLists.txt:567",
    "name": "test_fp32_restart_python",
    "properties": {
     "LABELS": [
@@ -826,7 +858,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:489",
+   "defined_at": "tests/CMakeLists.txt:507",
    "name": "test_fp32_science_python",
    "properties": {
     "LABELS": [
@@ -839,7 +871,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:485",
+   "defined_at": "tests/CMakeLists.txt:503",
    "name": "test_fp32_split_python",
    "properties": {
     "LABELS": [
@@ -853,7 +885,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:14",
+   "defined_at": "tests/CMakeLists.txt:20",
    "name": "test_fp32_typed_constants.release",
    "properties": {
     "LABELS": [
@@ -865,7 +897,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:548",
+   "defined_at": "tests/CMakeLists.txt:570",
    "name": "test_fp32_vic_pivot_python",
    "properties": {
     "LABELS": [
@@ -879,19 +911,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:233",
+   "defined_at": "tests/CMakeLists.txt:243",
    "name": "test_global_phase.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:234",
+   "defined_at": "tests/CMakeLists.txt:244",
    "name": "test_global_phase_closure.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:270",
+   "defined_at": "tests/CMakeLists.txt:280",
    "name": "test_gloo_invalid_interface.release",
    "properties": {
     "TIMEOUT": 60.0
@@ -899,7 +931,21 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:504",
+   "defined_at": "tests/CMakeLists.txt:521",
+   "name": "test_graph_builtin_forcing_python",
+   "properties": {
+    "LABELS": [
+     "forcing",
+     "hydro",
+     "python"
+    ],
+    "SKIP_RETURN_CODE": 125,
+    "TIMEOUT": 900.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:524",
    "name": "test_graph_capture_lifts_python",
    "properties": {
     "LABELS": [
@@ -912,7 +958,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:515",
+   "defined_at": "tests/CMakeLists.txt:535",
    "name": "test_graph_chemistry_slot_python",
    "properties": {
     "LABELS": [
@@ -926,7 +972,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:512",
+   "defined_at": "tests/CMakeLists.txt:532",
    "name": "test_graph_implicit_dt_python",
    "properties": {
     "LABELS": [
@@ -940,7 +986,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:519",
+   "defined_at": "tests/CMakeLists.txt:539",
    "name": "test_graph_implicit_python",
    "properties": {
     "LABELS": [
@@ -954,7 +1000,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:518",
+   "defined_at": "tests/CMakeLists.txt:538",
    "name": "test_graph_mesh_chemistry_python",
    "properties": {
     "LABELS": [
@@ -968,7 +1014,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:527",
+   "defined_at": "tests/CMakeLists.txt:547",
    "name": "test_graph_mesh_many_blocks_python",
    "properties": {
     "LABELS": [
@@ -981,13 +1027,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:244",
+   "defined_at": "tests/CMakeLists.txt:254",
    "name": "test_graph_monitor_amounts.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:509",
+   "defined_at": "tests/CMakeLists.txt:529",
    "name": "test_graph_outflow_refused_python",
    "properties": {
     "LABELS": [
@@ -1000,7 +1046,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:494",
+   "defined_at": "tests/CMakeLists.txt:512",
    "name": "test_graph_pool_recapture_python",
    "properties": {
     "LABELS": [
@@ -1013,7 +1059,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:525",
+   "defined_at": "tests/CMakeLists.txt:545",
    "name": "test_graph_positivity_meters_match_eager_python",
    "properties": {
     "LABELS": [
@@ -1027,7 +1073,21 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:499",
+   "defined_at": "tests/CMakeLists.txt:522",
+   "name": "test_graph_radial_dt_python",
+   "properties": {
+    "LABELS": [
+     "forcing",
+     "hydro",
+     "python"
+    ],
+    "SKIP_RETURN_CODE": 125,
+    "TIMEOUT": 300.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:517",
    "name": "test_graph_stretched_x1_python",
    "properties": {
     "LABELS": [
@@ -1040,7 +1100,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:495",
+   "defined_at": "tests/CMakeLists.txt:513",
    "name": "test_graph_user_forcing_python",
    "properties": {
     "LABELS": [
@@ -1054,7 +1114,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:113",
+   "defined_at": "tests/CMakeLists.txt:123",
    "name": "test_gravity_work_cache_to.release",
    "properties": {
     "LABELS": [
@@ -1064,20 +1124,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:415",
-   "name": "test_gravity_work_fixer_removed_python",
-   "properties": {
-    "LABELS": [
-     "gravity",
-     "hydro",
-     "python"
-    ],
-    "TIMEOUT": 60.0
-   },
-   "via": "snapy_add_python_test"
-  },
-  {
-   "defined_at": "tests/CMakeLists.txt:416",
+   "defined_at": "tests/CMakeLists.txt:426",
    "name": "test_gravity_work_radial_exact_python",
    "properties": {
     "LABELS": [
@@ -1091,13 +1138,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:114",
+   "defined_at": "tests/CMakeLists.txt:124",
    "name": "test_gravity_work_rows.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:475",
+   "defined_at": "tests/CMakeLists.txt:493",
    "name": "test_horizontal_flux_covariance_python",
    "properties": {
     "LABELS": [
@@ -1109,13 +1156,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:65",
+   "defined_at": "tests/CMakeLists.txt:74",
    "name": "test_hydro_options.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:110",
+   "defined_at": "tests/CMakeLists.txt:120",
    "name": "test_hydro_ref_x1.release",
    "properties": {
     "LABELS": [
@@ -1125,7 +1172,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:31",
+   "defined_at": "tests/CMakeLists.txt:39",
    "name": "test_hydro_ref_x1_rf_wall.release",
    "properties": {
     "LABELS": [
@@ -1135,13 +1182,19 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:64",
+   "defined_at": "tests/CMakeLists.txt:73",
    "name": "test_hydrostatic.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:392",
+   "defined_at": "tests/CMakeLists.txt:24",
+   "name": "test_ideal_gas_cons2prim_layout.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:402",
    "name": "test_implicit_advection_cfl_python",
    "properties": {
     "LABELS": [
@@ -1154,13 +1207,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:21",
+   "defined_at": "tests/CMakeLists.txt:29",
    "name": "test_implicit_cfl.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:22",
+   "defined_at": "tests/CMakeLists.txt:30",
    "name": "test_implicit_face_work_jacobian.release",
    "properties": {
     "LABELS": [
@@ -1170,7 +1223,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:413",
+   "defined_at": "tests/CMakeLists.txt:423",
    "name": "test_implicit_face_work_operator_python",
    "properties": {
     "LABELS": [
@@ -1185,7 +1238,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:402",
+   "defined_at": "tests/CMakeLists.txt:412",
    "name": "test_implicit_gravity_tall_column_cubed_python",
    "properties": {
     "LABELS": [
@@ -1201,7 +1254,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:407",
+   "defined_at": "tests/CMakeLists.txt:417",
    "name": "test_implicit_gravity_tall_column_large_courant_python",
    "properties": {
     "LABELS": [
@@ -1215,7 +1268,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:399",
+   "defined_at": "tests/CMakeLists.txt:409",
    "name": "test_implicit_gravity_tall_column_python",
    "properties": {
     "LABELS": [
@@ -1230,7 +1283,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:417",
+   "defined_at": "tests/CMakeLists.txt:428",
    "name": "test_implicit_options_type_python",
    "properties": {
     "LABELS": [
@@ -1242,7 +1295,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:522",
+   "defined_at": "tests/CMakeLists.txt:542",
    "name": "test_implicit_register_x1_off_python",
    "properties": {
     "LABELS": [
@@ -1256,7 +1309,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:414",
+   "defined_at": "tests/CMakeLists.txt:424",
    "name": "test_implicit_stratified_solid_python",
    "properties": {
     "LABELS": [
@@ -1270,7 +1323,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:384",
+   "defined_at": "tests/CMakeLists.txt:85",
+   "name": "test_input_report.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:394",
    "name": "test_jit_user_forcing_python",
    "properties": {
     "LABELS": [
@@ -1282,7 +1341,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:473",
+   "defined_at": "tests/CMakeLists.txt:491",
    "name": "test_local_horizontal_cells_python",
    "properties": {
     "LABELS": [
@@ -1295,13 +1354,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:38",
+   "defined_at": "tests/CMakeLists.txt:46",
    "name": "test_lu_failure.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:528",
+   "defined_at": "tests/CMakeLists.txt:548",
    "name": "test_mesh_block_job_failure_python",
    "properties": {
     "LABELS": [
@@ -1314,13 +1373,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:238",
+   "defined_at": "tests/CMakeLists.txt:248",
    "name": "test_mesh_capture.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:502",
+   "defined_at": "tests/CMakeLists.txt:520",
    "name": "test_mesh_capture_moist_python",
    "properties": {
     "LABELS": [
@@ -1334,13 +1393,27 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:240",
+   "defined_at": "tests/CMakeLists.txt:441",
+   "name": "test_mesh_chemistry_order_python",
+   "properties": {
+    "LABELS": [
+     "eos",
+     "kinetics",
+     "mesh",
+     "python"
+    ],
+    "TIMEOUT": 600.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:250",
    "name": "test_mesh_disagree.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:377",
+   "defined_at": "tests/CMakeLists.txt:387",
    "name": "test_mesh_exchange_python",
    "properties": {
     "LABELS": [
@@ -1351,19 +1424,32 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:236",
+   "defined_at": "tests/CMakeLists.txt:246",
    "name": "test_mesh_executor.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:836",
+   "defined_at": "tests/CMakeLists.txt:873",
    "name": "test_mesh_multi_block.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:383",
+   "defined_at": "tests/CMakeLists.txt:549",
+   "name": "test_mesh_restep_after_failure_python",
+   "properties": {
+    "LABELS": [
+     "hydro",
+     "python"
+    ],
+    "SKIP_RETURN_CODE": 125,
+    "TIMEOUT": 1200.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:393",
    "name": "test_mesh_second_instance_python",
    "properties": {
     "LABELS": [
@@ -1375,13 +1461,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:242",
+   "defined_at": "tests/CMakeLists.txt:252",
    "name": "test_mesh_worker_streams.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:467",
+   "defined_at": "tests/CMakeLists.txt:19",
+   "name": "test_moist_mixture_temp_alias.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:485",
    "name": "test_mps_matches_cpu_python",
    "properties": {
     "LABELS": [
@@ -1394,7 +1486,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:807",
+   "defined_at": "tests/CMakeLists.txt:844",
    "name": "test_netcdf_axis_attrs",
    "properties": {
     "LABELS": [
@@ -1407,7 +1499,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:386",
+   "defined_at": "tests/CMakeLists.txt:396",
    "name": "test_netcdf_cubed_lonlat_python",
    "properties": {
     "LABELS": [
@@ -1420,31 +1512,31 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:177",
+   "defined_at": "tests/CMakeLists.txt:187",
    "name": "test_netcdf_utils.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:66",
+   "defined_at": "tests/CMakeLists.txt:75",
    "name": "test_options_defaults.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:79",
+   "defined_at": "tests/CMakeLists.txt:89",
    "name": "test_options_pyi",
    "properties": {},
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:76",
+   "defined_at": "tests/CMakeLists.txt:86",
    "name": "test_options_table.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:464",
+   "defined_at": "tests/CMakeLists.txt:482",
    "name": "test_outflow_stale_ghosts_python",
    "properties": {
     "LABELS": [
@@ -1458,43 +1550,43 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:268",
+   "defined_at": "tests/CMakeLists.txt:278",
    "name": "test_output_barrier.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:47",
+   "defined_at": "tests/CMakeLists.txt:56",
    "name": "test_panel_rotation.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:224",
+   "defined_at": "tests/CMakeLists.txt:234",
    "name": "test_parentless_cloud.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:232",
+   "defined_at": "tests/CMakeLists.txt:242",
    "name": "test_parentless_cloud_nb1.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:298",
+   "defined_at": "tests/CMakeLists.txt:308",
    "name": "test_parentless_cloud_nb1_mp.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:300",
+   "defined_at": "tests/CMakeLists.txt:310",
    "name": "test_parentless_cloud_nb1_mp_gloo",
    "properties": {},
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:381",
+   "defined_at": "tests/CMakeLists.txt:391",
    "name": "test_periodic_corners_python",
    "properties": {
     "LABELS": [
@@ -1506,7 +1598,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:553",
+   "defined_at": "tests/CMakeLists.txt:575",
    "name": "test_perturbation_flux_python",
    "properties": {
     "LABELS": [
@@ -1520,7 +1612,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:552",
+   "defined_at": "tests/CMakeLists.txt:574",
    "name": "test_perturbation_flux_split_python",
    "properties": {
     "LABELS": [
@@ -1534,7 +1626,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:554",
+   "defined_at": "tests/CMakeLists.txt:576",
    "name": "test_perturbation_flux_x1_mass_covariance_python",
    "properties": {
     "LABELS": [
@@ -1548,31 +1640,31 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:25",
+   "defined_at": "tests/CMakeLists.txt:33",
    "name": "test_plm.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:13",
+   "defined_at": "tests/CMakeLists.txt:17",
    "name": "test_precision_policy.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:112",
+   "defined_at": "tests/CMakeLists.txt:122",
    "name": "test_pref_local_seam.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:230",
+   "defined_at": "tests/CMakeLists.txt:240",
    "name": "test_prescribed_after_sources.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:18",
+   "defined_at": "tests/CMakeLists.txt:26",
    "name": "test_pressure_scan_x1.release",
    "properties": {
     "LABELS": [
@@ -1584,13 +1676,13 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:192",
+   "defined_at": "tests/CMakeLists.txt:202",
    "name": "test_process_group.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:684",
+   "defined_at": "tests/CMakeLists.txt:706",
    "name": "test_python_import_path_python",
    "properties": {
     "LABELS": [
@@ -1601,13 +1693,24 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:63",
+   "defined_at": "tests/CMakeLists.txt:427",
+   "name": "test_python_option_print_python",
+   "properties": {
+    "LABELS": [
+     "options",
+     "python"
+    ]
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:72",
    "name": "test_radial_face_moments.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:484",
+   "defined_at": "tests/CMakeLists.txt:502",
    "name": "test_radial_order_python",
    "properties": {
     "LABELS": [
@@ -1619,7 +1722,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:558",
+   "defined_at": "tests/CMakeLists.txt:580",
    "name": "test_radial_order_x1_centroid_python",
    "properties": {
     "LABELS": [
@@ -1631,13 +1734,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:24",
+   "defined_at": "tests/CMakeLists.txt:32",
    "name": "test_radiating_boundary.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:345",
+   "defined_at": "tests/CMakeLists.txt:355",
    "name": "test_radiating_boundary_python",
    "properties": {
     "LABELS": [
@@ -1648,19 +1751,39 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:40",
+   "defined_at": "tests/CMakeLists.txt:49",
    "name": "test_rectify.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:183",
+   "defined_at": "tests/CMakeLists.txt:47",
+   "name": "test_redo_causes.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:433",
+   "name": "test_redo_positivity_meters_python",
+   "properties": {
+    "LABELS": [
+     "mesh",
+     "positivity",
+     "python",
+     "redo"
+    ],
+    "TIMEOUT": 300.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:193",
    "name": "test_restart_bundle.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:792",
+   "defined_at": "tests/CMakeLists.txt:829",
    "name": "test_restart_cycle_limit",
    "properties": {
     "LABELS": [
@@ -1673,7 +1796,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:792",
+   "defined_at": "tests/CMakeLists.txt:829",
    "name": "test_restart_dt_change",
    "properties": {
     "LABELS": [
@@ -1686,7 +1809,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:792",
+   "defined_at": "tests/CMakeLists.txt:829",
    "name": "test_restart_inplace_reorder",
    "properties": {
     "LABELS": [
@@ -1699,7 +1822,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:792",
+   "defined_at": "tests/CMakeLists.txt:829",
    "name": "test_restart_key_collision",
    "properties": {
     "LABELS": [
@@ -1712,7 +1835,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:771",
+   "defined_at": "tests/CMakeLists.txt:793",
    "name": "test_restart_multiblock",
    "properties": {
     "LABELS": [
@@ -1724,7 +1847,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:792",
+   "defined_at": "tests/CMakeLists.txt:829",
    "name": "test_restart_output_schedule",
    "properties": {
     "LABELS": [
@@ -1737,7 +1860,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:821",
+   "defined_at": "tests/CMakeLists.txt:858",
    "name": "test_restart_resume_schedule",
    "properties": {
     "LABELS": [
@@ -1750,7 +1873,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:33",
+   "defined_at": "tests/CMakeLists.txt:41",
    "name": "test_riemann.release",
    "properties": {
     "LABELS": [
@@ -1760,7 +1883,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:453",
+   "defined_at": "tests/CMakeLists.txt:468",
    "name": "test_roe_cubed_sphere_rest_python",
    "properties": {
     "LABELS": [
@@ -1773,13 +1896,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:39",
+   "defined_at": "tests/CMakeLists.txt:48",
    "name": "test_scalar.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:568",
+   "defined_at": "tests/CMakeLists.txt:590",
    "name": "test_scalar_cov_x1_split_python",
    "properties": {
     "LABELS": [
@@ -1792,7 +1915,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:561",
+   "defined_at": "tests/CMakeLists.txt:583",
    "name": "test_scalar_flux_covariance_python",
    "properties": {
     "LABELS": [
@@ -1805,7 +1928,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:562",
+   "defined_at": "tests/CMakeLists.txt:584",
    "name": "test_scalar_stratified_python",
    "properties": {
     "LABELS": [
@@ -1817,7 +1940,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:564",
+   "defined_at": "tests/CMakeLists.txt:586",
    "name": "test_scalar_upper_bound_donor_python",
    "properties": {
     "LABELS": [
@@ -1829,7 +1952,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:501",
+   "defined_at": "tests/CMakeLists.txt:519",
    "name": "test_seam_rotation_cache_python",
    "properties": {
     "LABELS": [
@@ -1842,13 +1965,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:282",
+   "defined_at": "tests/CMakeLists.txt:292",
    "name": "test_sedimentation_cubed_seam.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:287",
+   "defined_at": "tests/CMakeLists.txt:297",
    "name": "test_sedimentation_cubed_seam_gloo",
    "properties": {
     "LABELS": [
@@ -1859,13 +1982,32 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:108",
+   "defined_at": "tests/CMakeLists.txt:118",
    "name": "test_sedimentation_guards.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:418",
+   "defined_at": "tests/CMakeLists.txt:471",
+   "name": "test_shallow_roe_cubed_sphere_dir_python",
+   "properties": {
+    "LABELS": [
+     "cubed-sphere",
+     "python",
+     "riemann"
+    ],
+    "TIMEOUT": 120.0
+   },
+   "via": "snapy_add_python_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:9",
+   "name": "test_shallow_water_limiter.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:429",
    "name": "test_shear_cfl_python",
    "properties": {
     "LABELS": [
@@ -1878,7 +2020,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:422",
+   "defined_at": "tests/CMakeLists.txt:435",
    "name": "test_sk1_failure_counter_python",
    "properties": {
     "LABELS": [
@@ -1892,7 +2034,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:424",
+   "defined_at": "tests/CMakeLists.txt:437",
    "name": "test_sk2_active_set_python",
    "properties": {
     "LABELS": [
@@ -1906,7 +2048,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:510",
+   "defined_at": "tests/CMakeLists.txt:530",
    "name": "test_sk3_capture_moist_python",
    "properties": {
     "LABELS": [
@@ -1921,7 +2063,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:425",
+   "defined_at": "tests/CMakeLists.txt:438",
    "name": "test_sk4_chemistry_source_python",
    "properties": {
     "LABELS": [
@@ -1935,7 +2077,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:426",
+   "defined_at": "tests/CMakeLists.txt:439",
    "name": "test_sk4_mesh_chemistry_python",
    "properties": {
     "LABELS": [
@@ -1949,19 +2091,19 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:254",
+   "defined_at": "tests/CMakeLists.txt:264",
    "name": "test_source_registry.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:231",
+   "defined_at": "tests/CMakeLists.txt:241",
    "name": "test_species_face_clamp.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:12",
+   "defined_at": "tests/CMakeLists.txt:16",
    "name": "test_split_reference.release",
    "properties": {
     "LABELS": [
@@ -1973,7 +2115,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:458",
+   "defined_at": "tests/CMakeLists.txt:476",
    "name": "test_stage2_cubed_stretched_python",
    "properties": {
     "LABELS": [
@@ -1987,7 +2129,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:492",
+   "defined_at": "tests/CMakeLists.txt:510",
    "name": "test_stage_executor_capture_python",
    "properties": {
     "LABELS": [
@@ -2001,7 +2143,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:470",
+   "defined_at": "tests/CMakeLists.txt:488",
    "name": "test_stage_forcing_dry_tracer_python",
    "properties": {
     "LABELS": [
@@ -2014,25 +2156,25 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:246",
+   "defined_at": "tests/CMakeLists.txt:256",
    "name": "test_stage_schedule.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:248",
+   "defined_at": "tests/CMakeLists.txt:258",
    "name": "test_stage_segments.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:16",
+   "defined_at": "tests/CMakeLists.txt:22",
    "name": "test_state_store.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:570",
+   "defined_at": "tests/CMakeLists.txt:592",
    "name": "test_stencil_cache_small_block_python",
    "properties": {
     "LABELS": [
@@ -2044,7 +2186,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:740",
+   "defined_at": "tests/CMakeLists.txt:762",
    "name": "test_straka",
    "properties": {
     "LABELS": [
@@ -2054,7 +2196,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:750",
+   "defined_at": "tests/CMakeLists.txt:772",
    "name": "test_straka_redo",
    "properties": {
     "TIMEOUT": 600.0
@@ -2062,13 +2204,13 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:49",
+   "defined_at": "tests/CMakeLists.txt:58",
    "name": "test_stretched_x1.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:57",
+   "defined_at": "tests/CMakeLists.txt:66",
    "name": "test_stretched_x1_ref.release",
    "properties": {
     "LABELS": [
@@ -2078,7 +2220,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:58",
+   "defined_at": "tests/CMakeLists.txt:67",
    "name": "test_stretched_x1_ref_x1_centroid.release",
    "properties": {
     "LABELS": [
@@ -2088,7 +2230,7 @@
    "via": "add_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:412",
+   "defined_at": "tests/CMakeLists.txt:422",
    "name": "test_tall_column_runner_child_failure_python",
    "properties": {
     "LABELS": [
@@ -2101,7 +2243,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:466",
+   "defined_at": "tests/CMakeLists.txt:484",
    "name": "test_tracer_dry_convention_python",
    "properties": {
     "LABELS": [
@@ -2115,7 +2257,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:566",
+   "defined_at": "tests/CMakeLists.txt:588",
    "name": "test_tracer_ratio_python",
    "properties": {
     "LABELS": [
@@ -2130,43 +2272,43 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:252",
+   "defined_at": "tests/CMakeLists.txt:262",
    "name": "test_two_cards_species.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:32",
+   "defined_at": "tests/CMakeLists.txt:40",
    "name": "test_uniform_module_tree.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:111",
+   "defined_at": "tests/CMakeLists.txt:121",
    "name": "test_uranus_cycle1_abort.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:191",
+   "defined_at": "tests/CMakeLists.txt:201",
    "name": "test_user_output.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:249",
+   "defined_at": "tests/CMakeLists.txt:259",
    "name": "test_vapor_column_nb1.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:23",
+   "defined_at": "tests/CMakeLists.txt:31",
    "name": "test_vic_partial_tangential.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:457",
+   "defined_at": "tests/CMakeLists.txt:475",
    "name": "test_wall4_sphere_python",
    "properties": {
     "LABELS": [
@@ -2178,13 +2320,13 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:250",
+   "defined_at": "tests/CMakeLists.txt:260",
    "name": "test_wall_saturation.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:482",
+   "defined_at": "tests/CMakeLists.txt:500",
    "name": "test_wb_ref4_order_python",
    "properties": {
     "LABELS": [
@@ -2196,7 +2338,7 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:169",
+   "defined_at": "tests/CMakeLists.txt:179",
    "name": "test_wb_ref_wall.release",
    "properties": {
     "LABELS": [
@@ -2206,7 +2348,7 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:167",
+   "defined_at": "tests/CMakeLists.txt:177",
    "name": "test_wb_wall_corner.release",
    "properties": {
     "LABELS": [
@@ -2216,13 +2358,13 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:26",
+   "defined_at": "tests/CMakeLists.txt:34",
    "name": "test_weno.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:483",
+   "defined_at": "tests/CMakeLists.txt:501",
    "name": "test_x1_centroid_rest_python",
    "properties": {
     "LABELS": [
@@ -2234,25 +2376,25 @@
    "via": "snapy_add_python_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:27",
+   "defined_at": "tests/CMakeLists.txt:35",
    "name": "test_x1_coeffs.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:28",
+   "defined_at": "tests/CMakeLists.txt:36",
    "name": "test_x1_dim_guard.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:30",
+   "defined_at": "tests/CMakeLists.txt:38",
    "name": "test_x1_qmax_guard.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:115",
+   "defined_at": "tests/CMakeLists.txt:125",
    "name": "test_x1_seam_split.release",
    "properties": {
     "LABELS": [
@@ -2262,49 +2404,49 @@
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:133",
+   "defined_at": "tests/CMakeLists.txt:143",
    "name": "test_x1_seam_split_co4_face_density.release",
    "properties": {},
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:157",
+   "defined_at": "tests/CMakeLists.txt:167",
    "name": "test_x1_seam_split_mp.release",
    "properties": {},
    "via": "setup_parallel_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:166",
+   "defined_at": "tests/CMakeLists.txt:176",
    "name": "test_x1_seam_split_mp_co4_face_density.release",
    "properties": {},
    "via": "seam_arm_mp"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:165",
+   "defined_at": "tests/CMakeLists.txt:175",
    "name": "test_x1_seam_split_mp_radial_exact.release",
    "properties": {},
    "via": "seam_arm_mp"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:164",
+   "defined_at": "tests/CMakeLists.txt:174",
    "name": "test_x1_seam_split_mp_x1_centroid.release",
    "properties": {},
    "via": "seam_arm_mp"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:135",
+   "defined_at": "tests/CMakeLists.txt:145",
    "name": "test_x1_seam_split_nghost_check_conversion_order_4.release",
    "properties": {},
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:137",
+   "defined_at": "tests/CMakeLists.txt:147",
    "name": "test_x1_seam_split_nghost_check_x1_centroid.release",
    "properties": {},
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:131",
+   "defined_at": "tests/CMakeLists.txt:141",
    "name": "test_x1_seam_split_radial_exact.release",
    "properties": {
     "LABELS": [
@@ -2314,13 +2456,13 @@
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:128",
+   "defined_at": "tests/CMakeLists.txt:138",
    "name": "test_x1_seam_split_relays_are_seam_sides.release",
    "properties": {},
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:140",
+   "defined_at": "tests/CMakeLists.txt:150",
    "name": "test_x1_seam_split_vic_refuses_split.release",
    "properties": {
     "LABELS": [
@@ -2330,7 +2472,7 @@
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:129",
+   "defined_at": "tests/CMakeLists.txt:139",
    "name": "test_x1_seam_split_x1_centroid.release",
    "properties": {
     "LABELS": [
@@ -2340,7 +2482,7 @@
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:142",
+   "defined_at": "tests/CMakeLists.txt:152",
    "name": "test_x1_seam_split_x1_mass_covariance.release",
    "properties": {
     "LABELS": [
@@ -2350,19 +2492,19 @@
    "via": "seam_arm"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:29",
+   "defined_at": "tests/CMakeLists.txt:37",
    "name": "test_x1_stretched_refusal.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:72",
+   "defined_at": "tests/CMakeLists.txt:81",
    "name": "test_yaml_keys.release",
    "properties": {},
    "via": "setup_test"
   },
   {
-   "defined_at": "tests/CMakeLists.txt:96",
+   "defined_at": "tests/CMakeLists.txt:106",
    "name": "test_yamlcpp_cstdint_patch",
    "properties": {
     "LABELS": [

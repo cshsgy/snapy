@@ -12,7 +12,7 @@ TARGETS = {
     'species': 'book/chapters/02-thermodynamics/_howto-species.qmd',
     'condensate': 'book/chapters/10-moist-coupling/_howto-condensate.qmd',
 }
-PIN = '73c45a7c8c991209924e1137992352c335575062'
+PIN = '0d5caacbd8e365c87a30af6ce043c39ab30c0959'
 KINTERA = ('chengcli/kintera', '0429d795f79a0665afeca565e5a05c87ab4ba1e2')  # kintera v2.6.13
 CHECK_KINTERA = '[`kintera c55b13b2`](https://github.com/chengcli/kintera/commit/c55b13b2204997d2d09e04498558ab9495d8ee77)'  # func_table_check.py's own kintera: hand-written tables
 

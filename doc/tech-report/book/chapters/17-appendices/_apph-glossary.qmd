@@ -60,7 +60,7 @@
 - `cells`: cell counts and ghost-width options. Defined in [The passive-scalar limiter and the complement bound](#sec-ch08-scalar).
 - `cfl`: Courant-number limit for the time step. Not defined here; used in [Driver loop and accepted steps (`integration:`)](#sec-ch01-driver).
 - `composition`: elemental composition of a species. Not defined here; used in [Temperature-dependent moist thermodynamics (`moist-mixture`)](#sec-ch02-moist-mixture).
-- `const-gravity`: constant-gravity forcing component. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
+- `const-gravity`: constant-gravity forcing component. Defined in [Constant gravity and the cell form of the gravity work (no `gravity-work` key)](#sec-ch06-cell).
 - `const-vsed`: prescribed sedimentation velocities indexed by species. Not defined here; used in [Sedimentation of condensates (`sedimentation`)](#sec-ch08-sed).
 - `conversion-order`: order of the $x_1$ cell-average to point conversion of the primitives: 2 (default) or 4. Defined in [The fourth-order $x_1$ conversion between cell averages and point values (`dynamics/conversion-order`)](#sec-ch04-conv4).
 - `coriolis`: Coriolis-force options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
@@ -95,8 +95,8 @@
 - `gammad`: dry-gas ratio of specific heats. Defined in [Ideal-moist closure and the kintera thermodynamics (`ideal-moist`)](#sec-ch02-ideal-moist).
 - `geometry`: coordinate-system and grid options. Not defined here; used in [Construct a MeshBlock and its modules (`MeshBlockOptions`)](#sec-ch01-construction).
 - `grav1`: gravity component along the first coordinate. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
-- `gravity-work`: form of the $x_1$ gravity work; only `face` (the default) is accepted. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
-- `gravity-work-fixer`: removed in V3: only `false` (the default) is accepted. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
+- `gravity-work`: retired `const-gravity` key; refused as unknown at the pin, where the face form is the only form. Defined in [Constant gravity and the cell form of the gravity work (no `gravity-work` key)](#sec-ch06-cell).
+- `gravity-work-fixer`: retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone. Defined in [Constant gravity and the cell form of the gravity work (no `gravity-work` key)](#sec-ch06-cell).
 - `H`: hydrogen count in the composition mapping. Not defined here; used in [Fixed-volume fixed-energy phase equilibrium (`uv-solver`)](#sec-ch02-saturation).
 - `horizontal`: options for the horizontal reconstruction. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `implicit-advection-cfl`: Courant limit for the implicitly treated advection. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
@@ -119,7 +119,7 @@
 - `ncycle_out`: number of cycles between printed cycle lines; 0 turns the line off. Not defined here; used in [Install and run](#sec-preface-install).
 - `nghost`: number of ghost cells at each boundary. Defined in [The reconstruction framework (`dynamics/reconstruct`)](#sec-ch04-framework).
 - `nlim`: maximum number of integration cycles. Not defined here; used in [Driver loop and accepted steps (`integration:`)](#sec-ch01-driver).
-- `non-hydrostatic`: fraction of the vertical body force retained by the non-hydrostatic treatment. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
+- `non-hydrostatic`: fraction of the vertical body force retained by the non-hydrostatic treatment. Defined in [Constant gravity and the cell form of the gravity work (no `gravity-work` key)](#sec-ch06-cell).
 - `nu_iso`: isotropic viscosity coefficient, interpreted according to dynamic. Defined in [Isotropic viscosity and heat conduction (`forcing/diffusion`)](#sec-ch07-viscosity).
 - `nx1`: number of cells in the first coordinate direction. Not defined here; used in [Construct a MeshBlock and its modules (`MeshBlockOptions`)](#sec-ch01-construction).
 - `nx2`: number of cells in the second coordinate direction. Not defined here; used in [Construct a MeshBlock and its modules (`MeshBlockOptions`)](#sec-ch01-construction).
