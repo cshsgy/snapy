@@ -308,7 +308,7 @@ is claimed.
 
 [^rg-8f4d48c36ab6]: const-gravity — constant-gravity forcing component
 
-[^rg-2ba7d79124f9]: gravity-work-fixer — removed in V3: only `false` (the default) is accepted
+[^rg-2ba7d79124f9]: gravity-work-fixer — retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone
 
 [^rg-b87260aaaa6b]: PLM — piecewise-linear method
 

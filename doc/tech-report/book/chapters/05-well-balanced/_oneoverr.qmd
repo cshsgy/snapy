@@ -110,10 +110,10 @@ from snapy_report.ch05.figures.fig_oneoverr_favre import make_fig
 make_fig()
 ```
 
-The remainder in @fig-ch05-oneoverr-remainder comes from a closure run in snapy at the pin.[^ch05-1r-run] The run is `src/snapy_report/ch05/run_oneoverr_remainder.py`, the
+The remainder in @fig-ch05-oneoverr-remainder comes from a closure run in snapy at 6fbb3975.[^ch05-1r-run] The run is `src/snapy_report/ch05/run_oneoverr_remainder.py`, the
 spherical-polar counterpart of the Cartesian one-step harness `test_horizontal_flux_covariance`. It sets up an
-isentropic column of depth $L_z$ at radius $r_0$ with an anelastic roll in the azimuth $\varphi$[^rg-60f320595305], runs one RK3 step with cell gravity work
-and `SNAP_FLUX_COVARIANCE` on, and projects the entropy tendency on the seeded $v_1$ with unit weight per cell. The quantity
+isentropic column of depth $L_z$ at radius $r_0$ with an anelastic roll in the azimuth $\varphi$[^rg-60f320595305], runs one RK3 step with the cell gravity work of its sha
+(at the pin the face work is the only form, and the run is not repeated) and `SNAP_FLUX_COVARIANCE` on, and projects the entropy tendency on the seeded $v_1$ with unit weight per cell. The quantity
 is $D=(r_0/L_z)[\varepsilon_{\mathrm{eff}} n_1^2(r_0)-\varepsilon_{\mathrm{eff}} n_1^2(\infty)]$, where $\varepsilon_{\mathrm{eff}} n_1^2(\infty)$ is the same column in
 Cartesian geometry with the same switches.[^ch05-1r-wb4] With the
 switch on, the $1/r$ content is $+0.0004$ to $+0.0006$ for $r_0/L_z = 5$ to $160$ and $n_1 = 64$ to $256$. It is
@@ -151,15 +151,18 @@ No dedicated code. The pieces it depends on are listed in their own sections.
 **A minimal input.** The remainder needs a spherical-polar column with gravity along $x_1$. The closure run's card,
 trimmed, at $r_0/L_z=40$; the deck key `dynamics/x1-mass-covariance: true` removes the velocity part:
 
-<!-- reader glossary keys -->Keys in this fragment: `gravity-work`[^rg-01bd369fc2df], `gravity-work-fixer`[^rg-b4cb71f17b56].
 ```yaml
 geometry:
   type: spherical-polar
   bounds: {x1min: 40., x1max: 41., x2min: 1.570601, x2max: 1.570992, x3min: 0., x3max: 0.0707}
   cells: {nx1: 64, nx2: 1, nx3: 128, nghost: 3}
 forcing:
-  const-gravity: {grav1: -1., gravity-work: cell, gravity-work-fixer: false}
+  const-gravity: {grav1: -1.}
 ```
+
+The recorded run set `gravity-work: cell` and `gravity-work-fixer: false` in this block; at the pin both keys are
+refused as unknown (@sec-ch06-cell), the face work is the only form, and the card above is the one the script
+now writes.
 
 **What it refuses, and why.** With gravity on, setup refuses `dynamics/x1-mass-covariance: true` on a block with fewer than
 three $x_1$ cells ({{< code src/hydro/hydro.cpp HydroImpl::reset >}}): the one-sided density slope at a wall spans
@@ -206,7 +209,7 @@ difference to the plain mean that @eq-ch05-oneoverr-favre states.[^ch05-1r-chk]
     2.4.6, sympy 1.14.0]. Output `src/snapy_report/ch05/checks/wbref_check.out`, line `[C21]`.
 
 ::: {.callout-important title="Test"}
-**Evidence.** The closure run at the pin, `src/snapy_report/ch05/run_oneoverr_remainder.py`, with its data in
+**Evidence.** The closure run at 6fbb3975, `src/snapy_report/ch05/run_oneoverr_remainder.py`, with its data in
 `data/oneoverr_remainder.json`, gives @fig-ch05-oneoverr-remainder.[^ch05-1r-run] With the switch on, $r_0/L_z = 5$ to $160$,
 the $1/r$ content is $+0.00051$ to $+0.00063$ at $n_1 = 64$, $+0.00043$ to $+0.00048$ at $n_1 = 128$ and $+0.00038$ to
 $+0.00053$ at $n_1 = 256$, where the last value carries a round-off spread of $2\times10^{-4}$. With the switch off it
@@ -232,8 +235,4 @@ $5\times10^{-5}$ to $9\times10^{-4}$ for $n_1 \ge 64$. The derivation note's one
 
 <!-- reader glossary notes -->
 [^rg-60f320595305]: $\varphi$ — $x_3$ on a spherical-polar grid (azimuth) [rad]; never the potential
-
-[^rg-01bd369fc2df]: gravity-work — form of the $x_1$ gravity work; only `face` (the default) is accepted
-
-[^rg-b4cb71f17b56]: gravity-work-fixer — removed in V3: only `false` (the default) is accepted
 <!-- end reader glossary notes -->

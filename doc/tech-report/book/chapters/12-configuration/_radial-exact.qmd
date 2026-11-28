@@ -1,7 +1,7 @@
-## Corrected potential-energy face work (no switch; `gravity-work: face`) {#sec-ch12-radial-exact}
+## Corrected potential-energy face work (no switch) {#sec-ch12-radial-exact}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
 sources: src/hydro/hydro.cpp; src/hydro/hydro_forward.cpp; src/hydro/gravity_work.hpp; src/forcing/const_gravity.cpp;
          src/implicit/implicit_hydro.cpp; tests/test_gravity_work_radial_exact.py; tests/test_x1_seam_split.cpp;
          tests/CMakeLists.txt
@@ -12,8 +12,8 @@ reviewer:
 
 ### Summary
 
-At the pin the corrected potential-energy work has no switch. `gravity-work: face` is the only gravity-work form,
-and the work is booked wherever gravity is radial and the grid has an $x_1$ measure. This section keeps those gates
+At the pin the corrected potential-energy work has no switch. The face work is the only gravity-work form, with
+no deck key for it, and the work is booked wherever gravity is radial and the grid has an $x_1$ measure. This section keeps those gates
 and the registered arms. The derivation of the corrected potential energy, the centroid slope and the implicit row
 is in @sec-ch06-dwork and is not repeated here. With no switch there is no plain-budget control arm in a run. A
 grid without a measure books the plain face work and warns.
@@ -46,13 +46,12 @@ re-derives the cell-by-cell cancellation of the slope term for a fixed linear sl
 
 ### Numerical method
 
-`HydroImpl::radial_exact_work` ({{< code src/hydro/hydro.cpp HydroImpl::radial_exact_work >}}) holds three gates:
-a gravity block with nonzero `grav1`, `gravity-work` equal to `face`, and a grid whose `x1_measure`
+`HydroImpl::radial_exact_work` ({{< code src/hydro/hydro.cpp HydroImpl::radial_exact_work >}}) holds two gates:
+a gravity block with nonzero `grav1`, and a grid whose `x1_measure`
 ({{< code src/hydro/gravity_work.hpp x1_measure >}}) is not `none`. `x1_measure` is `plain` for `cartesian`, `radial`
-for `spherical-polar` and `radial_mid` for `gnomonic-equiangle`. Any other value of `gravity-work`, and an active
-`gravity-work-fixer`[^rg-a5b993b32d10], are refused when the deck is read (`ConstGravityOptionsImpl::from_yaml`,
-{{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}}) and again at setup. So the
-second gate always holds.
+for `spherical-polar` and `radial_mid` for `gnomonic-equiangle`. There is no work form to select: the retired
+`gravity-work`[^rg-334e37910182] and `gravity-work-fixer`[^rg-a5b993b32d10] keys are refused as unknown when the deck is read
+(`ConstGravityOptionsImpl::from_yaml`, {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}}).
 
 At setup, `HydroImpl::reset` ({{< code src/hydro/hydro.cpp HydroImpl::reset >}}) warns once on a grid without a
 measure and once on a periodic $x_1$ column. Neither warning changes the run. In `HydroImpl::forward`
@@ -88,18 +87,16 @@ geometry:
 forcing:
   const-gravity:
     grav1: -9.8     # m s^-2
-    gravity-work: face
 ```
 
-`gravity-work: face` is the default and may be left out. Periodic radial boundaries and unsupported measures produce
+The block carries no work key. Periodic radial boundaries and unsupported measures produce
 warnings, not refusals. They do not establish the corrected-budget guarantee.
 
 `HydroImpl::radial_exact_work` ({{< code src/hydro/hydro.cpp HydroImpl::radial_exact_work >}}) contains this
 selection step:
 
 ```cpp
-  return g && g->grav1() != 0. && g->gravity_work() == "face" &&
-         x1_measure(type) != X1Measure::none;
+  return g && g->grav1() != 0. && x1_measure(type) != X1Measure::none;
 ```
 
 All three predicates must hold before the work in @eq-ch06-dwork-d is booked. `[C5]` checks its algebraic
@@ -109,12 +106,12 @@ cancellation for a fixed linear slope operator. It does not execute this C++ bra
 |---|---|---|---|
 | gates | {{< code src/hydro/hydro.cpp HydroImpl::radial_exact_work >}} | `radial_exact_work` | `grav1`, `geometry/type` |
 | measure | {{< code src/hydro/gravity_work.hpp x1_measure >}} | `X1Measure` | `geometry/type` |
-| warnings | {{< code src/hydro/hydro.cpp HydroImpl::reset >}} | `TORCH_WARN_ONCE` | `gravity-work` |
-| work | {{< code src/hydro/gravity_work.hpp corrected_pe_work >}} | `corrected_pe_work` | `gravity-work` |
-| seam | {{< code src/hydro/gravity_work.hpp corrected_pe_work_seam >}} | `corrected_pe_work_seam` | `gravity-work` |
-| booking | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `radial_exact` | `gravity-work` |
+| warnings | {{< code src/hydro/hydro.cpp HydroImpl::reset >}} | `TORCH_WARN_ONCE` | none |
+| work | {{< code src/hydro/gravity_work.hpp corrected_pe_work >}} | `corrected_pe_work` | none |
+| seam | {{< code src/hydro/gravity_work.hpp corrected_pe_work_seam >}} | `corrected_pe_work_seam` | none |
+| booking | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `radial_exact` | none |
 | operator | {{< code src/implicit/implicit_hydro.cpp ImplicitHydroImpl::forward_masked >}} | `couple_radial_exact` | `integration/implicit-scheme` |
-| work mode | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `gravity_work` | `gravity-work`, only `face` |
+| key check | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `check_keys` | `gravity-work`, `gravity-work-fixer` refused as unknown |
 
 : Implementation sites for the corrected work. {#tbl-ch12-radial-exact-code}
 
@@ -169,7 +166,9 @@ The complete switch inventory is @sec-ch12-matrix.
 
 [^rg-859e2d0bb890]: $P$ — corrected discrete potential energy $\sum_iV_i[\rho_i\phi_i - g_1\sigma_i^2s_i[\rho]]$, exact to $O(h^4)$
 
-[^rg-a5b993b32d10]: gravity-work-fixer — removed in V3: only `false` (the default) is accepted
+[^rg-334e37910182]: gravity-work — retired `const-gravity` key; refused as unknown at the pin, where the face form is the only form
+
+[^rg-a5b993b32d10]: gravity-work-fixer — retired `const-gravity` key; refused as unknown at the pin, where the global fixer is gone
 
 [^rg-3ec07417d3f2]: $\mathcal E$ — the conserved energy functional of a scheme, named each time ($\mathcal E = \sum_iV_iE_i+P$ under D, $\sum_iV_iE_i+\mathrm{PE}_d$ under the plain face form)
 

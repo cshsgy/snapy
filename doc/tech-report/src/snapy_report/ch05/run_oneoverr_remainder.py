@@ -20,8 +20,8 @@ Setup, chosen so that R -> inf is the Cartesian column exactly:
     Cartesian harness;
   - rho, p and the momenta are initialised as exact cell averages in x1 (six-point Gauss-Legendre, weight r^2 on
     the sphere, 1 in Cartesian) and as point values in the horizontal; the velocity is <rho w> / <rho>;
-  - WENO5 in its smooth limit (scale, no shock flag), LMARS, RK3, gravity work "cell" with the gravity-work fixer
-    off (it heats uniformly, which the projection at k cannot see), SNAP_FLUX_COVARIANCE=1
+  - WENO5 in its smooth limit (scale, no shock flag), LMARS, RK3, the face gravity work (the only form at the pin;
+    the recorded run at 6fbb3975 set the cell form, fixer off), SNAP_FLUX_COVARIANCE=1
     (the x2/x3 face-flux covariance of #289/#293), every other SNAP_* switch unset;
   - one step of dt = DT_CFL / n1, the same for every R and for the Cartesian column.
 Arms: SNAP_X1_CENTROID_EXACT unset ("off") and =1 ("on"). Every switch is read once per process, so each arm runs
@@ -85,7 +85,7 @@ def config(nz, radius):
                                             "x2-inner": bc2, "x2-outer": bc2,
                                             "x3-inner": "periodic", "x3-outer": "periodic"}},
         "integration": {"type": "rk3", "cfl": 0.4, "implicit-scheme": 0, "nlim": -1, "tlim": 1.e9},
-        "forcing": {"const-gravity": {"grav1": -1.0, "gravity-work": "cell", "gravity-work-fixer": False}},
+        "forcing": {"const-gravity": {"grav1": -1.0}},
     }
 
 
@@ -232,7 +232,7 @@ def main():
             "run": "python3 run_oneoverr_remainder.py " + " ".join(sys.argv[1:]),
             "deck": "src/snapy_report/ch05/run_oneoverr_remainder.py (isentropic column T0 = 1 - z/Cp, R = g = 1, "
                     "gamma 1.4, H = 1, anelastic roll in phi at the equator, max |w| %g, x1 cell-average IC, "
-                    "WENO5 smooth, LMARS, RK3 one step dt = %g / n1, gravity-work: cell, fixer off, "
+                    "WENO5 smooth, LMARS, RK3 one step dt = %g / n1, face gravity work, "
                     "SNAP_FLUX_COVARIANCE=1)"
                     % (a.amp, DT_CFL),
             "arms": "SNAP_X1_CENTROID_EXACT unset (off) and =1 (on), each with its own Cartesian reference (same card, "

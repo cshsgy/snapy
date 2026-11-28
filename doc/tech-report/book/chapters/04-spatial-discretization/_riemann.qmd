@@ -16,7 +16,7 @@ solver also returns the face pressure the $x_1$ pressure force and the well-bala
 six cannot. The shipped decks name `lmars` (7), `hllc` (6) or `shallow-roe` (9).
 
 <!-- generated reader-reference: riemann -->
-For hydrodynamics, omitting the `riemann-solver` block preserves the created `type`, `hllc` ([`src/riemann/riemann.hpp:61`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/riemann/riemann.hpp#L61)); a present block without `type` keeps it too, through `op->type()` ([`src/riemann/riemann.cpp:71`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/riemann/riemann.cpp#L71)). Both parser paths give `hllc` at source pin `73c45a7c8c991209924e1137992352c335575062`.
+For hydrodynamics, omitting the `riemann-solver` block preserves the created `type`, `hllc` ([`src/riemann/riemann.hpp:55`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/riemann/riemann.hpp#L55)); a present block without `type` keeps it too, through `op->type()` ([`src/riemann/riemann.cpp:71`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/riemann/riemann.cpp#L71)). Both parser paths give `hllc` at source pin `0d5caacbd8e365c87a30af6ce043c39ab30c0959`.
 <!-- end reader-reference: riemann -->
 
 ::: {.callout-note title="At a glance"}

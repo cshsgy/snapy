@@ -214,7 +214,7 @@ block:
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_options_table.release` `options_table.pin_defaults` | a default-constructed `OutputOptionsImpl` and `HydroOptionsImpl` hold the tables' defaults (output: `fid` 0, `dt`[^rg-afb2348f9eea] 0, sums and ghosts off, empty slices and variables, `double_precision`[^rg-96965ca8c480] off, `combine` on; hydro: `wb_wall_clamp` on, `conversion_order` 2, `anomaly` off, `precision` `float64`, `flux_covariance` on, `x1_mass_covariance` off, `conserve_axial_momentum` `off`, no gravity, no EOS[^rg-d6598b149464]) | `EXPECT_EQ`, `EXPECT_TRUE`/`FALSE` (exact) | {{< code tests/test_options_table.cpp options_table.pin_defaults >}} |
-| `test_input_report.release` `InputReport.*` | the report of an `outputs` list keeps the supplied values and fills each entry's defaults independently (`combine: false` stays on the first entry, the second gets `true`, `dt` 0 and no `fid`, and the input is not modified); nested aliases and optional sections are respected (`x2max_pi` keeps `x2max` out, `nghost` is filled, `x1rat` is not, a `forcing` with `coriolis` gets `omega2` 0 and no `diffusion`, `integration/execution: eager` is kept); an omitted `distribute` section reports the deck defaults only (`blocks_per_process` 1, `layout` `slab`, no `device`) | `EXPECT_EQ`, `EXPECT_TRUE`/`FALSE` (exact) | {{< code tests/test_input_report.cpp InputReport.preserves_input_and_fills_each_output_independently >}}, {{< code tests/test_input_report.cpp InputReport.respects_nested_aliases_and_optional_sections >}}, {{< code tests/test_input_report.cpp InputReport.omitted_core_section_uses_only_deck_defaults >}} |
+| `test_input_report.release` `InputReport.*` | the report of an `outputs` list keeps the supplied values and fills each entry's defaults independently (`combine: false` stays on the first entry, the second gets `true`, `dt` 0 and no `fid`, and the input is not modified); nested aliases and optional sections are respected (`x2max_pi`[^rg-ac6928f20883] keeps `x2max` out, `nghost` is filled, `x1rat` is not, a `forcing` with `coriolis`[^rg-8bcf22d8d1e0] gets `omega2` 0 and no `diffusion`[^rg-099999caf825], `integration/execution: eager` is kept); an omitted `distribute` section reports the deck defaults only (`blocks_per_process`[^rg-2ffb165b9c89] 1, `layout`[^rg-93b86bf5c499] `slab`, no `device`) | `EXPECT_EQ`, `EXPECT_TRUE`/`FALSE` (exact) | {{< code tests/test_input_report.cpp InputReport.preserves_input_and_fills_each_output_independently >}}, {{< code tests/test_input_report.cpp InputReport.respects_nested_aliases_and_optional_sections >}}, {{< code tests/test_input_report.cpp InputReport.omitted_core_section_uses_only_deck_defaults >}} |
 | `test_options_table.release` `options_table.hydro_env_row` | `SNAP_ANOMALY` overrides the deck's `anomaly` and keeps its refusal of a bad word | `EXPECT_TRUE`/`FALSE`, `EXPECT_THROW` | {{< code tests/test_options_table.cpp options_table.hydro_env_row >}} |
 | `test_options_table.release` `options_table.axial_mode_words` | `conserve-axial-momentum` accepts `exact` and refuses `full` and the retired closure key, naming the replacement | exact string containment | {{< code tests/test_options_table.cpp options_table.axial_mode_words >}} |
 | `test_options_table.release` `options_table.output_checks`, `output_removed_keys_refused`, `output_domain_checks` | the slice/sum, removed-key and domain checks of an output entry keep their exception type and messages | `EXPECT_STREQ`, `EXPECT_THROW` | {{< code tests/test_options_table.cpp options_table.output_checks >}}, {{< code tests/test_options_table.cpp options_table.output_removed_keys_refused >}}, {{< code tests/test_options_table.cpp options_table.output_domain_checks >}} |
@@ -342,6 +342,16 @@ chapter, among them `test_options_table.release`, `test_options_defaults.release
 [^rg-96965ca8c480]: double_precision — whether an output stream writes NetCDF variables as `NC_DOUBLE` instead of `NC_FLOAT` (default false)
 
 [^rg-d6598b149464]: EOS — equation of state
+
+[^rg-ac6928f20883]: x2max_pi — upper bound of the second coordinate in multiples of pi
+
+[^rg-8bcf22d8d1e0]: coriolis — Coriolis-force options
+
+[^rg-099999caf825]: diffusion — viscosity and heat-diffusion options
+
+[^rg-2ffb165b9c89]: blocks_per_process — number of blocks assigned to each process
+
+[^rg-93b86bf5c499]: layout — block-layout selector
 
 [^rg-98eadbdb85b3]: scale — scaling in the enclosing component: a reconstruction switch or values of a thermal-transport profile
 

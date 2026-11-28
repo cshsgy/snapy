@@ -1,7 +1,7 @@
 ## Spherical cell-to-plain-mean conversion (`SNAP_X1_CENTROID_EXACT`) {#sec-ch12-centroid}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
 sources: OUTLINE.md 12.5; src/coord/x1_centroid.cpp; src/hydro/hydro.cpp; src/hydro/hydro_forward.cpp;
          src/hydro/balance_column.cpp; tests/test_x1_centroid_rest.py; tests/test_x1_seam_split.cpp; tests/CMakeLists.txt
 status: draft
@@ -78,7 +78,6 @@ geometry:
 forcing:
   const-gravity:
     grav1: -9.8     # m s^-2
-    gravity-work: face
 ```
 
 With gravity, XC needs three ghosts, as `dynamics/conversion-order: 4` does (@sec-ch12-wb-reference).

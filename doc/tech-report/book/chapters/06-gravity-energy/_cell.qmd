@@ -13,7 +13,7 @@ reviewer: zoeyzyhu
 
 The constant-gravity forcing, `const-gravity`[^rg-cf144a647361], adds the body force $\rho g_1$ to the $x_1$ momentum and, in the same
 cell, the work $\rho v_1g_1$ to the energy: the cell form of the gravity work. At the pin the cell form is not a
-choice, and no key selects it: the `gravity-work`[^rg-72cdee3ac795] key is gone from the deck, and the face form of @sec-ch06-face
+choice, and no key selects it: the `gravity-work` key is gone from the deck, and the face form of @sec-ch06-face
 replaces the cell work in every stage. The cell work is still computed, because the forcing that adds the body force adds its work with it; the
 hydro then subtracts it and adds the face work. This section states the forcing, the refusal, and why the cell form
 is not offered: its work is exact in each cell but its budget does not close, @eq-ch06-cell-defect.
@@ -168,8 +168,6 @@ Combinations with the study switches: @sec-ch12-matrix.
 <!-- reader glossary notes -->
 [^rg-cf144a647361]: const-gravity — constant-gravity forcing component
 
-[^rg-72cdee3ac795]: gravity-work — retired `const-gravity` key; refused as unknown at the pin, where the face form is the only form
-
 [^rg-88e66223cc5e]: grav1 — gravity component along the first coordinate
 
 [^rg-40de9bc874ef]: non-hydrostatic — fraction of the vertical body force retained by the non-hydrostatic treatment
@@ -183,8 +181,6 @@ Combinations with the study switches: @sec-ch12-matrix.
 [^rg-f239edda6399]: forcing — forcing options block: a map with one sub-block per forcing component
 
 [^rg-7034ba898e85]: CPU — central processing unit
-
-[^rg-20d0ad55a777]: YAML — YAML Ain't Markup Language, the structured input format used for decks
 
 [^rg-dd629466f3e7]: CUDA — NVIDIA's parallel computing platform
 

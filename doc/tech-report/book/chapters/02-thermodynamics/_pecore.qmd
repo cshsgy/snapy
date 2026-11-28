@@ -1,7 +1,7 @@
 ## How snapy differs from a hydrostatic primitive-equation core (`none`) {#sec-ch02-pecore}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: src/hydro/hydro_forward.cpp, src/eos/ideal_gas.cpp, src/coord/coordinate.cpp, src/coord/spherical_polar.cpp,
          src/hydro/hydro.cpp, src/implicit/implicit_hydro.cpp, src/forcing/const_gravity.cpp, src/forcing/coriolis.cpp,
          src/hydro/gravity_work.hpp at the pin; the sections each row of the table cites
@@ -69,7 +69,7 @@ implicit correction exists (@sec-ch09).
 | vertically implicit correction | {{< code src/implicit/implicit_hydro.cpp ImplicitHydroImpl::forward_masked >}} | `vic_stage` | `integration/implicit-scheme` |
 | one block per column for the correction | {{< code src/hydro/hydro.cpp HydroImpl::_apply_implicit_correction >}} | `nb1 = 1` | `integration/implicit-scheme` |
 | hydrostatic split, constant gravity | {{< code src/forcing/const_gravity.cpp ConstGravityOptionsImpl::from_yaml >}} | `non-hydrostatic` | `forcing/const-gravity` |
-| gravity work at the faces; cell form and fixer refused | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `face_gravity_work` | `forcing/const-gravity/gravity-work` |
+| gravity work at the faces; the retired work keys refused as unknown | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `face_gravity_work` | none |
 | traditional option, default off | {{< code src/forcing/coriolis.cpp CoriolisOptionsImpl::from_yaml >}} | `traditional`[^rg-eec0b8420f25] | `forcing/coriolis` |
 
 : Code map of the differences. {#tbl-ch02-pecore-code}

@@ -269,7 +269,7 @@ at the coarsest.
 | panel to Cartesian velocity | {{< code src/coord/cubed_sphere_utils.cpp cs_contra_to_cart_ >}} | `cs_contra_to_cart_` | `cubed-sphere` |
 | covariant to contravariant | {{< code src/coord/coord_utils_impl.h coord_vec_raise_impl >}} | `coord_vec_raise_impl` | none |
 | face clamps of the reconstruction | {{< code src/recon/reconstruct.cpp >}} | `clamp_min_` on the face rows | `shock`[^rg-d1873d074a8e] |
-| gravity work at the faces | {{< code src/hydro/hydro_forward.cpp >}} | `face_gravity_work` | `gravity-work`[^rg-9d4a892bae32] |
+| gravity work at the faces | {{< code src/hydro/hydro_forward.cpp >}} | `face_gravity_work` | none (the face work is the only form; the `gravity-work` key is retired) |
 
 : Where the invariants live in the code. {#tbl-ch16-inv-code}
 
@@ -528,8 +528,6 @@ factor is exactly zero rather than merely small — which is the distinction the
 [^rg-b06d1779eb4d]: limiter — whether the enclosing component enables its limiter
 
 [^rg-d1873d074a8e]: shock — whether reconstruction uses its shock handling
-
-[^rg-9d4a892bae32]: gravity-work — form of the $x_1$ gravity work; only `face` (the default) is accepted
 
 [^rg-97940a7e792f]: CI — continuous integration
 <!-- end reader glossary notes -->

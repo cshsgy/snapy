@@ -83,7 +83,7 @@ forcing:
     grav1: -9.8          # no gravity-work-fixer key: the reader refuses it with any value
 ```
 
-**What is refused, and why.** `gravity-work-fixer` with any value, from YAML, with the message
+**What is refused, and why.** `gravity-work-fixer` with any value, from YAML[^rg-20d0ad55a777], with the message
 `unknown key 'forcing/const-gravity/gravity-work-fixer'. Valid keys: ...`; Python options have no such attribute.
 There is no defect for it to repair.
 
@@ -129,4 +129,6 @@ Combinations with the study switches: @sec-ch12-matrix.
 
 <!-- reader glossary notes -->
 [^rg-b660c0a73eb0]: $\mathcal D$ — the $E+\mathrm{PE}_d$ defect of a step, the quantity the gravity-work fixer removes [J]
+
+[^rg-20d0ad55a777]: YAML — YAML Ain't Markup Language, the structured input format used for decks
 <!-- end reader glossary notes -->

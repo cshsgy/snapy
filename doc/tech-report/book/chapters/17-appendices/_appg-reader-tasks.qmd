@@ -84,7 +84,7 @@
 - See that no deck reaches the legacy x1 wall routines. See Legacy $x_1$ wall routine: the wall-face state copy (no switch), @sec-ch05-legacy.
 - Select the cell form of the gravity work. See Constant gravity and the cell form of the gravity work, @sec-ch06-cell.
 - Use the default face form of the gravity work. See Face form of the gravity work, @sec-ch06-face.
-- Turn on the gravity-work fixer. See Gravity-work fixer, @sec-ch06-fixer.
+- Turn on the gravity-work fixer. See Gravity-work fixer (removed; its key is refused), @sec-ch06-fixer.
 - Get the corrected-PE face gravity work (on by default with `gravity-work: face` and nonzero `grav1` on a Cartesian, spherical-polar or gnomonic-equiangle grid). See The corrected-PE face gravity work, @sec-ch06-dwork.
 - Run with the vertical implicit scheme so gravity work enters the implicit operator. See Gravity work inside the vertical implicit operator, @sec-ch06-vic.
 - Install two forcing modules (constant gravity and body heating) from YAML. See The forcing loop: parsing, registration and the stage increment, @sec-ch07-framework.

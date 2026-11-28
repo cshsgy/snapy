@@ -1,7 +1,7 @@
 ## Radial velocity mean correction (`dynamics/x1-mass-covariance`) {#sec-ch12-mass-covariance}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy, code_pin.yml)
 sources: src/options/hydro.yaml; src/hydro/hydro.hpp; src/hydro/hydro.cpp; src/hydro/hydro_forward.cpp;
          src/recon/well_balanced_x1.cpp; src/hydro/x1_mass_covariance.hpp; tests/test_x1_seam_split.cpp; tests/CMakeLists.txt
 status: draft
@@ -77,7 +77,6 @@ cells. The guard acts with radial gravity, as in this fragment of a complete inp
 forcing:
   const-gravity:
     grav1: -9.8     # m s^-2
-    gravity-work: face
 ```
 
 For two $x_1$ cells with radial gravity, reset refuses the stencil with "dynamics/x1-mass-covariance needs at least

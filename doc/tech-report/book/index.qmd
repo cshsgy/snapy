@@ -44,19 +44,19 @@ and printed in the build note below for readers of the PDF. Every code citation 
 Every input file, switch and command in this book is written for snapy at the pin above, built from source. The
 releases on PyPI (`pip install snapy`) are older than the pin. They lack the environment switches of chapters 4 to
 6 (`SNAP_WB_REF4`, `SNAP_X1_CENTROID_EXACT`, `SNAP_X1_MASS_COVARIANCE`, `SNAP_GRAVITY_WORK_RADIAL_EXACT`), and a
-switch the code does not know is ignored without a message. Older releases also refuse the `gravity-work` keys of
-chapter 6. So build the pin, as below, before you try any example.
+switch the code does not know is ignored without a message. Older releases also differ in the `const-gravity` keys of
+chapter 6, which at the pin refuses the retired `gravity-work` keys as unknown. So build the pin, as below, before you try any example.
 
 <!-- generated reader-reference: install -->
-**What you need.** Python `>=3.10` ([`pyproject.toml:25`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/pyproject.toml#L25)), CMake 3.22 or later (`cmake_minimum_required`, [`CMakeLists.txt:1`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/CMakeLists.txt#L1)), a C++17 compiler (`CMAKE_CXX_STANDARD`, [`CMakeLists.txt:3`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/CMakeLists.txt#L3)), and the NetCDF C library. Install the latter with `brew install netcdf` on macOS or `sudo apt install libnetcdf-dev` on Debian/Ubuntu.
+**What you need.** Python `>=3.10` ([`pyproject.toml:25`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/pyproject.toml#L25)), CMake 3.22 or later (`cmake_minimum_required`, [`CMakeLists.txt:1`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/CMakeLists.txt#L1)), a C++17 compiler (`CMAKE_CXX_STANDARD`, [`CMakeLists.txt:3`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/CMakeLists.txt#L3)), and the NetCDF C library. Install the latter with `brew install netcdf` on macOS or `sudo apt install libnetcdf-dev` on Debian/Ubuntu.
 
-**Build the source pin.** The Python dependencies below follow [`pyproject.toml`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/pyproject.toml); the CMake options explicitly enable the example drivers and disable the optional UCX and parallel-NetCDF backends for this single-machine build.
+**Build the source pin.** The Python dependencies below follow [`pyproject.toml`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/pyproject.toml); the CMake options explicitly enable the example drivers and disable the optional UCX and parallel-NetCDF backends for this single-machine build.
 
 ```bash
 python3 -m venv snapy-env && source snapy-env/bin/activate
 pip install numpy pyyaml "kintera>=2.6.14" torch==2.10.0
 git clone https://github.com/chengcli/snapy && cd snapy
-git checkout 73c45a7c8c991209924e1137992352c335575062
+git checkout 0d5caacbd8e365c87a30af6ce043c39ab30c0959
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_EXAMPLES=ON -DNETCDF=ON -DPNETCDF=OFF -DUCX=OFF
 cmake --build build --parallel 6
