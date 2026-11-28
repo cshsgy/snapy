@@ -273,9 +273,9 @@ to it; rows 1 and 2 are posted to the monitor by the adjustment and are not retr
 
 [^appe-build]: snapy at the pin configured with `cmake -DCUDA=OFF -DCMAKE_BUILD_TYPE=Release -DNETCDF=OFF -DPNETCDF=OFF
     -DUCX=ON`, built with `cmake --build`, installed with `pip install --no-build-isolation --no-deps`, then
-    `import snapy`: every step exit 0, against kintera 2.6.13 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
-    torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64; the same tree with `-DNETCDF=ON
-    -DPNETCDF=ON -DBUILD_EXAMPLES=ON` for the NetCDF arm of @sec-appd. One run, one host.
+    `import snapy`: every step exit 0, against kintera 2.6.14 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
+    torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64. One run, one host. The
+    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at the previous pin.
 
 No numerical result is claimed for any component version on CUDA, MPS or more than one rank. The appendix's C++
 link statement follows the build definition, not an inspected linked binary; a platform linker may omit unused
