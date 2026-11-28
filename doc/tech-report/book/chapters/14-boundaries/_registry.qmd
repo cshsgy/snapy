@@ -115,13 +115,27 @@ of its faces (@sec-ch14-periodic), and $x_1$[^rg-e4c312927e59] is the vertical (
 **Refusals and prerequisites.** An unregistered name such as `typo` is refused as "Boundary function 'typo_inner'
 is not defined." Unknown map keys are rejected by `check_keys`; a collapsed direction does not read its face names.
 
-**Read the implementation.** `MeshBlockOptionsImpl::from_yaml` ({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}}) contains:
+**Read the implementation.** `MeshBlockOptionsImpl::from_yaml` reads every face name in one loop over `side`
+([`src/mesh/meshblock_options.cpp:114-126`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_options.cpp#L114-L126)), verbatim at the pin:
 
 ```cpp
-auto ix1 = external_bc["x1-inner"].as<std::string>("reflecting");
+    for (std::string side : {"inner", "outer"}) {
+      auto key = "x" + std::to_string(d + 1) + "-" + side;
+      auto name = external_bc[key].as<std::string>("reflecting");
+      if (name == "periodic") {
+        if (d == 0 && op->layout()->type() == "cubed")
+          op->layout()->periodic_z(true);
+        if (d == 1) op->layout()->periodic_x(true);
+        if (d == 2) op->layout()->periodic_y(true);
+      }
+      name += "_" + side;
+      TORCH_CHECK(get_bc_func().find(name) != get_bc_func().end(),
+                  "Boundary function '", name, "' is not defined.");
+      op->bfuncs().push_back(get_bc_func()[name]);
 ```
 
-The default supplies the face name; the following registry lookup realizes the dispatch contract in the Derivation layer.
+The default `reflecting` supplies the face name, the suffix names the registry entry, and the lookup refuses a name
+that is not registered: the dispatch contract of the Derivation layer.
 
 | what | code link | symbol | switch |
 |---|---|---|---|

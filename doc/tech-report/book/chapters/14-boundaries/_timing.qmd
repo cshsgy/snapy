@@ -13,7 +13,8 @@ reviewer:
 
 Two fillers write ghosts and their footprints overlap at the corners of a block. The physical callbacks own
 the ghost slabs of physical faces, the whole orthogonal extent included; the exchange owns the slabs of
-layout faces, corners excluded when `skip_corner` is on. A corner slab that lies in a physical x1 face's
+layout faces, corners excluded when `skip_corner` is on except an $x_2$–$x_3$ corner under the diagonal corner rule
+(@sec-ch14-exchange). A corner slab that lies in a physical x1 face's
 ghost region and in a tangential layout face's ghost region is written by the exchange with the neighbour's
 column, after which the x1 wall of that column has to be re-imposed. This scheme states the order in which
 the two fillers run and the refresh that keeps the overlap consistent.

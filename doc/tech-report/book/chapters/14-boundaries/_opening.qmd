@@ -32,7 +32,7 @@ make_fig()
 | @sec-ch14-outflow | `outflow` | off | locally linear characteristic selection; reflection fraction below $0.05$ in the pulse test | @sec-ch16-ch11 |
 | @sec-ch14-custom | `custom`, `solid` | off | exact identity and constant fill | @sec-ch16-ch11 |
 | @sec-ch14-timing | `apply_boundaries`, `exchange_ghost_zones` | fixed by the driver | exact ownership; no order of accuracy | @sec-ch16-ch11 |
-| @sec-ch14-exchange | `SyncOptions` | `interpolate` off, `skip_corner` on | exact copy on matched cells; corners averaged | @sec-ch16-ch11 |
+| @sec-ch14-exchange | `SyncOptions` | `interpolate` off, `skip_corner` on | exact copy on matched cells; a corner copied from its diagonal neighbour, else averaged | @sec-ch16-ch11 |
 | @sec-ch14-wb | `dynamics/wb-wall-clamp` | true | $O(h^2)$ reference bias at the wall cells (truncation argument) | @sec-ch16-ch11 |
 | @sec-ch14-prescribed | face kind `wall`, `vars["solid"]` | on for every wall and solid face | exact zero rows; momentum rows free | `test_prescribed_after_sources` |
 | @sec-ch14-solids | `boundary-condition/internal/*`, `vars["solid"]` | `max-iter`[^rg-5f7fd96723e1] 5, density $10^3$, pressure $10^9$ | line optimum of the mask; closure exact; geometry first order (staircase) | @sec-ch16-ch11 |

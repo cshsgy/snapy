@@ -25,7 +25,7 @@ relies on: which exchanges interpolate, which do not, and when the corners are f
 
 **Activation.** State exchanges enable interpolation; `SyncOptions` defaults do not.
 
-**Guarantee / limits.** Slab copy is exact; corner averaging preserves constants.
+**Guarantee / limits.** Slab copy is exact; a corner with a diagonal neighbour is copied (slab and cubed layouts), any other corner is averaged, which preserves constants.
 
 **Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run.
 :::
@@ -40,8 +40,14 @@ q^{\mathrm{corner}}=\tfrac12\bigl(q^{\mathrm{edge1}}+q^{\mathrm{edge2}}\bigr).
 $$ {#eq-ch14-exchange-corner}
 
 `LayoutImpl::fill_corners` ({{< code src/layout/layout.cpp LayoutImpl::fill_corners >}}) implements
-@eq-ch14-exchange-corner for the four corners of the tangential plane by broadcasting the end rows of the
-two adjacent exchanged strips. The weights sum to one, so constants are preserved exactly in real arithmetic;
+@eq-ch14-exchange-corner for the corners of the tangential plane that the exchange did not write, by broadcasting
+the edge rows of the two adjacent exchanged strips that are nearest the corner. Which corners those are depends on
+the layout's `CornerRule` ({{< code src/layout/layout.hpp CornerRule >}}). Under `diagonal`, the rule of the slab and
+cubed layouts, the exchange copies an $x_2$–$x_3$ corner from its diagonal neighbour (a periodic image included)
+even with `skip_corner` on (`LayoutImpl::for_each_direction`,
+{{< code src/layout/layout.cpp LayoutImpl::for_each_direction >}}). `fill_corners` then averages only a corner that
+has no diagonal neighbour or whose corner direction is a physical face. Under `synthesized`, the rule of the
+cubed-sphere layout, every corner is averaged. The weights sum to one, so constants are preserved exactly in real arithmetic;
 this does not prove a two-dimensional interpolation order. Check C4 checks the constant-preservation identity
 and records why nonconstant edge values need not reconstruct the corner value [check
 `src/snapy_report/ch14/checks/boundary_check.py`, output `src/snapy_report/ch14/checks/boundary_check.out`]. The checks
@@ -95,15 +101,29 @@ boundary-condition:
 checked during construction (@sec-ch12-layout); unknown boundary keys are rejected by the parser. Do not enable
 interpolation for a donor-cell limiter factor: it must retain its donor identity.
 
-**Read the implementation.** The excerpt synthesizes corners for every layout, not only cubed-sphere panels. `LayoutImpl::fill_corners` ({{< code src/layout/layout.cpp LayoutImpl::fill_corners >}}) contains:
+**Read the implementation.** In `LayoutImpl::fill_corners`, the closure `synthesize`
+([`src/layout/layout.cpp:720-733`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/layout/layout.cpp#L720-L733)), verbatim at the pin:
 
 ```cpp
-auto var_left = var.index(sub_left).select(-3, 0).unsqueeze(-3);
-auto var_bot = var.index(sub_bot).select(-2, 0).unsqueeze(-2);
-var.index_put_(sub, 0.5 * (var_left + var_bot));
+  auto synthesize = [&](int dy, int dx) {
+    std::tuple<int, int, int> corner(dy, dx, 0);
+    if (corner_rule() == CornerRule::diagonal &&
+        !_skips_direction(pmb, corner) && neighbor_rank(iloc, corner) >= 0)
+      return;
+    auto sub = pmb->part(corner, PartOptions().exterior(true));
+    auto sub_x2 = pmb->part({0, dx, 0}, PartOptions().exterior(true));
+    auto sub_x3 = pmb->part({dy, 0, 0}, PartOptions().exterior(true));
+    for (auto& [name, var] : vars) {
+      auto var_x2 = var.index(sub_x2).select(-3, dy < 0 ? 0 : -1).unsqueeze(-3);
+      auto var_x3 = var.index(sub_x3).select(-2, dx < 0 ? 0 : -1).unsqueeze(-2);
+      var.index_put_(sub, 0.5 * (var_x2 + var_x3));
+    }
+  };
 ```
 
-The two end strips are the edge values of @eq-ch14-exchange-corner; the last line forms their arithmetic mean.
+The early `return` leaves a corner the diagonal exchange already wrote. `var_x2` and `var_x3` are the edge rows
+nearest the corner, the edge values of @eq-ch14-exchange-corner, and the last assignment forms their arithmetic
+mean.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
@@ -113,6 +133,8 @@ The two end strips are the edge values of @eq-ch14-exchange-corner; the last lin
 | panel | {{< code src/layout/cubed_sphere_layout.cpp CubedSphereLayoutImpl::deserialize >}} | `interp_ghost` | `interpolate` |
 | interp | {{< code src/coord/gnomonic_equiangle.cpp GnomonicEquiangleImpl::interp_ghost >}} | `interp_ghost` | `interpolate` |
 | average | {{< code src/layout/layout.cpp LayoutImpl::fill_corners >}} | `fill_corners` | `skip_corner` |
+| rule | {{< code src/layout/layout.hpp CornerRule >}} | `CornerRule` | layout type |
+| directions | {{< code src/layout/layout.cpp LayoutImpl::for_each_direction >}} | `skip_corner` | `skip_corner`, `CornerRule` |
 | raw | {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}} | `interpolate` | none |
 | wrap | {{< code src/layout/slab_layout.cpp SlabLayoutImpl::neighbor_rank >}} | `periodic_x` | layout periodic flags |
 
