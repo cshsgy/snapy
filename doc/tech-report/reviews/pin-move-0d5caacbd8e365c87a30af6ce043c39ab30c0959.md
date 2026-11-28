@@ -239,7 +239,8 @@ also cited by ch16, a legacy chapter):
 
 `tools/check_provenance.py` requires a tag's sha to be the pin or later, so every run tag at `73c45a7c` now counts
 against its chapter: 77 problems at the base -> 198 at the head (`check_provenance.py --update`). The ratchet's
-`offpin` count rises the same way, 225 -> 458 at the head (`ratchet_gate.py update`; the earlier figures of this
+`offpin` count rises the same way, 225 -> 461 at the head (`ratchet_gate.py update`; 458 before the review's three
+sha mentions in appC/appD/appE; the earlier figures of this
 branch, 585 and 499, were measured before the how-to contracts were regenerated at the pin and before the #357
 merge, and are superseded). Both tools ask for exactly this update in a pin move, and
 both checks pass against `a71bfa1b` afterwards. New tags at the pin: ch06 `_cell`/`_fixer` and ch15
@@ -310,7 +311,7 @@ pin (0 unresolved); of the changed bodies it cites (`MeshImpl::forward`, `MeshBl
 `exchange`, `exchange_ghost_zones`, `build_schedule`) only `MeshImpl::forward` carried a claim, the Mesh timing
 paragraph of `_timing.qmd` (the chemistry in the global phase), rewritten for #382; `gen_boundary_contract.py`
 carries the pin and its fragment was rewritten; the baselines were re-measured as the pin-move update against
-`24513bdb` (offpin 458, provenance 198; ch14's 23 run-tag mentions of `73c45a7c` are off-pin now).
+`24513bdb` (offpin 461, provenance 198; ch14's 23 run-tag mentions of `73c45a7c` are off-pin now).
 
 ## Open
 
@@ -322,7 +323,7 @@ carries the pin and its fragment was rewritten; the baselines were re-measured a
   form) is not made here.
 - ch13: `test_mesh_executor.cpp`'s new `repeated_local_exchange_reads_current_buffers_after_failure` case (#383) has
   no Tests-table row yet.
-- Every run tag at `73c45a7c` (198 provenance problems, 458 off-pin mentions): chapter owners re-run or re-word after
+- Every run tag at `73c45a7c` (198 provenance problems, 461 off-pin mentions): chapter owners re-run or re-word after
   the merge, as in the previous move.
 - The figure-data gate fails on the base and on the head alike (22 changed series of ch06 and others, 2 broken
   identity links, 28 coverage differences); not touched by this move.
