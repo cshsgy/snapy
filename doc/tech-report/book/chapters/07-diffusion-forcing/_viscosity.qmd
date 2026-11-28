@@ -247,7 +247,7 @@ make_fig()
 Each face flux of @eq-ch07-viscosity-stencil reads the two cells across the face and, for the cross terms and the
 divergence, their neighbours in the tangential directions: one ghost layer for conduction, two for viscosity (the
 face average of a centred difference reaches two cells), hence the setup check $n_{\mathrm{ghost}}\ge2$. Ghosts are
-filled by the boundary functions and the block exchange before the stage (@sec-ch14b). Faces at a reflecting $x_1$
+filled by the boundary functions and the block exchange before the stage (@sec-ch14). Faces at a reflecting $x_1$
 wall take the one-sided coefficient of @sec-ch07-wallcoef; every other face, including seams between blocks, takes
 the two-cell average. With `temperature_inner` (or `temperature_outer`) $T_w>0$ at a wall named `reflecting_inner`
 (`reflecting_outer`), the temperature difference across the wall face is replaced by the half-cell difference to the

@@ -1,4 +1,4 @@
-# Boundary conditions and immersed solids {#sec-ch14b}
+# Boundary conditions and immersed solids {#sec-ch14}
 
 {{< include 14-boundaries/_opening.qmd >}}
 

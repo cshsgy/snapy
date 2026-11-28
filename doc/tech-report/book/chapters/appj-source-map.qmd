@@ -58,7 +58,7 @@ library's source lists, and 9 of them hold one `.cu` file each, all in its CUDA 
 
 | directory | what it owns | built | covered in |
 |---|---|---|---|
-| `bc/` | external boundary functions, internal (solid) boundaries | yes, with CUDA | @sec-ch14b |
+| `bc/` | external boundary functions, internal (solid) boundaries | yes, with CUDA | @sec-ch14 |
 | `chemistry/` | the chemistry step a block or a Mesh registers (`ChemistrySource`, kintera kinetics) | yes | @sec-appe-components |
 | `coord/` | coordinate systems and metrics: Cartesian, spherical-polar, gnomonic cubed sphere | yes, with CUDA | @sec-ch03 |
 | `diagnostics/` | the budget read off the flux register, and the consumer interface for diagnostics that read the register | yes | @sec-ch06-conserves; the pre-V3 diagnostics chapter, which returns with the V3 chapter 10 |

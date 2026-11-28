@@ -11,7 +11,7 @@ status: draft
 One routine treats a stratified column at a wall without the well-balanced reconstruction: it makes the two states
 at the wall face agree. It runs only on the $x_1$ path taken when `wb_x1` is false and gravity is on, a combination
 no configuration reaches with a pressure row. The code at the pin has no isentropic wall-ghost fill; the ghost cells
-at an $x_1$ wall are those the boundary functions write (@sec-ch14b).
+at an $x_1$ wall are those the boundary functions write (@sec-ch14).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** The wall treatment of the non-well-balanced $x_1$ path: a wall-face state copy.
