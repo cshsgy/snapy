@@ -13,7 +13,7 @@
    "xref": 1
   },
   "appc": {
-   "history": 1,
+   "history": 0,
    "offpin": 0,
    "status": 0,
    "xref": 0
@@ -25,7 +25,7 @@
    "xref": 0
   },
   "appe": {
-   "history": 1,
+   "history": 0,
    "offpin": 0,
    "status": 0,
    "xref": 0
@@ -85,13 +85,13 @@
    "xref": 0
   },
   "ch05": {
-   "history": 1,
+   "history": 0,
    "offpin": 57,
    "status": 0,
    "xref": 0
   },
   "ch06": {
-   "history": 2,
+   "history": 0,
    "offpin": 17,
    "status": 0,
    "xref": 0
@@ -133,7 +133,7 @@
    "xref": 0
   },
   "ch13": {
-   "history": 1,
+   "history": 0,
    "offpin": 14,
    "status": 0,
    "xref": 0
@@ -145,7 +145,7 @@
    "xref": 0
   },
   "ch15": {
-   "history": 2,
+   "history": 0,
    "offpin": 6,
    "status": 0,
    "xref": 0

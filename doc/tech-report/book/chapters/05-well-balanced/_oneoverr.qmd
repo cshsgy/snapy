@@ -161,8 +161,7 @@ forcing:
 ```
 
 The recorded run set `gravity-work: cell` and `gravity-work-fixer: false` in this block; at the pin both keys are
-refused as unknown (@sec-ch06-cell), the face work is the only form, and the card above is the one the script
-now writes.
+refused as unknown (@sec-ch06-cell), the face work is the only form, and the card above is the script's.
 
 **What it refuses, and why.** With gravity on, setup refuses `dynamics/x1-mass-covariance: true` on a block with fewer than
 three $x_1$ cells ({{< code src/hydro/hydro.cpp HydroImpl::reset >}}): the one-sided density slope at a wall spans

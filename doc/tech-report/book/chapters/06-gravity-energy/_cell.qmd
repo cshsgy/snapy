@@ -144,8 +144,8 @@ The options object has no member for the work form (`ConstGravityOptionsImpl`,
 : Tests of the constant gravity forcing at the pin. {#tbl-ch06-cell-tests}
 
 Both ctests pass at the pin.[^ch06-cell-run-pin] `test_const_gravity_options_python` is new there and replaces the two
-refusal tests that went with the keys; the previous pin's run of the chapter's 19 gravity-work and implicit ctests is
-kept for the record.[^ch06-cell-run]
+refusal tests that went with the keys; the run of the chapter's 19 gravity-work and implicit ctests at the sha its
+tag names is kept for the record.[^ch06-cell-run]
 
 [^ch06-cell-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own inputs; run: `ctest -j 1 --timeout 1800
     --output-on-failure -R '^(test_forcing\.release|test_const_gravity_options_python)$'` in the build directory of a

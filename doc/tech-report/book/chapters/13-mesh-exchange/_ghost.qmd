@@ -146,8 +146,8 @@ gains one entry per Mesh and kind of exchange on first use; `clear_local_exchang
 ({{< code src/layout/layout.cpp clear_local_exchange >}}) erases the Mesh's entries together with its mail,
 anchors and boards, after a failed job and from the worker pool's destructor. A later Mesh cannot read a stale
 entry in any case: each Mesh takes a new id from a process-wide counter when it is built or reset
-({{< code src/mesh/mesh.cpp MeshImpl::reset >}}), ids are never reused, and the id leads the key. At the previous
-pin, where the map kept its entries for the life of the process, a new Mesh built after a failed one, stepped in
+({{< code src/mesh/mesh.cpp MeshImpl::reset >}}), ids are never reused, and the id leads the key. At the sha of
+the footnote, where the map kept its entries for the life of the process, a new Mesh built after a failed one, stepped in
 eager and default execution, matched a freshly built Mesh bitwise, and 30 entries were left in the map at
 exit;[^ghost-stale] not repeated at the pin.
 **Re-stepping the same Mesh after a failure is not supported.** With its state restored from a copy taken before

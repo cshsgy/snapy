@@ -193,6 +193,24 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 | 146 | `tools/gen_options.py` | file | +34/-11 | appj(1) ch15(4) | gen_options no longer emits `report()`, emits the input schemas: ch15 _options already describes `input_report_schema` (a3c18776) |
 | 147 | `tools/gen_options.py emit_members` | L105-L119 -> L105-L108 | +0/-11 |  | gen_options no longer emits `report()`, emits the input schemas: ch15 _options already describes `input_report_schema` (a3c18776) |
 
+### Changed bodies cited only by chapter 14 (merged with #357)
+
+The census preceded #357; with ch14 in, `code_anchors.py diff` lists 163 changed symbols. Beyond the 147 above and
+the 9 symbols that are new at the pin (the three `InputReport` cases, the two renamed `OutputPrecision` cases,
+`report_input`, `test_removed_gravity_options`, `test_aneos_metric`'s case, `test_redo_positivity_meters.py`, all
+cited by the sections this move rewrote) and `ConstGravityOptionsImpl` in `src/forcing/forcing.hpp` (the
+`gravity_work`/`gravity_work_fixer` members gone; ch06, a3c18776), seven are cited by ch14 alone:
+
+| symbol | lines (old -> new) | cited by | re-read |
+|---|---|---|---|
+| `python/csrc/pymesh.cpp` | file (+3/-8) | ch14(9) | `__repr__` through `options_repr`; the `set_chemistry` docstring says last-stage op; no ch14 claim names either |
+| `python/snapy/mesh.pyi` | file | ch14(1) | the `set_chemistry` docstring; no claim |
+| `src/bc/bc.hpp BoundaryFuncOptions` | L29-L43 -> L29-L37 | ch14(3) | #381: `report()` removed; the option fields ch14 lists are unchanged |
+| `src/coord/coordinate.hpp` | file (-17) | ch14(1) | #381: `CoordinateOptionsImpl::report()` removed; no claim |
+| `src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries` | L214-L286 -> L214-L286 | ch14(6) | formatting (`&` placement) only |
+| `tests/test_implicit_stratified_solid.py` | file | ch14(1), ch16(1) | #379: the `work`/`fixer` arguments and deck keys dropped; the solid-mass assertions ch14 quotes are unchanged |
+| `tests/test_implicit_stratified_solid.py solid_run` | L100-L142 -> L97-L139 | ch14(1), ch16(2) | as above |
+
 ## Generated fixtures
 
 - `tools/package-pins.json`, `tools/env-pins.json`: the kintera pin stays at `0429d795` (v2.6.13). snapy at the pin sets the
@@ -219,8 +237,9 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 
 `tools/check_provenance.py` requires a tag's sha to be the pin or later, so every run tag at `73c45a7c` now counts
 against its chapter: 77 problems at the base -> 198 at the head (`check_provenance.py --update`). The ratchet's
-`offpin` count rises the same way, 225 -> 499 (`ratchet_gate.py update`; the regenerated how-to contracts carry the
-new sha, which is why the first measurement, 585, fell). Both tools ask for exactly this update in a pin move, and
+`offpin` count rises the same way, 225 -> 458 at the head (`ratchet_gate.py update`; the earlier figures of this
+branch, 585 and 499, were measured before the how-to contracts were regenerated at the pin and before the #357
+merge, and are superseded). Both tools ask for exactly this update in a pin move, and
 both checks pass against `a71bfa1b` afterwards. New tags at the pin: ch06 `_cell`/`_fixer` and ch15
 `_options`/`_output` (the replacement ctests, run under the node's ctest lock: 98ab72e5), appE's build record
 (f41a1c7c), appC's refresh (dd49df61), and ch07 `_framework`'s port tag `[^fw-run]` (`framework_check.py` re-run,

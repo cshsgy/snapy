@@ -408,7 +408,7 @@ cover the callback's acceptance and refusal, not a new field
 
 `test_user_output.release` passes at the pin on a serial CPU run of a build without NetCDF, which is the build
 that compiles and runs the `netcdf_output_without_netcdf_warns_once` case.[^ch15-output-run-pin] Every ctest entry of
-this table passed at the previous pin on a serial CPU run with NetCDF and PnetCDF built in: 16 of
+this table passed, at the sha its footnote names, on a serial CPU run with NetCDF and PnetCDF built in: 16 of
 the 16 tests selected for this chapter, among them `test_user_output.release`, `test_combine_parts.release`,
 `test_netcdf_axis_attrs` (both writers) and `test_netcdf_cubed_lonlat_python`.[^ch15-output-run] The
 without-NetCDF case is compiled only without NetCDF and so did not run in

@@ -63,8 +63,7 @@ the steps of that floor: 2.5.8 for `SpeciesThermo` `names()`, `mu()` and `popula
 saturation-failure counter; 2.6.2 for the `h2o_bryan` liquid beta that `examples/bryan.yaml` needs; 2.6.3 for the
 same-call rate constants of the kinetics Jacobian; 2.6.9 for the constant-$c_v$ perturbation-pressure helper;
 2.6.11 for `compute_into`, which writes the moist-mixture EOS's fixed buffers; and 2.6.14, the floor itself, for
-the per-call log-SVP state of kintera #160, which lets the blocks of a Mesh run their chemistry concurrently
-(@sec-ch10-kinetics). The Python `[build-system] requires` and `[project] dependencies` both contain
+the per-call log-SVP state that lets the blocks of a Mesh run their chemistry concurrently (@sec-ch10-kinetics). The Python `[build-system] requires` and `[project] dependencies` both contain
 `kintera>=2.6.14` ({{< code pyproject.toml >}}).
 
 Neither Python list declares pyharp or pydisort, and the runtime list declares no torch. They are required all
@@ -276,7 +275,7 @@ to it; rows 1 and 2 are posted to the monitor by the adjustment and are not retr
     -DUCX=ON`, built with `cmake --build`, installed with `pip install --no-build-isolation --no-deps`, then
     `import snapy`: every step exit 0, against kintera 2.6.14 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
     torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64. One run, one host. The
-    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at the previous pin.
+    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at the sha of the appD record and is not repeated here.
 
 No numerical result is claimed for any component version on CUDA, MPS or more than one rank. The appendix's C++
 link statement follows the build definition, not an inspected linked binary; a platform linker may omit unused

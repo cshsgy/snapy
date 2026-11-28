@@ -224,7 +224,7 @@ block:
 : Tests of the options schema and the tolerance each uses. {#tbl-ch15-options-tests}
 
 `test_input_report.release` and `test_options_table.release` pass at the pin on a serial CPU[^rg-401f567dfb65] run.[^ch15-options-run-pin] Every
-ctest entry of this table passed at the previous pin on a serial CPU run: 16 of the 16 tests selected for this
+ctest entry of this table passed, at the sha its footnote names, on a serial CPU run: 16 of the 16 tests selected for this
 chapter, among them `test_options_table.release`, `test_options_defaults.release` and
 `test_yaml_keys.release`.[^ch15-options-run]
 

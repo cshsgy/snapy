@@ -102,8 +102,8 @@ There is no defect for it to repair.
 
 : Tests of the refused fixer. {#tbl-ch06-fixer-tests}
 
-`test_const_gravity_options_python` passes at the pin,[^ch06-fixer-run-pin] where it replaces the two tests of the
-previous pin, whose run is kept for the record.[^ch06-fixer-run]
+`test_const_gravity_options_python` passes at the pin,[^ch06-fixer-run-pin] where it replaces the two refusal
+tests; their run, at the sha its tag names, is kept for the record.[^ch06-fixer-run]
 
 [^ch06-fixer-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own inputs; run: `ctest -j 1 --timeout 1800
     --output-on-failure -R '^test_const_gravity_options_python$'` in the build directory of a CPU Release build at the
