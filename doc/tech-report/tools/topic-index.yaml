@@ -553,7 +553,7 @@ sections:
   sec-ch14-registry:
     - boundary condition: [boundary-condition block, ghost zones, how boundaries are chosen]
   sec-ch14-prescribed:
-    - wall flux: [prescribed faces, boundary.prescribed, conducting wall]
+    - prescribed faces, boundary side: [conducting wall, solid faces]
   sec-ch14-solids:
     - immersed solids: [solid mask, terrain]
   sec-ch14-timing:
