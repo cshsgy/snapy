@@ -275,7 +275,7 @@ to it; rows 1 and 2 are posted to the monitor by the adjustment and are not retr
     -DUCX=ON`, built with `cmake --build`, installed with `pip install --no-build-isolation --no-deps`, then
     `import snapy`: every step exit 0, against kintera 2.6.14 (the package pin), pyharp 2.7.17, pydisort 1.8.13,
     torch 2.10.0+cu128, commux 0.2.1, pinc 0.2.0, CMake 3.26.2, g++ 11.4.0, Linux x86-64. One run, one host. The
-    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at the sha of the appD record and is not repeated here.
+    NetCDF arm of @sec-appd (`-DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON`) was last built at 73c45a7c8c991209924e1137992352c335575062 (the appD record) and is not repeated here.
 
 No numerical result is claimed for any component version on CUDA, MPS or more than one rank. The appendix's C++
 link statement follows the build definition, not an inspected linked binary; a platform linker may omit unused

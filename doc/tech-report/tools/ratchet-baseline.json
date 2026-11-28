@@ -14,19 +14,19 @@
   },
   "appc": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },
   "appd": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },
   "appe": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },

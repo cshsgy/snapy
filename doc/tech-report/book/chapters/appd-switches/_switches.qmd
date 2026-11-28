@@ -274,7 +274,7 @@ entries and the gtest, the six Python entries skipped with code 125 (their captu
 `test_uranus_cycle1_abort` passed. The seven other `BACKEND=gloo` entries read back NetCDF output and failed there because none was written; all seven
 passed in the build with NetCDF[^appd-run]. The CUDA, UCX-on-GPU and `FULL_TESTS` arms were not run.
 
-[^appd-run]: `ctest -j 1` on the entries by name, in a Release build at the pin configured with `cmake -DCUDA=OFF
+[^appd-run]: `ctest -j 1` on the entries by name, in a Release build at snapy@73c45a7c8c991209924e1137992352c335575062 configured with `cmake -DCUDA=OFF
     -DNETCDF=OFF -DPNETCDF=OFF -DUCX=ON`, kintera 2.6.13, pyharp 2.7.17, torch 2.10.0+cu128, Linux x86-64, the
     multi-rank entries as two or three `torchrun` ranks on one host. First batch, passed: `test_x1_seam_split_x1_centroid`,
     `test_x1_seam_split_nghost_check_x1_centroid`, `test_x1_seam_split_mp_x1_centroid`,

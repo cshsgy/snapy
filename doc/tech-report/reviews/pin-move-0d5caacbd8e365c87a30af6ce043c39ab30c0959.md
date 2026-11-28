@@ -195,11 +195,13 @@ chapters that cite them, and what was done. A commit sha names the commit of thi
 
 ### Changed bodies cited only by chapter 14 (merged with #357)
 
-The census preceded #357; with ch14 in, `code_anchors.py diff` lists 163 changed symbols. Beyond the 147 above and
+The census preceded #357; with ch14 in, `code_anchors.py diff` lists 163 changed symbols (row 147 of the table above,
+`tools/gen_options.py emit_members`, no longer appears in it, so 146 of the 147 remain). Beyond those and
 the 9 symbols that are new at the pin (the three `InputReport` cases, the two renamed `OutputPrecision` cases,
 `report_input`, `test_removed_gravity_options`, `test_aneos_metric`'s case, `test_redo_positivity_meters.py`, all
 cited by the sections this move rewrote) and `ConstGravityOptionsImpl` in `src/forcing/forcing.hpp` (the
-`gravity_work`/`gravity_work_fixer` members gone; ch06, a3c18776), seven are cited by ch14 alone:
+`gravity_work`/`gravity_work_fixer` members gone; ch06, a3c18776), seven have ch14 as their only gated citer (two are
+also cited by ch16, a legacy chapter):
 
 | symbol | lines (old -> new) | cited by | re-read |
 |---|---|---|---|
