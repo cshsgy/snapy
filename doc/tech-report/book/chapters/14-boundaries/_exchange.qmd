@@ -1,11 +1,11 @@
 ## Supply ghosts through layout exchange (`SyncOptions`) {#sec-ch14-exchange}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.8; src/layout/layout.hpp; src/layout/layout.cpp; src/layout/slab_layout.cpp;
-         src/layout/cubed_sphere_layout.cpp; src/coord/gnomonic_equiangle.cpp; src/hydro/hydro_forward.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/layout/layout.hpp; src/layout/layout.cpp; src/layout/slab_layout.cpp;
+         src/layout/cubed_sphere_layout.cpp; src/coord/gnomonic_equiangle.cpp; src/hydro/flux_positivity.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -25,9 +25,9 @@ relies on: which exchanges interpolate, which do not, and when the corners are f
 
 **Activation.** State exchanges enable interpolation; `SyncOptions` defaults do not.
 
-**Guarantee / limits.** Slab copy is exact; corner averaging preserves constants.
+**Guarantee / limits.** Slab copy is exact; a corner with a diagonal neighbour is copied (slab and cubed layouts), any other corner is averaged, which preserves constants.
 
-**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run at the pin.
+**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run.
 :::
 
 ### Derivation
@@ -40,8 +40,14 @@ q^{\mathrm{corner}}=\tfrac12\bigl(q^{\mathrm{edge1}}+q^{\mathrm{edge2}}\bigr).
 $$ {#eq-ch14-exchange-corner}
 
 `LayoutImpl::fill_corners` ({{< code src/layout/layout.cpp LayoutImpl::fill_corners >}}) implements
-@eq-ch14-exchange-corner for the four corners of the tangential plane by broadcasting the end rows of the
-two adjacent exchanged strips. The weights sum to one, so constants are preserved exactly in real arithmetic;
+@eq-ch14-exchange-corner for the corners of the tangential plane that the exchange did not write, by broadcasting
+the edge rows of the two adjacent exchanged strips that are nearest the corner. Which corners those are depends on
+the layout's `CornerRule` ({{< code src/layout/layout.hpp CornerRule >}}). Under `diagonal`, the rule of the slab and
+cubed layouts, the exchange copies an $x_2$–$x_3$ corner from its diagonal neighbour (a periodic image included)
+even with `skip_corner` on (`LayoutImpl::for_each_direction`,
+{{< code src/layout/layout.cpp LayoutImpl::for_each_direction >}}). `fill_corners` then averages only a corner that
+has no diagonal neighbour or whose corner direction is a physical face. Under `synthesized`, the rule of the
+cubed-sphere layout, every corner is averaged. The weights sum to one, so constants are preserved exactly in real arithmetic;
 this does not prove a two-dimensional interpolation order. Check C4 checks the constant-preservation identity
 and records why nonconstant edge values need not reconstruct the corner value [check
 `src/snapy_report/ch14/checks/boundary_check.py`, output `src/snapy_report/ch14/checks/boundary_check.out`]. The checks
@@ -60,8 +66,8 @@ or momentum rows for `kConserved` and `kPrimitive` input; `kScalar` input is cop
 `GnomonicEquiangleImpl::interp_ghost` ({{< code src/coord/gnomonic_equiangle.cpp GnomonicEquiangleImpl::interp_ghost >}})
 interpolates the strip widened by `cs_interp_margin` along the panel edge. The hydro state is exchanged
 with `interpolate` on in the stage and initialization exchanges of @sec-ch14-timing; the donor factor of the
-flux positivity limiter is exchanged raw, `interpolate(false)` with scalar type, in `HydroImpl::forward`
-({{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}), because the donor of a seam face is the
+flux positivity limiter is exchanged raw, `interpolate(false)` with scalar type, in `flux_positivity_sync_theta_`
+({{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}}), because the donor of a seam face is the
 neighbour's edge cell and an interpolated ghost is not its factor. This is a data-ownership map; no measured
 seam order is claimed.
 
@@ -95,25 +101,41 @@ boundary-condition:
 checked during construction (@sec-ch12-layout); unknown boundary keys are rejected by the parser. Do not enable
 interpolation for a donor-cell limiter factor: it must retain its donor identity.
 
-**Read the implementation.** The excerpt synthesizes corners for every layout, not only cubed-sphere panels. `LayoutImpl::fill_corners` ({{< code src/layout/layout.cpp LayoutImpl::fill_corners >}}) contains:
+**Read the implementation.** In `LayoutImpl::fill_corners`, the closure `synthesize`
+([`src/layout/layout.cpp:720-733`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/layout/layout.cpp#L720-L733)), verbatim at the pin:
 
 ```cpp
-auto var_left = var.index(sub_left).select(-3, 0).unsqueeze(-3);
-auto var_bot = var.index(sub_bot).select(-2, 0).unsqueeze(-2);
-var.index_put_(sub, 0.5 * (var_left + var_bot));
+  auto synthesize = [&](int dy, int dx) {
+    std::tuple<int, int, int> corner(dy, dx, 0);
+    if (corner_rule() == CornerRule::diagonal &&
+        !_skips_direction(pmb, corner) && neighbor_rank(iloc, corner) >= 0)
+      return;
+    auto sub = pmb->part(corner, PartOptions().exterior(true));
+    auto sub_x2 = pmb->part({0, dx, 0}, PartOptions().exterior(true));
+    auto sub_x3 = pmb->part({dy, 0, 0}, PartOptions().exterior(true));
+    for (auto& [name, var] : vars) {
+      auto var_x2 = var.index(sub_x2).select(-3, dy < 0 ? 0 : -1).unsqueeze(-3);
+      auto var_x3 = var.index(sub_x3).select(-2, dx < 0 ? 0 : -1).unsqueeze(-2);
+      var.index_put_(sub, 0.5 * (var_x2 + var_x3));
+    }
+  };
 ```
 
-The two end strips are the edge values of @eq-ch14-exchange-corner; the last line forms their arithmetic mean.
+The early `return` leaves a corner the diagonal exchange already wrote. `var_x2` and `var_x3` are the edge rows
+nearest the corner, the edge values of @eq-ch14-exchange-corner, and the last assignment forms their arithmetic
+mean.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
 | sync | {{< code src/layout/layout.hpp SyncOptions >}} | `skip_corner` | `SyncOptions` |
 | finalize | {{< code src/layout/layout.cpp LayoutImpl::finalize >}} | `fill_corners` | `skip_corner` |
-| block | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `interpolate` | none |
+| block | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange >}} | `interpolate` | none |
 | panel | {{< code src/layout/cubed_sphere_layout.cpp CubedSphereLayoutImpl::deserialize >}} | `interp_ghost` | `interpolate` |
 | interp | {{< code src/coord/gnomonic_equiangle.cpp GnomonicEquiangleImpl::interp_ghost >}} | `interp_ghost` | `interpolate` |
 | average | {{< code src/layout/layout.cpp LayoutImpl::fill_corners >}} | `fill_corners` | `skip_corner` |
-| raw | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `interpolate` | none |
+| rule | {{< code src/layout/layout.hpp CornerRule >}} | `CornerRule` | layout type |
+| directions | {{< code src/layout/layout.cpp LayoutImpl::for_each_direction >}} | `skip_corner` | `skip_corner`, `CornerRule` |
+| raw | {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}} | `interpolate` | none |
 | wrap | {{< code src/layout/slab_layout.cpp SlabLayoutImpl::neighbor_rank >}} | `periodic_x` | layout periodic flags |
 
 : Implementation sites for exchange. {#tbl-ch14-exchange-code}
@@ -122,13 +144,13 @@ The two end strips are the edge values of @eq-ch14-exchange-corner; the last lin
    {{< code src/layout/layout.hpp SyncOptions >}}.
 2. For the subdivided interpolated panel path, finish the intra-panel exchange before packing the
    cross-panel donors. The anchor `interpolate` is in
-   {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}.
+   {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange >}}.
 3. Deserialize, interpolate when selected, transform the vector components, and synthesize the corners once
    per exchange. The anchor `interp_ghost` is in
    {{< code src/layout/cubed_sphere_layout.cpp CubedSphereLayoutImpl::deserialize >}}; the anchor
    `fill_corners` is in {{< code src/layout/layout.cpp LayoutImpl::finalize >}}.
 4. Keep the raw scalar donor-factor exchange separate from the interpolated hydro exchange. The anchor
-   `interpolate` is in {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}.
+   `interpolate` is in {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}}.
 
 ### Tests
 
@@ -166,11 +188,12 @@ out a general corner reconstruction claim.[^ch11-exchange-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-exchange-run]: [sha: snapy@c0c38593d3d3f37bebe204a590610fd7daa05a5f; deck: the deterministic fixtures in the
+[^ch11-exchange-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.12.10, numpy 2.5.4, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C4]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C4]`; the check imports
+    no snapy code.
 
 ### Limits
 

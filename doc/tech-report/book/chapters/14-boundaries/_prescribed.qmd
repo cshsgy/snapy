@@ -1,0 +1,154 @@
+## Which faces are prescribed, and with what (`boundary.prescribed`) {#sec-ch14-prescribed}
+
+<!-- PROVENANCE
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14.2; src/layout/seam_register.cpp; src/hydro/hydro_forward.cpp;
+         src/hydro/flux_register.cpp; src/mesh/meshblock_options.cpp; tests/test_prescribed_after_sources.cpp;
+         tests/test_wb_wall_corner.cpp; tests/test_wall4_sphere.py; tests/CMakeLists.txt
+status: draft
+author: Xinyue Wang
+reviewer:
+-->
+
+### Summary
+
+A ghost fill decides what the reconstruction sees next to a wall. The flux through the wall face is decided
+separately: the flux register overwrites it. On every face of kind `wall`, and on every face that touches a
+solid cell, the register sets the flux rows to zero, except the rows that stay free. The momentum rows are always
+free, because the pressure term of a wall face is a momentum flux. On an $x_1$ wall whose boundary prescribes a
+temperature, the energy row is free too, so that wall conducts heat while carrying no mass.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Zero the face flux rows that a wall or a solid face must not carry.
+
+**Data.** The register's face totals; the wall planes, the solid mask and the free rows of each plane.
+
+**Placement.** Set at the start of each hydro call; applied after each sweep's flux, after the sources' posts and
+after the implicit correction.
+
+**Activation.** Always, on faces of kind `wall` and faces next to a solid cell.
+
+**Guarantee / limits.** Zero mass and energy flux through a wall face that prescribes no temperature; outflow,
+periodic and custom faces are not prescribed.
+
+**Evidence.** @tbl-ch14-prescribed-tests.
+:::
+
+### Derivation
+
+A wall face carries no mass, so its mass flux and every tracer flux are zero. A reflecting wall also carries no
+energy flux: at a symmetric face the normal velocity vanishes, so the advective energy flux does too. The momentum
+flux at the face is the wall pressure, which balances the column, so the momentum rows must keep their computed
+value. A wall that prescribes a temperature conducts: its diffusive energy flux is the heat the wall supplies, so
+its energy row keeps its computed value too.
+
+`supply_prescribed` ({{< code src/layout/seam_register.cpp supply_prescribed >}}) implements this rule. For each
+direction it takes the lower and upper block faces whose `face_kind`
+({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::face_kind >}}) is `wall` (the reflecting and
+fixed-temperature names, @sec-ch14-registry). Each such plane gets the caller's free rows, and an $x_1$ wall plane
+gets the extra rows of its end. The prescribed value is zero.
+
+### Numerical method
+
+`HydroImpl::forward` ({{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}) calls `supply_prescribed` at
+the start of each hydro call. It passes the three momentum rows as the free rows of every plane, and the energy
+row `IPR` as an extra free row of an $x_1$ end where the diffusion's wall temperature is positive or the face's
+recorded name is `fixed_temperature_inner` (`fixed_temperature_outer`).
+
+The register stores the rule in one of two forms:
+
+- **No solid mask.** `FluxRegister::set_prescribed_walls`
+  ({{< code src/hydro/flux_register.cpp FluxRegister::set_prescribed_walls >}}) records only the wall planes and
+  their free rows.
+- **With a solid mask.** `supply_prescribed` builds a full face mask: the wall planes, plus every face between two
+  cells of which at least one is solid. It clears the free rows in the mask and passes it, with a zero value, to
+  `FluxRegister::set_prescribed` ({{< code src/hydro/flux_register.cpp FluxRegister::set_prescribed >}}). The $x_1$
+  extra free rows are cleared on the wall planes only, not on solid faces.
+
+`FluxRegister::apply_prescribed` ({{< code src/hydro/flux_register.cpp FluxRegister::apply_prescribed >}})
+overwrites the masked rows with the prescribed value, in the total and in each kept part, and books the change
+under `boundary.prescribed`. The hydro calls it for each direction after that direction's sweep, and again for every direction after the
+sources have posted their fluxes. It calls it once more for $x_1$ before the divergence when the implicit correction
+ran or the register was written since the last apply. The passive scalars call `supply_prescribed` on their own
+register with no free rows, so every tracer row is zero on the wall and solid faces, and then apply it
+(`ScalarImpl::forward`, {{< code src/scalar/scalar.cpp ScalarImpl::forward >}}).
+
+### Code
+
+**How to use.** Nothing is set beyond the face names: a `reflecting` face is prescribed, and an `outflow`,
+`periodic` or `custom` face is not. From a deck, a conducting $x_1$ wall needs a positive wall temperature in the
+diffusion options, because no callback registered at the pin carries a `fixed_temperature` name (@sec-ch14-registry).
+A callback installed with `set_bfunc` under the name `fixed_temperature_inner` or `fixed_temperature_outer` is a
+wall too, and on $x_1$ it frees the energy row as well.
+
+```yaml
+boundary-condition:
+  external:
+    x1-inner: reflecting
+    x1-outer: reflecting
+```
+
+**Refusals and prerequisites.** `set_prescribed_walls` refuses a plane outside the face totals and a free row
+outside the variable rows; `set_prescribed` refuses a mask that is not bool, and a mask or value not shaped like
+the face total. It does not check the value's dtype: `apply_prescribed` converts the value to the total's device and
+dtype when it applies it.
+
+**Read the implementation.** `supply_prescribed` ({{< code src/layout/seam_register.cpp supply_prescribed >}})
+contains:
+
+```cpp
+if (pmb->options->face_kind(o[0], o[1], o[2]) != FaceKind::wall) continue;
+```
+
+Only faces of kind `wall` become prescribed planes; every other face kind keeps its computed flux.
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| rule | {{< code src/layout/seam_register.cpp supply_prescribed >}} | `supply_prescribed` | face names |
+| kind | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::face_kind >}} | `FaceKind::wall` | face names |
+| rows | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `x1_wall_rows` | diffusion wall temperature |
+| walls | {{< code src/hydro/flux_register.cpp FluxRegister::set_prescribed_walls >}} | `set_prescribed_walls` | none |
+| mask | {{< code src/hydro/flux_register.cpp FluxRegister::set_prescribed >}} | `set_prescribed` | `vars["solid"]` |
+| apply | {{< code src/hydro/flux_register.cpp FluxRegister::apply_prescribed >}} | `boundary.prescribed` | none |
+
+: Implementation sites for the prescribed faces. {#tbl-ch14-prescribed-code}
+
+1. At the start of each hydro call, find the wall planes and their free rows. The anchor `x1_wall_rows` is in
+   {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}.
+2. Record the planes, or a full mask when a solid mask is present. The anchor `supply_prescribed` is in
+   {{< code src/layout/seam_register.cpp supply_prescribed >}}.
+3. Overwrite and book the prescribed rows after each writer of the face totals. The anchor `boundary.prescribed` is
+   in {{< code src/hydro/flux_register.cpp FluxRegister::apply_prescribed >}}.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_prescribed_after_sources.release` | a source flux posted on the walls after the sweep is prescribed again and does not reach `du`; a wall at a prescribed temperature conducts $20\,\Delta t$ in one stage and books nothing as removed, and a reflecting wall conducts nothing | `EXPECT_NEAR` relative $10^{-9}$; $10^{-12}$ of the column energy | the test |
+| `test_wb_wall_corner.release` | a resting column stays at rest at stock and user-named walls | Mach at most $10^{-12}$ | test constant |
+| `test_wall4_sphere_python` | reflecting $x_1$ walls with `conversion-order: 4` on the cubed sphere: every step accepted and $|v_1| < 1\ \mathrm{m\,s^{-1}}$ | pass/fail | the script |
+
+: Source-test assertions for the prescribed faces. {#tbl-ch14-prescribed-tests}
+
+The register assertions are in
+{{< code tests/test_prescribed_after_sources.cpp FluxRegister.a_source_post_on_the_walls_is_prescribed_again >}},
+{{< code tests/test_prescribed_after_sources.cpp FluxRegister.a_source_post_on_the_walls_does_not_reach_du >}} and
+{{< code tests/test_prescribed_after_sources.cpp FluxRegister.a_prescribed_wall_temperature_conducts_in_a_full_step >}}.
+The rest assertions are in {{< code tests/test_wb_wall_corner.cpp WallCorner.x2_uniform_rest_keeps_u2_zero >}}.
+The sphere script is {{< code tests/test_wall4_sphere.py >}}.
+
+No snapy runtime test is executed for this section. Device/rank distinctions and missing runs are recorded in
+@sec-ch16-ch11.
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+Only faces of kind `wall` are prescribed: an outflow, periodic or custom face keeps its computed flux, and a custom
+callback that builds a wall in user code is not prescribed unless it is installed under one of the wall names
+(`reflecting_inner`, `reflecting_outer`, `fixed_temperature_inner`, `fixed_temperature_outer`). The extra free energy
+row exists only on $x_1$ walls. No callback at the pin is registered under a `fixed_temperature` name, so from a deck
+the conducting wall is reached only through the diffusion's wall temperature.
+
+Untested switch combinations remain subject to @sec-ch12-matrix. No new CPU, CUDA or multi-rank solver result
+is claimed.
+:::

@@ -19,7 +19,7 @@ installed. On the cubed sphere nothing is removed, so each panel edge keeps the 
 cards must name `custom`, the no-op, on all four tangential faces; the ghosts are then left to the cubed-sphere
 exchange, which does not consult the predicate. A card that names none gets the default `reflecting` on the panel
 edges, and nothing refuses it. The boundary conditions themselves are
-covered by @sec-ch14b.
+covered by @sec-ch14.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Decide per block face whether its ghosts come from a boundary function (physical) or a neighbour

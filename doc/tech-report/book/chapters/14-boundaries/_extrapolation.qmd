@@ -1,10 +1,10 @@
 ## Repeat the nearest owned cell (`extrapolation`) {#sec-ch14-extrapolation}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.4; src/bc/bc_func.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/bc/bc_func.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -26,7 +26,7 @@ shallow-water system through it.
 
 **Guarantee / limits.** Constant preserving; no characteristic selection.
 
-**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run at the pin.
+**Evidence.** Report checks and source-test limits are in the Tests layer; solver ctests were not run.
 :::
 
 ### Derivation
@@ -40,7 +40,7 @@ $$ {#eq-ch14-extrapolation-copy}
 
 At the lower wall $i$ is the first owned index and $l=1,\ldots,n_g$; the upper rule uses the last owned cell.
 `extrapolation_inner`
-([`bc_func.cpp:52-66`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L52-L66))
+({{< code src/bc/bc_func.cpp >}})
 and its upper-wall twin `extrapolation_outer` implement @eq-ch14-extrapolation-copy by assigning a width-one
 slab to the width-$n_g$ ghost slab, which broadcasts it. For a general smooth field, a Taylor expansion between
 the donor and the ghost centroids gives a leading difference proportional to their separation times the normal
@@ -53,8 +53,11 @@ call a snapy kernel.
 
 A collapsed direction returns at once. Primitive, conserved and scalar calls all use the same copy; no row is
 treated specially. `radiating` ({{< code src/bc/bc_func.cpp radiating >}}) selects this copy before any of its
-own checks when the input type is `kScalar` or the EOS type is `shallow-water`, so an auxiliary limiter field
-and a tracer density under outflow never go through the acoustic split. The callback runs with the physical
+own checks when the input type is `kScalar` or the EOS type is `shallow-water`. A `kScalar` call reaches an
+outflow face only for a field the physical fills pass separately, such as the flux positivity factor. The
+transported tracers of an outflow face do not take this copy: `MeshBlockImpl::apply_boundaries`
+({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::apply_boundaries >}}) hands them to the outflow callback as
+mass ratios, which it selects with the advective characteristic (@sec-ch14-outflow). The callback runs with the physical
 fills of @sec-ch14-timing, including the corner refresh after an exchange.
 
 @fig-ch14-extrapolation-stencil illustrates the operations, with labelled roles independent of colour.
@@ -95,15 +98,15 @@ Broadcasting the width-one donor realizes @eq-ch14-extrapolation-copy at every g
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| extrap | [`bc_func.cpp:52-66`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L52-L66) | `extrapolation_inner` | `extrapolation` |
+| extrap | {{< code src/bc/bc_func.cpp >}} | `extrapolation_inner` | `extrapolation` |
 | radiating | {{< code src/bc/bc_func.cpp radiating >}} | `radiating` | `outflow` |
 
 : Implementation sites for extrapolation. {#tbl-ch14-extrapolation-code}
 
 1. Select the first or last owned width-one slab. The anchor `extrapolation_inner` is in
-   [`bc_func.cpp:52-66`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L52-L66).
+   {{< code src/bc/bc_func.cpp >}}.
 2. Broadcast it to the whole ghost slab without changing owned cells. The anchor `extrapolation_outer` is in
-   [`bc_func.cpp:52-66`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L52-L66).
+   {{< code src/bc/bc_func.cpp >}}.
 3. Use the same operation as the scalar and shallow-water fallback of outflow. The anchor `radiating` is in
    {{< code src/bc/bc_func.cpp radiating >}}.
 
@@ -128,11 +131,12 @@ exactly.[^ch11-extrapolation-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-extrapolation-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the deterministic fixtures in the
+[^ch11-extrapolation-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.13.15, numpy 2.5.3, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports
+    no snapy code.
 
 ### Limits
 

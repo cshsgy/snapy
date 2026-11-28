@@ -1,10 +1,10 @@
 ## Mirror a reflecting wall (`reflecting`) {#sec-ch14-reflecting}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.2; src/bc/bc_func.cpp; src/bc/bc.hpp; src/mesh/meshblock.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14.1; src/bc/bc_func.cpp; src/bc/bc.hpp; src/mesh/meshblock_exchange.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -47,7 +47,7 @@ $$ {#eq-ch14-reflecting-parity}
 
 Here $q$ is any even component and $v_1$ has units $\mathrm{m\,s^{-1}}$.
 The upper-wall mapping reverses the last owned slab in the same way. `reflecting_inner`
-([`bc_func.cpp:10-34`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L10-L34))
+({{< code src/bc/bc_func.cpp >}})
 and its upper-wall twin `reflecting_outer` implement @eq-ch14-reflecting-parity with a `flip` of the adjacent
 slab and a sign change of the row `4-dim`, which is the normal velocity row of the dimension being filled
 (`dim` 3 is x1, so row 1 is `IVX`).
@@ -105,21 +105,21 @@ The reversed donor slab implements the even row of @eq-ch14-reflecting-parity. T
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| reflect | [`bc_func.cpp:10-34`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L10-L34) | `reflecting_inner` | `reflecting` |
+| reflect | {{< code src/bc/bc_func.cpp >}} | `reflecting_inner` | `reflecting` |
 | context | {{< code src/bc/bc.hpp BoundaryFuncOptions >}} | `BoundaryFuncOptions` | none |
-| corner | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
+| corner | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
 
 : Implementation sites for reflecting. {#tbl-ch14-reflecting-code}
 
 1. Return for a collapsed direction, then copy and reverse the adjacent owned slab of width $n_g$. The anchor
    `reflecting_inner` is in
-   [`bc_func.cpp:10-34`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L10-L34).
+   {{< code src/bc/bc_func.cpp >}}.
 2. Negate the normal row for conserved or primitive input; keep even parity for scalar input. The anchor
    `reflecting_outer` is in
-   [`bc_func.cpp:10-34`](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/bc/bc_func.cpp#L10-L34).
+   {{< code src/bc/bc_func.cpp >}}.
 3. Repeat after a block exchange, in one full-extent call when every tangential face is exchange-owned and
    otherwise on the exchange-owned tangential corner slabs. The anchor `refresh` is in
-   {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}.
+   {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}}.
 
 ### Tests
 
@@ -147,11 +147,12 @@ exactly.[^ch11-reflecting-run]
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-reflecting-run]: [sha: snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; deck: the deterministic fixtures in the
+[^ch11-reflecting-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
     check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.11.13, NumPy 2.4.6, SymPy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C1]`.
+    Python 3.12.11, NumPy 2.4.6, SymPy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C1]`; the check imports no
+    snapy code.
 
 ### Limits
 

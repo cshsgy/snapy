@@ -7,7 +7,7 @@ import code_anchors
 
 REPORT = Path(__file__).resolve().parent.parent
 TARGET = 'book/chapters/14-boundaries/_howto.qmd'
-PIN = '919936da07d80a310b98ab11da184972a3203274'
+PIN = '73c45a7c8c991209924e1137992352c335575062'
 
 
 def read_source(checkout, sha, path):
@@ -21,14 +21,17 @@ def generate(report):
         raise ValueError('N6 boundary contract needs review when the code pin changes')
     checkout = code_anchors.find_commit(repo, sha)
 
-    def excerpt(path, pattern):
+    def excerpt(path, pattern, label=None, symbol=None):
+        """the one match of pattern in path at the pin (the drift gate), and a pinned code citation"""
         text = read_source(checkout, sha, path)
         matches = list(re.finditer(pattern, text, re.M | re.S))
         if len(matches) != 1:
             raise ValueError(f'{path}: expected one match, got {len(matches)}')
-        m = matches[0]
-        line = text[:m.start()].count('\n') + 1
-        return m[0].strip(), f'[{path}:{line}](https://github.com/{repo}/blob/{sha}/{path}#L{line})'
+        code = '{{< code ' + path + (' ' + symbol if symbol else '') + ' >}}'
+        return matches[0][0].strip(), (f'{label}, {code}' if label else code)
+
+    def cite(label, path, pattern, symbol=None):
+        return excerpt(path, pattern, label, symbol)[1]
 
     signature, signature_cite = excerpt('python/snapy/mesh.pyi',
         r'    def set_bfunc\(self,.*?\) -> None: \.\.\.')
@@ -39,27 +42,56 @@ def generate(report):
     callback, callback_cite = excerpt('python/csrc/pymesh.cpp',
         r'              func = \[f\]\(torch::Tensor const& var, int id,.*?\n              \};')
     native, native_cite = excerpt('src/bc/bc_func.hpp',
-        r'using bcfunc_t =\n[^;]+;')
+        r'using bcfunc_t =\n[^;]+;', symbol='bcfunc_t')
     ghosts, ghosts_cite = excerpt('src/coord/coordinate.hpp',
         r'  int nc1\(\) const[^\n]+\n  int nc2\(\) const[^\n]+\n  int nc3\(\) const[^\n]+')
-    inner_lookup, inner_lookup_cite = excerpt('src/mesh/meshblock_options.cpp',
-        r'    ix1 \+= "_inner";.*?op->bfuncs\(\).push_back\(get_bc_func\(\)\[ix1\]\);')
-    outer_lookup, outer_lookup_cite = excerpt('src/mesh/meshblock_options.cpp',
-        r'    ox1 \+= "_outer";.*?op->bfuncs\(\).push_back\(get_bc_func\(\)\[ox1\]\);')
+    lookup, lookup_cite = excerpt('src/mesh/meshblock_options.cpp',
+        r'      name \+= "_" \+ side;.*?op->bfuncs\(\).push_back\(get_bc_func\(\)\[name\]\);',
+        symbol='MeshBlockOptionsImpl::from_yaml')
     bc_glob, bc_glob_cite = excerpt('src/CMakeLists.txt',
         r'file\(GLOB src_files\n    #\*\.cpp\n    bc/\*\.cpp')
     # Join the source's error-string pieces around the selected example key.
-    error_parts = re.findall(r'"([^"\n]*)"', inner_lookup)
-    inner_error = error_parts[1] + 'zero_gradient' + error_parts[0] + error_parts[2]
+    error_parts = re.findall(r'"([^"\n]*)"', lookup)
+    inner_error = error_parts[1] + 'zero_gradient' + error_parts[0] + 'inner' + error_parts[2]
+    links = {
+        'shape_cite': cite('shape checks', 'src/mesh/meshblock.cpp',
+                           r'"initialize: hydro_w has incorrect shape\."', 'MeshBlockImpl::initialize_local'),
+        'slab_cite': cite('slab dispatch', 'src/mesh/meshblock_exchange.cpp',
+                          r'          int g = ng < n / 2 \? ng : n / 2;', 'MeshBlockImpl::exchange_ghost_zones'),
+        'mapping_cite': cite('mapping', 'python/csrc/pymesh.cpp',
+                             r'            int face = -1;.*?face = 5;\n            \}'),
+        'dispatch_cite': cite('dispatch', 'src/mesh/meshblock_exchange.cpp',
+                              r'      fn\(hydro, dim, op\);\n      if \(has_tracers\) \{.*?\n      \}',
+                              'MeshBlockImpl::apply_boundaries'),
+        'init_prim_cite': cite('initialization', 'src/mesh/meshblock.cpp',
+                               r'  apply_boundaries\(vars, hydro_w, scalar_r, true\);', 'MeshBlockImpl::initialize_local'),
+        'init_cons_cite': cite('initialization', 'src/mesh/meshblock.cpp',
+                               r'  apply_boundaries\(\n      vars, vars.at\("hydro_u"\),',
+                               'MeshBlockImpl::finalize_initialization'),
+        'stage_cite': cite('each stage', 'src/mesh/meshblock_advance.cpp',
+                           r'void MeshBlockImpl::stage_boundaries\(.*?\n\}', 'MeshBlockImpl::stage_boundaries'),
+        'refresh_cite': cite('refresh', 'src/mesh/meshblock_exchange.cpp',
+                             r'    auto refresh = \[&\]\(torch::Tensor field, int type\) \{.*?\n    \};',
+                             'MeshBlockImpl::exchange_ghost_zones'),
+        'repeat_cite': cite('repeat-call requirement', 'src/bc/bc_func.hpp',
+                            r'// A face function may be called again.*?\(#264\)\.', 'BC_FUNCTION'),
+        'macro_cite': cite('macro and registrar', 'src/bc/bc_func.hpp',
+                           r'#define BC_FUNCTION\(name, var, dim, op\).*?op\)$', 'BC_FUNCTION'),
+        'binding_cite': cite('binding checks', 'python/csrc/pymesh.cpp',
+                             r'            if \(self->bfuncs\(\)\.empty\(\)\) \{.*?"functions\."\);\n            \}'),
+        'names_cite': cite('name handling', 'python/csrc/pymesh.cpp',
+                           r'            // The name must not outlive.*?self->bcnames\(\)\[face\] = name;\n            \}'),
+    }
     replacements = locals()
     text = TEMPLATE
     for key in ('signature', 'signature_cite', 'registration', 'registration_cite',
                 'arguments', 'arguments_cite', 'callback', 'callback_cite',
                 'native', 'native_cite', 'ghosts', 'ghosts_cite',
-                'inner_lookup', 'inner_lookup_cite', 'outer_lookup',
-                'outer_lookup_cite', 'bc_glob', 'bc_glob_cite', 'inner_error'):
+                'lookup', 'lookup_cite', 'bc_glob', 'bc_glob_cite', 'inner_error'):
         text = text.replace('@' + key + '@', replacements[key])
-    return text.replace('@url@', f'https://github.com/{repo}/blob/{sha}')
+    for key, value in links.items():
+        text = text.replace('@' + key + '@', value)
+    return text
 
 
 def check(report=REPORT):
@@ -190,22 +222,22 @@ print("N6 boundary: both x1 faces filled at initialization and after RK1")
   ```
 
 - Shapes and ghosts: hydro uses `[nvar, nc3, nc2, nc1]` and scalars use
-  `[nscalar, nc3, nc2, nc1]` ([shape checks](@url@/src/mesh/meshblock.cpp#L430)).
+  `[nscalar, nc3, nc2, nc1]` (@shape_cite@).
   The extents below include ghosts only on non-singleton axes (@ghosts_cite@).
   After exchange, an x1 callback can receive a view whose tangential extent is
   `min(nghost, n/2)` for tangential size `n`; use the supplied sizes, not cached block sizes
-  ([slab dispatch](@url@/src/mesh/meshblock.cpp#L1061-L1062)).
+  (@slab_cite@).
 - Faces and timing: offsets `(dx3, dx2, dx1)` select inner/outer x1 with
   `(0,0,-1)` / `(0,0,1)`, x2 with `(0,-1,0)` / `(0,1,0)` and x3 with
-  `(-1,0,0)` / `(1,0,0)` ([mapping](@url@/python/csrc/pymesh.cpp#L70)).
+  `(-1,0,0)` / `(1,0,0)` (@mapping_cite@).
   C++ dispatch skips null callbacks and singleton dimensions, passes `dim = 3 - f/2`,
   then calls hydro and, if present, scalars with the corresponding `op.type()`
-  ([dispatch](@url@/src/mesh/meshblock.cpp#L1660-L1686)). Calls occur for primitives at
-  [initialization](@url@/src/mesh/meshblock.cpp#L449), conserved state at the end
-  of [initialization](@url@/src/mesh/meshblock.cpp#L516) and
-  [each local stage](@url@/src/mesh/meshblock.cpp#L910), plus x1 tangential-slab
-  refresh after exchange when that tangential face is not physical
-  ([refresh](@url@/src/mesh/meshblock.cpp#L1032-L1070)). Do not assume one call per stage.
+  (@dispatch_cite@). Calls occur for primitives at
+  @init_prim_cite@, conserved state at the end
+  of @init_cons_cite@ and
+  @stage_cite@, plus a tangential-slab refresh of every installed
+  callback except outflow after exchange, on the slabs of the faces exchange owns
+  (@refresh_cite@). Do not assume one call per stage.
 - Dtype/device: the binding passes the tensor through (@callback_cite@).
   Use tensor-relative operations, as above, and explicitly match any auxiliary
   floating tensors to `var.dtype` and `var.device`. This recipe's runtime
@@ -213,15 +245,15 @@ print("N6 boundary: both x1 faces filled at initialization and after RK1")
 - Mutation/ownership: fill ghosts in place; rebinding a local Python name will
   not replace the driver's tensor (inference from the void callback interface,
   @native_cite@). Preserve interior cells, do not retain borrowed tensor views,
-  and make repeated calls idempotent ([repeat-call requirement](@url@/src/bc/bc_func.hpp#L28)).
+  and make repeated calls idempotent (@repeat_cite@).
   The binding captures the Python function by value and stores its wrapper in
   the options' callback vector (@callback_cite@; @registration_cite@).
 - Registration/refusals: `None` installs a null callback; an empty callback
   vector or a direction unavailable to its size is refused
-  ([binding checks](@url@/python/csrc/pymesh.cpp#L40)). The default name is empty;
+  (@binding_cite@). The default name is empty;
   registration replaces the previous name. Declare a reflecting name only for
   a matching wall callback, because names participate in the wall coefficient
-  ([name handling](@url@/python/csrc/pymesh.cpp#L87)). This zero-gradient recipe
+  (@names_cite@). This zero-gradient recipe
   uses the descriptive names `zero_gradient_inner` and `zero_gradient_outer`;
   these labels do not add functions to the native registry.
 
@@ -242,7 +274,7 @@ CI checks source-contract drift; the pin-build runtime check covers CPU fills, n
 ```
 
 1. Add `src/bc/zero_gradient.cpp` with a suffixed pair. The macro registers
-   its exact function name ([macro and registrar](@url@/src/bc/bc_func.hpp#L17)).
+   its exact function name (@macro_cite@).
    For example, the same nearest-interior fill is:
 
 ```cpp
@@ -281,13 +313,12 @@ boundary-condition:
 ```
 
 The parser appends `_inner` or `_outer` to each face value, checks the registry,
-then installs the function (@inner_lookup_cite@; @outer_lookup_cite@).
+then installs the function (@lookup_cite@).
 See the existing registry explanation in @sec-ch14-registry. The generated
 lookup and refusal facts are:
 
 ```cpp
-@inner_lookup@
-@outer_lookup@
+@lookup@
 ```
 
 For the missing inner function, the error text is

@@ -12,7 +12,7 @@ A boundary test has to check more than the numbers in the ghost cells. It must c
 representation (conserved rows stay conserved, tracers stay per unit dry mass), that an outgoing wave leaves
 rather than reflects, that a saved boundary reference survives a restart, and that a solid wall inside the
 domain keeps the fluid segments apart. This section collects the tests that do this for the boundaries of
-@sec-ch14b: the radiating characteristic boundary on every face, walls and corners, restart continuation, device
+@sec-ch14: the radiating characteristic boundary on every face, walls and corners, restart continuation, device
 agreement, and immersed solids.
 
 ::: {.callout-note title="At a glance"}

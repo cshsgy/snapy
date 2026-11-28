@@ -1,12 +1,12 @@
 ## Rectify a mask and close fluid faces against solids (`boundary-condition/internal/*; vars["solid"]`) {#sec-ch14-solids}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy)
-sources: OUTLINE.md 11.9; src/bc/internal_boundary.cpp; src/bc/rectify_solid.cpp; src/bc/bc_dispatch.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy, code_pin.yml)
+sources: STRUCTURE.md section 6 chapter 14; src/bc/internal_boundary.cpp; src/bc/rectify_solid.cpp; src/bc/bc_dispatch.cpp;
          src/bc/flip_zero_impl.h; src/mesh/meshblock.cpp; src/hydro/hydro.cpp; src/hydro/hydro_forward.cpp;
-         src/implicit/vic_assemble_partial_impl.h; src/implicit/vic_assemble_full_impl.h; src/implicit/implicit_dispatch.cpp
+         src/mesh/meshblock_advance.cpp; src/implicit/vic_assemble_impl.h; src/implicit/vic_kernels.h; src/implicit/implicit_hydro.cpp
 status: draft
-author: Jiheng Hu
+author: Jiheng Hu; rewritten at the pin by Xinyue Wang
 reviewer:
 -->
 
@@ -28,14 +28,14 @@ the face mirror and the masked rows provide.
 
 **Activation.** Supply `vars["solid"]`; internal `max-iter` defaults to 5.
 
-**Guarantee / limits.** Exact line optimum; solid sound speed is $10^{-8}\ \mathrm{m\,s^{-1}}$ and solid mass is excluded from the gravity-work fixer; no global multidimensional optimum claimed.
+**Guarantee / limits.** Exact line optimum; solid sound speed is $10^{-8}\ \mathrm{m\,s^{-1}}$ in the time-step bound; no global multidimensional optimum claimed.
 
 **Evidence.** Report checks and source-test limits are in the Tests layer.
 :::
 
 Local symbols: $D_i(b,\ell)$ is the minimum flip count after processing $i$ mask entries, ending with bit $b$ and capped
 run length $\ell$; $\ell^{\min}_b$ is the required run length of bit $b$ (counts): $\ell^{\min}_0=3$ for fluid, $\ell^{\min}_1=2$
-for solid. ($l$[^rg-36a067af690d] is appendix A’s stencil offset and $m_1$[^rg-d6696182bc0f] its momentum component, so neither is used here.)
+for solid. ($l$ is appendix A’s stencil offset and $m_1$[^rg-d6696182bc0f] its momentum component, so neither is used here.)
 Bits and $\mathrm{cost}_i(b)$, the candidate flip cost at position $i$, are dimensionless.
 $\mathsf H$ is the dimensionless reflection matrix, distinct from the Riemann eigenvector matrix $\mathsf R$[^rg-fbf95e060345].
 These symbols are local to this section.
@@ -75,7 +75,7 @@ costs into an atomic counter. Check C5 compares an independent dynamic program w
 for every binary line of lengths two through eight.
 
 For the partial implicit system, $\mathsf H=\operatorname{diag}(1,-1,1)$ on the density, normal momentum and
-energy rows. Row $i$ of the column system reads $\mathsf B_i\boldsymbol\delta_{i-1}+\mathsf A_i\boldsymbol\delta_i+\mathsf C_i\boldsymbol\delta_{i+1}$,
+energy rows; the full system uses the same reflection on all five rows, with only the normal momentum negated. Row $i$ of the column system reads $\mathsf B_i\boldsymbol\delta_{i-1}+\mathsf A_i\boldsymbol\delta_i+\mathsf C_i\boldsymbol\delta_{i+1}$,
 with $\boldsymbol\delta_i$[^rg-99b561f97866] the implicit solve's unknown (appendix A, notation group 7). Next to a solid below, the ghost increment is
 the reflection $\boldsymbol\delta_{i-1}=\mathsf H\boldsymbol\delta_i$, so the lower term becomes $\mathsf B_i\mathsf H\boldsymbol\delta_i$ and
 joins the diagonal; next to a solid above, $\boldsymbol\delta_{i+1}=\mathsf H\boldsymbol\delta_i$ and $\mathsf C_i\mathsf H\boldsymbol\delta_i$ joins it.
@@ -88,18 +88,19 @@ $$
 \end{aligned}
 $$ {#eq-ch14-solids-closure}
 
-Apply each row only at its relevant fluid boundary. The vector `Bnd` of `vic_assemble_partial_impl`
-({{< code src/implicit/vic_assemble_partial_impl.h vic_assemble_partial_impl >}}) implements
-@eq-ch14-solids-closure: the lower row is added when the cell is the first of the column or `solid_lower`
-is set, the upper row when it is the last or `solid_upper` is set. With `solid_lower` the same function also
+Apply each row only at its relevant fluid boundary. The full and the partial assembly are one template,
+`vic_assemble_impl` ({{< code src/implicit/vic_assemble_impl.h vic_assemble_impl >}}); its vector `Bnd`
+implements @eq-ch14-solids-closure. The lower row is added when the cell is the first of the column or
+`solid_lower` is set, the upper row when it is the last or `solid_upper` is set, in both cases only on the
+first (last) x1 block and never on a periodic column; `vic_assemble_partial_impl` passes the column as
+non-periodic. With `solid_lower` the same function also
 mirrors the base state used in the lower face Jacobian, copying the cell's primitives to the solid side
 with the normal velocity negated. A solid row has the identity divided by $\Delta t$[^rg-007123c4e2b1] on the diagonal and
-zero neighbour blocks (`setIdentity`, {{< code src/implicit/implicit_dispatch.cpp vic_assemble_partial_cpu >}}),
-and its right-hand side is zeroed before the solve (`forward_masked`,
-{{< code src/hydro/hydro.cpp HydroImpl::_apply_implicit_correction >}}), so that row has a zero solved
-increment. Check C6 verifies the block substitution algebra. The full-system closure
-({{< code src/implicit/vic_assemble_full_impl.h vic_assemble_full_impl >}}) adds the same rows under an
-additional non-periodic guard; this derivation does not assert an untested periodic-solid combination.
+zero neighbour blocks (`setIdentity`, {{< code src/implicit/vic_kernels.h vic_assemble_cell >}}), and its
+right-hand side is zeroed before the solve (`HydroImpl::_apply_implicit_correction`,
+{{< code src/hydro/hydro.cpp HydroImpl::_apply_implicit_correction >}}, which then calls `forward_masked`), so
+that row has a zero solved increment. Check C6 verifies the block substitution algebra. This derivation does
+not assert an untested periodic-solid combination.
 Checks C5 and C6 are [check `src/snapy_report/ch14/checks/boundary_check.py`, output
 `src/snapy_report/ch14/checks/boundary_check.out`]; they do not call a snapy kernel.
 
@@ -124,11 +125,11 @@ replaces the sound speed in solid cells by $10^{-8}\ \mathrm{m\,s^{-1}}$. The im
 both x1 faces physical, masks the solid increments and reads the placeholder primitives in solid cells.
 After each RK combination `fill_cons_solid_`
 ({{< code src/bc/internal_boundary.cpp InternalBoundaryImpl::fill_cons_solid_ >}}) restores the conserved
-fill state in solid cells, in `MeshBlockImpl::advance_local`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}); only the hydro tensor is refilled. The
-gravity-work fixer (`MeshBlockImpl::gravity_work_fixer_sums`,
-{{< code src/mesh/meshblock.cpp MeshBlockImpl::gravity_work_fixer_sums >}}) zeroes the mass of solid cells
-before it sums, so they take no share of the energy correction. The staircase geometry is cell-aligned, not a
+fill state in solid cells, in `MeshBlockImpl::stage_combine`
+({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}); only the hydro tensor is refilled.
+The corrected gravity work of the implicit solve books no work in solid cells: their slope stencil would read
+fluid neighbours (`ImplicitHydroImpl::forward_masked`,
+{{< code src/implicit/implicit_hydro.cpp ImplicitHydroImpl::forward_masked >}}). The staircase geometry is cell-aligned, not a
 cut-cell representation, and no geometric convergence order is measured.
 
 @fig-ch14-solids-stencil illustrates the operations, with labelled roles independent of colour.
@@ -192,12 +193,11 @@ The stage sweep calls `mark_prim_solid_` and the `pib` face mirror of the x1, x2
 | finalinit | {{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize_initialization >}} | `fill_solid_hydro_u` | `vars["solid"]` |
 | dt | {{< code src/hydro/hydro.cpp HydroImpl::max_time_step >}} | `solid` | `vars["solid"]` |
 | masked | {{< code src/hydro/hydro.cpp HydroImpl::_apply_implicit_correction >}} | `forward_masked` | `vars["solid"]` |
-| solidrow | {{< code src/implicit/implicit_dispatch.cpp vic_assemble_partial_cpu >}} | `setIdentity` | `vars["solid"]` |
-| closure | {{< code src/implicit/vic_assemble_partial_impl.h vic_assemble_partial_impl >}} | `solid_lower` | `vars["solid"]` |
-| closurediag | {{< code src/implicit/vic_assemble_partial_impl.h vic_assemble_partial_impl >}} | `Bnd` | none |
-| fullclosure | {{< code src/implicit/vic_assemble_full_impl.h vic_assemble_full_impl >}} | `Bnd` | none |
-| refill | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `fill_cons_solid_` | `vars["solid"]` |
-| fixer | {{< code src/mesh/meshblock.cpp MeshBlockImpl::gravity_work_fixer_sums >}} | `solid` | `gravity-work-fixer` |
+| solidrow | {{< code src/implicit/vic_kernels.h vic_assemble_cell >}} | `setIdentity` | `vars["solid"]` |
+| closure | {{< code src/implicit/vic_assemble_impl.h vic_assemble_impl >}} | `solid_lower` | `vars["solid"]` |
+| closurediag | {{< code src/implicit/vic_assemble_impl.h vic_assemble_impl >}} | `Bnd` | none |
+| refill | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}} | `fill_cons_solid_` | `vars["solid"]` |
+| work | {{< code src/implicit/implicit_hydro.cpp ImplicitHydroImpl::forward_masked >}} | `rx_fluid` | `vars["solid"]` |
 
 : Implementation sites for solids. {#tbl-ch14-solids-code}
 
@@ -209,8 +209,8 @@ The stage sweep calls `mark_prim_solid_` and the `pib` face mirror of the x1, x2
 3. Save the fill states, mark the primitives, mirror the reconstructed interface states and mask the
    implicit system. The anchor `mark_prim_solid_` is in
    {{< code src/bc/internal_boundary.cpp InternalBoundaryImpl::mark_prim_solid_ >}}.
-4. Refill the solid hydro cells after the stage combination and exclude the solids from the fixer's mass.
-   The anchor `fill_cons_solid_` is in {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}.
+4. Refill the solid hydro cells after the stage combination. The anchor `fill_cons_solid_` is in
+   {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}.
 
 ### Tests
 
@@ -241,10 +241,12 @@ three block-substitution residuals vanish and reflection squared is identity.[^c
 These checks exercise report formulas, not the compiled boundary kernels. The source-test table records
 assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 
-[^ch11-solids-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the deterministic fixtures in the check;
+[^ch11-solids-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the deterministic fixtures in the
+    check;
     run: `python src/snapy_report/ch14/checks/boundary_check.py`, CPU, one process;
-    Python 3.13.15, numpy 2.5.3, sympy 1.14.0; exact symbolic/rational and integer checks;
-    7 passed, 0 failed]. Output: `boundary_check.out`, `[C5]`, `[C6]`.
+    Python 3.12.11, numpy 2.4.6, sympy 1.14.0; exact symbolic/rational and integer checks;
+    7 passed, 0 failed]. Output identical to the committed `boundary_check.out`, `[C5]`, `[C6]`; the check
+    imports no snapy code.
 
 ### Limits
 
@@ -252,7 +254,7 @@ assertions and tolerances, not new CPU, CUDA or multi-rank solver results.
 The per-line optimum does not make the multidimensional repaired mask globally minimal. The sweep loop
 throws when its last permitted sweep still changes entries, even if one more sweep would have converged.
 The mask and the fill states are static. The stage refill restores only the hydro tensor, not the passive
-scalars ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}); scalar-solid isolation needs
+scalars ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}); scalar-solid isolation needs
 runtime evidence. Diffusion coefficients at solid placeholders need a separate analysis; no quantitative
 placeholder contamination measurement is reused here. An x1 decomposition with the implicit solve is
 rejected ({{< code src/hydro/hydro.cpp HydroImpl::_apply_implicit_correction >}}).
@@ -262,8 +264,6 @@ is claimed.
 :::
 
 <!-- reader glossary notes -->
-[^rg-36a067af690d]: $l$ — stencil offset index ($\bar\rho_{i+l}$); never $k$, which is the $x_3$ index
-
 [^rg-d6696182bc0f]: $m_1, m_2, m_3$ — momentum density $\rho v_a$
 
 [^rg-fbf95e060345]: $\mathsf R, \mathsf R^{-1}$ — right eigenvectors and their inverse
