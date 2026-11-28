@@ -29,7 +29,7 @@ captures.
 writes `hydro_u` and `hydro_w`. Both read the host step.
 
 **Placement.** The `forcing` op sits between `advance` and `combine`; the `chemistry` op between `saturation` and
-`boundaries` (@sec-ch11-segments). A Mesh's chemistry runs after the last stage, before the final exchange.
+`boundaries` (@sec-ch11-segments), on a bare block and on a Mesh's block alike.
 
 **Activation.** `set_user_stage_forcings` on a block; `set_chemistry` on a block or a Mesh. Default: neither set,
 and both ops capture as no-ops.
@@ -56,7 +56,7 @@ the eager op reads the host step and keeps no graph.
 **When each op is eager.** `StageExecutor::user_forcing`
 ({{< code src/mesh/stage_executor.cpp StageExecutor::user_forcing >}}) is true when the block holds a user stage
 forcing; `StageExecutor::chemistry_slot` ({{< code src/mesh/stage_executor.cpp StageExecutor::chemistry_slot >}})
-is true when the block has a chemistry step and is not a block of a Mesh. `StageExecutor::build_schedule` then
+is true when the block has a chemistry step, on a bare block and on a Mesh's block alike. `StageExecutor::build_schedule` then
 marks the op not capturable, with the reason "a user TorchScript stage forcing is set" or "a chemistry step is
 registered (eager FP64 kinetics, V3 C2)", and sets its `reads_host_dt`.
 
@@ -85,9 +85,9 @@ With strict, the case stops before its first launch, naming the segment.
 | what | code link | symbol | switch |
 |---|---|---|---|
 | a user forcing is set | {{< code src/mesh/stage_executor.cpp StageExecutor::user_forcing >}} | `StageExecutor::user_forcing` | `set_user_stage_forcings` |
-| a chemistry step on a bare block | {{< code src/mesh/stage_executor.cpp StageExecutor::chemistry_slot >}} | `StageExecutor::chemistry_slot` | `set_chemistry` |
+| a chemistry step on a block | {{< code src/mesh/stage_executor.cpp StageExecutor::chemistry_slot >}} | `StageExecutor::chemistry_slot` | `set_chemistry` |
 | the ops and their reasons | {{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}} | `StageExecutor::build_schedule` | none |
-| a Mesh's chemistry phase | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `MeshImpl::forward` | `set_chemistry` |
+| a Mesh's blocks' stages, chemistry inside | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `MeshImpl::forward` | `set_chemistry` |
 
 : Code map of the eager ops. {#tbl-ch11-eagerops-code}
 

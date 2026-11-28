@@ -106,7 +106,7 @@ ORs the flags block by block), reduces once and returns the mask
 ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::decide_retry >}}). A single block calls it for itself; a Mesh
 checks signals first, calls it once for all its blocks and applies the decision to every block, restoring every
 block on a VIC failure even past `max_redo` ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}). The example
-driver calls `check_redo` after the stages, and the chemistry step is the last operation of the last stage, so a
+driver calls `check_redo` after the stages, and the chemistry step runs inside the last stage, before its boundary fill, so a
 redo also rolls the chemistry back ({{< code examples/run_hydro.cpp main >}}).
 
 ### Code

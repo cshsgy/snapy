@@ -13,8 +13,8 @@ derives nothing.
 
 At the pin the kinetics is no longer a driver's call between steps. A caller registers the reactions on the block
 with `set_chemistry`, which needs an equation of state with a thermo and builds the block's chemistry source
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::set_chemistry >}}). The step then runs it after the last stage
-({{< code src/mesh/meshblock.hpp MeshBlockImpl::set_chemistry >}}). The stage executor gives it its own slot, on a
+({{< code src/mesh/meshblock.cpp MeshBlockImpl::set_chemistry >}}). The step then runs it in the last stage, before
+the boundary fill ({{< code src/mesh/meshblock.hpp MeshBlockImpl::set_chemistry >}}). The stage executor gives it its own slot, on a
 bare block and on a Mesh's block alike
 ({{< code src/mesh/stage_executor.cpp StageExecutor::chemistry_slot >}}). The example driver registers it this way
 ({{< code examples/run_hydro.cpp main >}}). At the pin the chemistry step adds its species increment to the state
