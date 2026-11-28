@@ -159,7 +159,8 @@ kept for the record.[^ch06-cell-run]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- A deck that still carries `gravity-work` or `gravity-work-fixer` does not load (unknown key); drop the keys.
+- `gravity-work` and `gravity-work-fixer` are the retired `const-gravity` keys: the deck reader refuses them as unknown,
+  with any value, so a deck that still carries them does not load; drop the keys.
 - The $x_2$ and $x_3$ components of gravity book cell work only; only the $x_1$ work is replaced by the face form.
 :::
 

@@ -55,7 +55,7 @@ def one_stage(block, nvar, vapour, pressure):
 ```
 
 1. Write the vapour and the condensate entries. Their values are those of the deck at the pin
-   ([`examples/bryan.yaml:15-18`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.yaml#L15-L18), [`examples/bryan.yaml:20-23`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.yaml#L20-L23)).
+   ([`examples/bryan.yaml:15-18`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/examples/bryan.yaml#L15-L18), [`examples/bryan.yaml:20-23`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/examples/bryan.yaml#L20-L23)).
 
 ```python
 vapour = {
@@ -72,7 +72,7 @@ cloud = {
 }
 ```
 
-2. Name it in a reaction, with a saturation formula of kintera ([`examples/bryan.yaml:75-78`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.yaml#L75-L78)).
+2. Name it in a reaction, with a saturation formula of kintera ([`examples/bryan.yaml:75-78`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/examples/bryan.yaml#L75-L78)).
 
 ```python
 reactions = [{
@@ -114,17 +114,17 @@ print("N6 condensate: condensed", condensed, "kg m^-3 in one stage")
   `phase: gas` ([`kintera src/thermo/nucleation.cpp:51-56`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/thermo/nucleation.cpp#L51-L56)), so leave the phase empty or give `liquid` or `solid`.
 - Formula: `rate-constant: {formula: ...}` names one of kintera's saturation functions, the entries of
   `KINTERA_FUNC1_LIST` ([`kintera src/func_list.h:7-29`](https://github.com/chengcli/kintera/blob/4eb9b2350be692860c63cd8f0b736ad050762078/src/func_list.h#L7-L29)).
-- When: once per step, on the last stage, whenever the reaction list is non-empty ([`src/mesh/meshblock_advance.cpp:352-353`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_advance.cpp#L352-L353)):
+- When: once per step, on the last stage, whenever the reaction list is non-empty ([`src/mesh/meshblock_advance.cpp:356-357`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/mesh/meshblock_advance.cpp#L356-L357)):
 
   ```cpp
   if (stage == pintg->stages.size() - 1 && phydro->options->eos()->thermo() &&
       phydro->options->eos()->thermo()->reactions().size() > 0)
   ```
 
-- What it writes: only the species rows, `hydro_u.narrow(0, ICY, ny) = yfrac * rho;` ([`src/mesh/meshblock_advance.cpp:374`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_advance.cpp#L374)); the energy row is not written,
+- What it writes: only the species rows, `hydro_u.narrow(0, ICY, ny) = yfrac * rho;` ([`src/mesh/meshblock_advance.cpp:378`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/mesh/meshblock_advance.cpp#L378)); the energy row is not written,
   as step 5 checks.
 - Failure: a cell the solve leaves unadjusted makes the block redo the step with a smaller `dt`
-  ([`src/mesh/meshblock_redo.cpp:40`](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_redo.cpp#L40)).
+  ([`src/mesh/meshblock_redo.cpp:40`](https://github.com/chengcli/snapy/blob/0d5caacbd8e365c87a30af6ce043c39ab30c0959/src/mesh/meshblock_redo.cpp#L40)).
 
 CI checks the contract, and the runtime test runs on a pin build.
 
@@ -218,7 +218,7 @@ cmake --build build --parallel
 pip install .
 ```
 
-[^ch10-func-table]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; the check builds kintera's files at [`kintera c55b13b2`](https://github.com/chengcli/kintera/commit/c55b13b2204997d2d09e04498558ab9495d8ee77), where the tables were
+[^ch10-func-table]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; the check builds kintera's files at [`kintera c55b13b2`](https://github.com/chengcli/kintera/commit/c55b13b2204997d2d09e04498558ab9495d8ee77), where the tables were
     written out by hand; deck: the check itself; run: `python3 src/snapy_report/ch10/checks/func_table_check.py`,
     CPU, `c++` (GCC 11.5.0), 1 process; Python 3.11.13]. Output `func_table_check.out`, lines `[C1]`–`[C5]`; the
     crash of `[C5]` is undefined behaviour, observed as exit status -11 on this build.

@@ -14,7 +14,7 @@ import code_anchors
 
 REPORT = Path(__file__).resolve().parent.parent
 TARGET = 'book/chapters/04-spatial-discretization/_howto-native.qmd'
-PIN = '73c45a7c8c991209924e1137992352c335575062'
+PIN = '0d5caacbd8e365c87a30af6ce043c39ab30c0959'
 
 
 def generate(report):
@@ -110,9 +110,8 @@ def generate(report):
     parent, parent_cite = excerpt('src/riemann/riemann.hpp',
         r'^  //! non-owning reference to parent\n  HydroImpl const\* phydro = nullptr;')
     rebuild, rebuild_cite = excerpt('README.md',
-        r'^cmake -B build -DCMAKE_BUILD_TYPE=Release -DNETCDF=ON\ncmake --build build --parallel 3')
-    install, install_cite = excerpt('README.md', r'^5\. Install the Python package:\n```bash\npip install \.')
-    install = install.splitlines()[-1]
+        r'^cmake -S \. -B build -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF -DNETCDF=ON -DBUILD_TESTS=ON\ncmake --build build --parallel 3')
+    install, install_cite = excerpt('README.md', r'^python -m pip install --no-build-isolation --no-deps \.$')
 
     # face slots (left/right) and how the solver consumes them
     slots, slots_cite = excerpt('src/snap.h',
