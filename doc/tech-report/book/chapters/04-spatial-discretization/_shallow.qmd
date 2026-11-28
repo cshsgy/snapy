@@ -96,8 +96,8 @@ make_wavefan("shallow")
 **Rows and directions.** `dir` decides which momentum rows are normal and tangential: with `dir: xy` the
 normal row is `IVX` on $x_1$ faces and `IVY` otherwise; with `dir: yz` it is `IVY` on $x_2$ faces and `IVZ`
 otherwise. `RiemannSolverImpl::solve` refuses any other `dir`, `omni` included. The gnomonic `yz` check in
-`reset` compares the coordinate type with `gnomonic_equiangle`, which the type `gnomonic-equiangle` never matches,
-so it never fires. The states are projected with `prim2local{1,2,3}_` and the flux returned with
+`reset` compares the coordinate type with `gnomonic-equiangle` and refuses any other `dir` there ("ShallowRoeSolver
+with GnomonicEquiangle coordinate only supports options->dir() = 'yz'"). The states are projected with `prim2local{1,2,3}_` and the flux returned with
 `flux2global{1,2,3}_`.
 
 ### Code
@@ -116,8 +116,8 @@ dynamics:
 
 1. *`dir` must be `xy` or `yz`* for `shallow-roe` ("ShallowRoeSolver takes options->dir() = 'xy' or 'yz'"), checked
    on the first call, so the default `omni` fails.
-2. *The gnomonic `yz` check does not fire*: `reset` compares the coordinate type with `gnomonic_equiangle`, but the
-   type is `gnomonic-equiangle`, so a gnomonic deck with `dir: xy` is not refused.
+2. *The gnomonic `yz` check fires at setup*: `reset` refuses a gnomonic deck with `dir: xy`; a deck on any other
+   grid may use either direction.
 3. *`shallow-roe` and `plume-roe` refuse a face-pressure request*; the shallow-water equation of state turns the
    request off, any other one does not (@sec-ch04-riemann).
 4. *`plume-roe` refuses every direction but $x_3$* ("PlumeRoeSolver only supports dim = 1").
@@ -145,7 +145,7 @@ step 4.
 | shallow-water body | {{< code src/riemann/riemann_kernels.h shallow_roe_impl >}} | `shallow_roe_impl` | `type: shallow-roe` |
 | the averaged wave speed | {{< code src/eos/shallow_water_impl.h shallow_water_roe_sound_speed >}} | `shallow_water_roe_sound_speed` | |
 | `dir` checks and the frame | {{< code src/riemann/riemann.cpp RiemannSolverImpl::solve >}} | `dir` | `xy` or `yz` |
-| gnomonic `yz` check (never fires) | {{< code src/riemann/riemann.cpp RiemannSolverImpl::reset >}} | `gnomonic_equiangle` | |
+| gnomonic `yz` check | {{< code src/riemann/riemann.cpp RiemannSolverImpl::reset >}} | `gnomonic-equiangle` | `dir` |
 | plume flux | {{< code src/riemann/riemann.cpp lax_friedrichs_flux >}} | `lax_friedrichs_flux` | `type: plume-roe` |
 | no `plume-eos` | {{< code src/eos/equation_of_state.cpp EquationOfStateImpl::create >}} | `create` | |
 

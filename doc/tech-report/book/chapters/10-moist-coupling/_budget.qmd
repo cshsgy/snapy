@@ -1,7 +1,7 @@
 ## Budgets and the budget series (`BudgetConsumer`, `BudgetSeries`) {#sec-ch10-budget}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (UCzhangxi/snapy v3/final)
 sources: STRUCTURE.md 10.7; src/diagnostics/budget.{hpp,cpp}; src/output/budget_series.{hpp,cpp}; src/mesh/meshblock_redo.cpp; tests/test_budget.{cpp,yaml} and tests/test_conservation_budget.cpp, all at the pin
 status: draft
 -->
@@ -49,6 +49,7 @@ consumer has no column for it.
 ### Numerical method
 
 **The output.** `BudgetOutput::bind` requests the step field of every active direction of the hydro register
+and starts the series file again for a new run, so a later record creates the file or, after a carry, appends to it
 ({{< code src/output/budget_series.cpp BudgetOutput::bind >}}). After an accepted step `apply_redo` calls
 `observe` on every output ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}}), which passes the
 register and its monitor to the consumer ({{< code src/output/budget_series.cpp BudgetOutput::observe >}}).
