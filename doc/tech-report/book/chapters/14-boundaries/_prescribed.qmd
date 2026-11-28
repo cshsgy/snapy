@@ -87,7 +87,9 @@ boundary-condition:
 ```
 
 **Refusals and prerequisites.** `set_prescribed_walls` refuses a plane outside the face totals and a free row
-outside the variable rows; `set_prescribed` refuses a mask or value of the wrong shape or dtype.
+outside the variable rows; `set_prescribed` refuses a mask that is not bool, and a mask or value not shaped like
+the face total. It does not check the value's dtype: `apply_prescribed` converts the value to the total's device and
+dtype when it applies it.
 
 **Read the implementation.** `supply_prescribed` ({{< code src/layout/seam_register.cpp supply_prescribed >}})
 contains:
