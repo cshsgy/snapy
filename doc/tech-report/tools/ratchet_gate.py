@@ -25,7 +25,9 @@ and it may rise only together with a move of that pin:
   * `update` refuses to write a higher count unless `code_pin.yml` names another sha than the baseline's `pin`;
   * `check --base-ref <ref>` (what CI runs) also compares the committed baseline with the one at `<ref>`, the
     target branch: a higher count there fails unless `code_pin.yml` differs between `<ref>` and the head, so a
-    baseline raised by hand fails too.
+    baseline raised by hand fails too. One exception, for off-pin only (tools/relocation_credit.py): findings of
+    a file that git sees as renamed from another chapter, matched one for one with that file's findings at
+    `<ref>`, count against the source chapter's baseline at `<ref>` instead of the target's.
 
 OWNERS (`tools/chapter-owners.tsv`): one row per chapter, `chapter owner [checker]`, each given by GitHub handle only
 (`-` for no checker; `check` fails when a checker is also the row's owner). The owner is
@@ -151,6 +153,11 @@ def chapter_of(rel: str) -> str:
             return m.group(1)
     m = re.match(r"(\d\d)-", top)
     return f"ch{m.group(1)}" if m else top
+
+
+def counted(rel: str) -> bool:
+    """Whether the ratchet reads the file at `rel` (relative to book/): the filter of sources()."""
+    return rel == "index.qmd" or (rel.startswith("chapters/") and rel.endswith(".qmd"))
 
 
 def sources(book: pathlib.Path) -> list[pathlib.Path]:
@@ -429,10 +436,23 @@ def baseline_raised(root: pathlib.Path, ref: str, baseline: dict) -> list[str]:
     if old_pin and old_pin.group(1) != pins(root).get("snapy"):
         return []  # the pin moves in this change: a rise is allowed
     old_chapters = json.loads(old)["chapters"]
+    # relocation credit (tools/relocation_credit.py): off-pin findings of files git sees as renamed into another
+    # chapter, matched one for one with the same file's findings at `ref`, move from the source chapter's count at
+    # `ref` to the target's; nothing else is credited
+    from relocation_credit import adjusted, credit, describe, relocated_files
+    pin = pins(root)
+    credits = credit(relocated_files(root, ref, chapter_of, counted),
+                     lambda rel: offpin_hits(_git_show(root, ref, f"book/{rel}") or "", pin),
+                     lambda rel: offpin_hits((root / "book" / rel).read_text(), pin))
+    old_offpin = adjusted({ch: c.get("offpin", 0) for ch, c in old_chapters.items()}, credits)
+    if credits:
+        print(f"ratchet: relocation credit (offpin, renamed files only): {describe(credits)}")
     out = []
-    for ch in sorted(set(baseline) | set(old_chapters)):
+    for ch in sorted(set(baseline) | set(old_chapters) | set(old_offpin)):
         for check in CHECKS:
             now, was = baseline.get(ch, {}).get(check, 0), old_chapters.get(ch, {}).get(check, 0)
+            if check == "offpin":
+                was = old_offpin.get(ch, 0)
             if now > was:
                 out.append(f"{ch} {check}: the baseline rises {was} -> {now} against {ref} without a pin move")
     return out

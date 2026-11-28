@@ -13,7 +13,7 @@ tasks:
 - id: Q-001
   question: How do I build and run the smallest GPU case on my cluster, and confirm that the computation actually uses the GPU?
   status: partly documented
-  dest: sec-ch14-gpu
+  dest: sec-ch11-devices
   missing: a ready-made batch script and the laptop-to-cluster/GPU path
   lookup_grade: PARTIAL
 - id: Q-002
@@ -42,7 +42,7 @@ tasks:
 - id: Q-006
   question: How do I launch the same case across two nodes, assign processes to GPUs and verify that each process uses the intended device?
   status: partly documented
-  dest: sec-ch14-launch
+  dest: sec-ch12-layout
   missing: a two-node launch command (pd-run has no multi-node mode)
   lookup_grade: PARTIAL
 - id: Q-007
@@ -94,7 +94,7 @@ tasks:
 - id: Q-015
   question: 'How do I set up condensable species (NH3, H2O, NH4SH; CH4 and H2S for ice giants), and what happens to the condensate: immediate rainout, retained, or advected?'
   status: partly documented
-  dest: sec-ch10-satadj
+  dest: sec-ch08-satadj
   missing: CH4/ice-giant setup and the species declaration
   lookup_grade: PARTIAL
 - id: Q-016
@@ -284,10 +284,9 @@ tasks:
   lookup_grade: PARTIAL
 - id: Q-048
   question: My run stopped with negative density or NaN. What do I check first, and which settings usually fix it?
-  status: partly documented
-  dest: sec-ch13-redo-view
-  missing: first-check order and usual fixes
-  lookup_grade: PARTIAL
+  status: undocumented
+  not_provided: 'its answering section (“Redo causes and termination status”, in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10'
+  lookup_grade: NONE
 - id: Q-049
   question: How do I tell whether a feature in my result is physics or a numerical artifact, and which simple test should I run first?
   status: outside scope
@@ -314,7 +313,7 @@ tasks:
 - id: Q-053
   question: 'How is precipitation and sedimentation treated: fall speed, time-step limits? Is the mass leaving at the bottom counted in the budgets?'
   status: answered
-  dest: sec-ch10-sed
+  dest: sec-ch08-sed
   lookup_grade: FULL
 - id: Q-054
   question: Which boundary conditions are closed and which are open? Do outflow or sponge boundaries leak mass or energy, and is the leak reported?
@@ -331,59 +330,59 @@ tasks:
 - id: Q-056
   question: Which parts of a time step execute on the GPU, which stay on the CPU, and when must data move between them?
   status: partly documented
-  dest: sec-ch14-gpu
+  dest: sec-ch11-devices
   missing: a module GPU how-to; timing and memory diagnostics
   lookup_grade: PARTIAL
 - id: Q-057
   question: Is a GPU run deterministic from run to run (atomics, reduction order)? How large is the spread, and how does it affect the conservation and well-balancing numbers?
   status: partly documented
-  dest: sec-ch14-repro
+  dest: sec-ch16-devices
   missing: measured GPU run-to-run spread
   lookup_grade: PARTIAL
 - id: Q-058
   question: When one rank hits NaN or crashes, does the job stop and name the rank, cell and step, or does it hang?
   status: partly documented
-  dest: sec-ch14-collectives
+  dest: sec-ch09-redo
   missing: whether the job stops naming the rank/cell/step or hangs
   lookup_grade: PARTIAL
 - id: Q-059
   question: Where is uninterrupted-versus-restarted agreement tested, including across multiple processes, and is the expected agreement bitwise or within a stated tolerance?
   status: partly documented
-  dest: sec-ch14-restart
+  dest: sec-ch15-restart
   missing: changes of precision, GPU count or version on restart; module state
   lookup_grade: PARTIAL
 - id: Q-060
   question: How do I arrange checkpoints around a wall-time limit and resume a job after interruption without overwriting useful output?
   status: partly documented
-  dest: sec-ch14-restart
+  dest: sec-ch15-restart
   missing: a wall-time checkpoint recipe
   lookup_grade: PARTIAL
 - id: Q-061
   question: After the first restart, how can I check that it continued the intended run without a gap or duplicated output times?
   status: partly documented
-  dest: sec-ch14-restart
+  dest: sec-ch15-restart
   missing: a user-level check for gaps or duplicated output times
   lookup_grade: PARTIAL
 - id: Q-062
   question: What evidence shows that interrupted writes cannot be mistaken for complete checkpoints or output, and how do I identify the latest usable checkpoint after a node or storage failure?
   status: undocumented
-  not_provided: 'an interrupted-write completeness guarantee and recovery procedure are not established; the output contracts are delivered in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart'
+  not_provided: 'an interrupted-write completeness guarantee and recovery procedure are not established; the output contracts are delivered in @sec-ch15-output and @sec-ch15-restart'
   lookup_grade: NONE
 - id: Q-063
   question: What output formats and file layouts are available, how are variables, units, coordinates and times recorded, and which settings control output frequency and volume?
   status: partly documented
-  dest: sec-ch14-netcdf
+  dest: sec-ch15-output
   missing: pressure-level/lat-lon output; standard dynamics diagnostics
   lookup_grade: PARTIAL
 - id: Q-064
   question: How do I open the output, plot one variable at one time, and make a simple animation?
   status: outside scope
-  not_provided: a plotting/animation tutorial is outside scope; the delivered output contracts describe the formats in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart
+  not_provided: a plotting/animation tutorial is outside scope; the delivered output contracts describe the formats in @sec-ch15-output and @sec-ch15-restart
   lookup_grade: NONE
 - id: Q-065
   question: 'How is output produced across processes: does each process write separately, does one gather the data, or is parallel I/O used, and what limits follow from that choice?'
   status: answered
-  dest: sec-ch14-netcdf
+  dest: sec-ch15-output
   lookup_grade: FULL
 - id: Q-066
   question: What is the minimal skeleton of a new forcing module? Which class or interface do I implement, which method returns the tendency, and how is it registered so that a key in the input file turns it on?
@@ -411,14 +410,13 @@ tasks:
   lookup_grade: PARTIAL
 - id: Q-070
   question: Is there a harness I can reuse to show my forcing changes mass, momentum and energy only as intended, budgeted per step?
-  status: partly documented
-  dest: sec-ch13-cycle
-  missing: a reusable per-forcing harness; momentum budget
-  lookup_grade: PARTIAL
+  status: undocumented
+  not_provided: 'its answering section (“Cycle-line budget”, in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10'
+  lookup_grade: NONE
 - id: Q-071
   question: 'How do I test that a new condensate conserves total water (vapor + condensate) and moist energy through a phase change? What tolerance should I expect: round-off or truncation?'
   status: partly documented
-  dest: sec-ch10-satadj
+  dest: sec-ch08-satadj
   missing: a recipe for a new condensate
   lookup_grade: PARTIAL
 - id: Q-072
@@ -430,12 +428,12 @@ tasks:
 - id: Q-073
   question: 'How does condensation and evaporation work: saturation adjustment or kinetic rates? Where is it called, and how does the energy equation see the latent heat?'
   status: answered
-  dest: sec-ch10-satadj
+  dest: sec-ch08-satadj
   lookup_grade: FULL
 - id: Q-074
   question: How do I add sedimentation or precipitation for a condensate? Is it carried by the hydro flux or by a separate flux? How does it enter the time-step limit?
   status: answered
-  dest: sec-ch10-sed
+  dest: sec-ch08-sed
   lookup_grade: FULL
 - id: Q-075
   question: What is the layout of the state vector? What is the order of density, momenta, energy, vapors, condensates and passive scalars? Are condensates stored as mass fractions, mixing ratios or densities, and in which units?
@@ -468,7 +466,7 @@ tasks:
 - id: Q-080
   question: 'Does the output record the code version, commit and the fully resolved configuration? What does a paper need to record: dependency versions, precision, hardware, rank layout and communication backend?'
   status: undocumented
-  not_provided: 'a publication-record checklist is not provided; the delivered output/restart contracts describe recorded data in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart'
+  not_provided: 'a publication-record checklist is not provided; the delivered output/restart contracts describe recorded data in @sec-ch15-output and @sec-ch15-restart'
   lookup_grade: NONE
 - id: Q-081
   question: Are the thermodynamic constants (latent heats, saturation vapour pressures, heat capacities) documented with sources, so that I can compare them against my old model's values?
@@ -477,9 +475,10 @@ tasks:
   lookup_grade: NONE
 - id: Q-082
   question: Are runs bitwise reproducible across CPU and GPU, thread counts and MPI ranks, and where they are not bitwise, do they agree within a stated tolerance or statistically?
-  status: answered
-  dest: sec-ch14-repro
-  lookup_grade: FULL
+  status: partly documented
+  dest: sec-ch16-gates
+  missing: a bitwise comparison across process counts and decompositions (the pre-V3 reproducibility section was retired)
+  lookup_grade: PARTIAL
 - id: Q-083
   question: Which results-changing fixes went into which versions, so I can tell whether the version a paper used is affected?
   status: undocumented
@@ -498,7 +497,7 @@ tasks:
 - id: Q-086
   question: Why might adding GPUs make my run slower, and how can I distinguish insufficient work per GPU, communication, load imbalance and storage costs?
   status: partly documented
-  dest: sec-ch14-gpu
+  dest: sec-ch11-devices
   missing: a scaling measurement and a way to tell the four causes apart
   lookup_grade: PARTIAL
 - id: Q-087

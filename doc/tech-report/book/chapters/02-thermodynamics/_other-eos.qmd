@@ -91,7 +91,7 @@ A CUDA graph captures a stage only for `ideal-gas` and `ideal-moist`. `StageExec
 ({{< code src/mesh/stage_executor.cpp StageExecutor::config_reasons >}}) lists every reason a block cannot be
 captured; for the closure it checks the type against the set `capture_eos` and, for any other type, adds the
 reason "equation of state is `<type>`; capture allows ideal-gas, ideal-moist". In default execution such a
-block then runs eager (@sec-ch14). The flow of each closure is drawn in its own section
+block then runs eager (@sec-ch11-default). The flow of each closure is drawn in its own section
 (@fig-ch02-moist-mixture-flow, @fig-ch02-shallow-water-flow, @fig-ch02-aneos-flow); this overview has no figure
 of its own.
 
@@ -109,7 +109,7 @@ of its own.
 
 **What is refused, and why.**
 
-1. *Capture.* The reason above; under default execution the block runs eager (@sec-ch14).
+1. *Capture.* The reason above; under default execution the block runs eager (@sec-ch11-default).
 2. *Anomaly storage.* `HydroImpl::reset` allows it for `ideal-moist` only (@sec-ch02-laws).
 3. *An ideal gas with species.* `EquationOfStateImpl::create` refuses `ideal-gas` with species or reactions
    and names `ideal-moist` and `moist-mixture` as the closures that support them.

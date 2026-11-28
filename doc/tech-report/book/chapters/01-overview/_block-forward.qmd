@@ -1,22 +1,24 @@
 ## Exchange before a single-block stage (`MeshBlock.forward`) {#sec-ch01-block-forward}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.5; src/mesh/meshblock.cpp; src/mesh/mesh.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/meshblock_advance.cpp; src/mesh/meshblock_exchange.cpp;
+         src/mesh/stage_executor.cpp; src/mesh/mesh.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
 
-A driver that steps one block calls `MeshBlock::forward` once per stage. That call does two things in a fixed
-order: it first refreshes the ghost cells from the neighbours, then advances the stage. The order matters
-for a caller that edits the interior between two calls, because the edit reaches the ghosts before the next
+A driver that steps one block calls `MeshBlock::forward` once per stage. That call runs the block's stage schedule,
+whose first op on a bare block refreshes the ghost cells from the neighbours before the stage's own ops run
+(@sec-ch01-stage), and then the block's global phase, the axial-momentum closure when it is on. The order matters for
+a caller that edits the interior between two calls, because the edit reaches the ghosts before the next
 reconstruction reads them.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** N/A, a code map: exchange the conserved ghosts, then run `advance_local`.
+**Purpose.** N/A, a code map: run the stage schedule (stage-entry exchange first), then the axial closure.
 
 **Data.** In: `hydro_u` and `scalar_s` with stale ghosts. Out: the same tensors advanced by one stage.
 
@@ -36,14 +38,18 @@ in their owning chapters.
 
 ### Numerical method
 
-`MeshBlockImpl::forward` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}) calls `exchange_ghost_zones` and
-then `advance_local`. `MeshBlockImpl::exchange_ghost_zones`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}) exchanges the conserved hydro state and the
-scalar densities with interpolation on. It then re-applies the non-outflow $x_1$ boundary functions on the tangential
-ghost slabs the exchange owns (the `refresh` closure; @sec-ch14-timing), and recomputes the scalar ratios. A reflecting
-wall whose tangential faces are all exchange-owned is re-applied in one call over the full extent; it writes the same
-slab values and rewrites the other rows with the values they hold. The mesh
-driver `MeshImpl::forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) advances first and exchanges afterwards
+`MeshBlockImpl::forward` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}) records the step's $\Delta t$
+on stage zero and hands the stage to its executor (`run_stage`), whose schedule for a bare block starts with the
+stage-entry exchange as a host-exchange segment of its own
+({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}). With the axial-momentum closure on, it then sums
+the block's closure moments, applies the solid-body increment and refills the physical ghosts (@sec-ch07).
+`MeshBlockImpl::exchange_ghost_zones` ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}})
+exchanges the conserved hydro state and the scalar densities with interpolation on. It then re-applies every installed
+wall function except outflow (the $x_1$ walls and the physical $x_2$ and $x_3$ ones) on the tangential ghost slabs the
+exchange owns (the `refresh` closure, [meshblock_exchange.cpp#L153-L161](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock_exchange.cpp#L153-L161); @sec-ch14-timing), and recomputes the scalar ratios. A reflecting wall whose
+tangential faces are all exchange-owned is re-applied in one call over the full extent; it writes the same slab values
+and rewrites the other rows with the values they hold. A Mesh block's schedule has no stage-entry exchange: `MeshImpl::forward`
+({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) runs the stages first and exchanges its blocks afterwards
 (@sec-ch01-mesh). The wrapper changes when the ghosts are fresh, not the stencil order; physical boundary conditions
 and cubed-sphere interpolation keep their own errors.
 
@@ -52,7 +58,7 @@ and cubed-sphere interpolation keep their own errors.
 ```{python}
 #| label: fig-ch01-block-forward-flow
 #| fig-cap: "Exchange before a single-block stage. Labelled green boxes name operations or owners; black arrows show the reading sequence, not a timing measurement."
-#| fig-alt: "Sequence: caller modifies interior; conserved exchange; advance_local; physical boundary fill."
+#| fig-alt: "Sequence: caller modifies interior; conserved exchange; the stage's ops; physical boundary fill; axial closure."
 #| echo: false
 from snapy_report.ch01.figures.fig_block_forward_flow import make_fig
 make_fig()
@@ -61,36 +67,53 @@ make_fig()
 **Why exchange first.** Two facts of the code decide the order.
 
 1. The reconstruction of a stage reads ghost cells (@sec-ch04), so the ghosts must hold the neighbours' current values
-   when the stage starts. The exchange at the top of `forward` guarantees that for a single block
-   ({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}).
-2. A driver may change the interior between two calls (the kinetics step of @sec-ch01-driver does). With the exchange
-   first, that change reaches the ghosts before the next reconstruction; with the mesh order it reaches them only
-   after the next stage.
+   when the stage starts. The exchange op at the head of a bare block's schedule guarantees that for a single block
+   ({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}).
+2. A driver may change the interior between two calls, for example with an operator-split source term applied on
+   `hydro_u` between `forward` calls, which the comment on `forward` names
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}). With the exchange first, that change reaches
+   the ghosts before the next reconstruction; with the mesh order it reaches them only after the next stage.
 
 ### Code
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| forward | {{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}} | `forward` | none |
-| exchange | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `exchange_ghost_zones` | none |
-| corners | {{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
+| forward | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}} | `forward` | none |
+| exchange op | {{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}} | `exchange` | none |
+| exchange | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}} | `exchange_ghost_zones` | none |
+| corners | {{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}} | `refresh` | none |
 | mesh forward | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `forward` | none |
 
 : Implementation anchors for the block-level forward. {#tbl-ch01-block-forward-code}
 
-1. Exchange, then advance: `forward` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}).
-2. Fill the layout ghosts, refresh the $x_1$ wall corners, recompute the scalar ratios:
-   `exchange_ghost_zones` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::exchange_ghost_zones >}}).
+1. Run the schedule (exchange first), then the axial closure: `forward`
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}).
+2. Fill the layout ghosts, refresh the wall corners, recompute the scalar ratios:
+   `exchange_ghost_zones` ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::exchange_ghost_zones >}}).
 3. Compare with the mesh order, advance then exchange: `MeshImpl::forward`
    ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}).
 
-**How to use it.** There is nothing to configure. The whole method is two calls
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::forward >}}):
+**How to use it.** There is nothing to configure. The whole method is
+({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}}):
 
 ```cpp
 void MeshBlockImpl::forward(Variables &vars, double dt, int stage) {
-  exchange_ghost_zones(vars);
-  advance_local(vars, dt, stage);
+  // Exchange BEFORE reconstruction consumes the ghosts (same count per step):
+  // host-side operator-split source terms applied between forward calls
+  // (e.g. condensation on hydro_u) are then synced before use, removing a
+  // one-signed seam bias on the cubed sphere.
+  if (stage == 0) step_dt = dt;
+  // the block's schedule: the stage-entry exchange, then the stage's ops,
+  // eagerly or as graphs
+  _executor->run_stage(_executor_index, vars, dt, stage);
+  // the global phase of a bare block, as Mesh::forward runs it over its blocks
+  if (phydro->paam->closes()) {
+    apply_axial_closure(vars, dt, stage,
+                        global_phase_sum({axial_closure_sums()}, *_playout));
+    apply_boundaries(
+        vars, vars.at("hydro_u"),
+        vars.count("scalar_s") ? vars.at("scalar_s") : torch::Tensor());
+  }
 }
 ```
 
@@ -101,17 +124,20 @@ exchange on the next call.
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| no dedicated test | missing evidence | not applicable | not applicable |
+| no dedicated test of the bare-block order | missing evidence | not applicable | not applicable |
+| `tests/test_mesh_executor.cpp` (`test_mesh_executor.<b>`), the Mesh order | a Mesh's blocks stepped through the executor equal the local stages followed by the exchange | bitwise (`torch::equal`) | the executor changes who runs the stage, not what runs |
 
 : Source assertions for the block-level forward. {#tbl-ch01-block-forward-tests}
 
-No ctest isolates this order, and no report check exists for it: **missing evidence**; the ownership rule
-of the exchange and the corner refresh is tested in @sec-ch14-timing.
+No ctest isolates the bare-block order, and no report check exists for it: **missing evidence**; the ownership
+rule of the exchange and the corner refresh is tested in @sec-ch14-timing. The Mesh order (stages, then the exchange)
+is held bitwise by `test_mesh_executor.release`, which passed at the pin with 4 of 8 cases on CPU (the CUDA cases skip
+there) and all 8 on CUDA (@sec-ch01-mesh).
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-The source comment on `forward` attributes a removed cubed-sphere seam bias to this placement; the chapter
-does not promote that comment to measured evidence. A regression that isolates driver-split sources between
+The source comment on `forward` attributes a removed cubed-sphere seam bias to this placement of the exchange;
+the chapter does not promote that comment to measured evidence. A regression that isolates driver-split sources between
 consecutive calls is missing.
 :::

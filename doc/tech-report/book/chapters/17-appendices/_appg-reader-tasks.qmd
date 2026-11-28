@@ -2,12 +2,12 @@
 
 | status | tasks |
 |---|---|
-| answered | 102 |
-| partly documented | 80 |
-| undocumented | 14 |
+| answered | 83 |
+| partly documented | 76 |
+| undocumented | 20 |
 | unsupported by the code | 0 |
 | outside scope | 8 |
-| total | 204 |
+| total | 187 |
 
 : Reader tasks by status. {#tbl-appg-reader-tasks}
 
@@ -23,18 +23,16 @@
 - Check whether density and pressure positivity is guaranteed and what happens when it fails. See The equation-of-state limiter: two passes, floors and marks, @sec-ch08-eoslimiter.
 - Find how radiation is coupled to the dynamics. See Locate dependencies outside snapy, @sec-ch01-dependencies.
 - Understand how kintera and pyharp plug in and whether my first run needs them. See External component interfaces, @sec-appe-components.
-- Understand precipitation and sedimentation: fall speed, time-step limit, budget at the bottom. See Sedimentation of condensates, @sec-ch10-sed.
-- Open a NetCDF output file in Python and plot temperature. See NetCDF output: per-block files and the combine, @sec-ch14-netcdf.
-- Understand how output is written across processes and its limits. See NetCDF output: per-block files and the combine, @sec-ch14-netcdf.
-- Understand condensation/evaporation: saturation adjustment or kinetics, and the latent heat in the energy. See Saturation adjustment in the step, @sec-ch10-satadj.
-- Add sedimentation or precipitation for a condensate and see how it limits the step. See Sedimentation of condensates, @sec-ch10-sed.
+- Understand precipitation and sedimentation: fall speed, time-step limit, budget at the bottom. See Sedimentation of condensates, @sec-ch08-sed.
+- Open a NetCDF output file in Python and plot temperature. See Output writers, @sec-ch15-output.
+- Understand how output is written across processes and its limits. See Output writers, @sec-ch15-output.
+- Understand condensation/evaporation: saturation adjustment or kinetics, and the latent heat in the energy. See Saturation adjustment in the step, @sec-ch08-satadj.
+- Add sedimentation or precipitation for a condensate and see how it limits the step. See Sedimentation of condensates, @sec-ch08-sed.
 - Look up the state-vector layout and the units of condensates. See [2. State, thermodynamics and species](#sec-appa-2).
 - Write a new boundary condition, fill its ghosts and select it from the input. See Reserve a face or fill a solid mask, @sec-ch14-custom.
-- Check bitwise reproducibility across CPU/GPU, threads and ranks. See Reproducibility: what is shown bit for bit and what is not, @sec-ch14-repro.
 - Add a new gas species (a new state row) from the YAML species card and check it is carried. See Ideal-moist closure and the kintera thermodynamics, @sec-ch02-ideal-moist.
 - Prototype a new reconstruction in Python and check it against the built-in one. See The reconstruction framework, @sec-ch04-framework.
 - Add a reconstruction or Riemann solver in C++ and select it from YAML. See The reconstruction framework, @sec-ch04-framework.
-- Register a process group and call a snapy collective across two processes. See Communication backends: Gloo, UCX through commux, an external group, @sec-ch14-backends.
 - Understand what a ghost zone is. See Locate tensor rows, faces and ghost slabs, @sec-ch01-layout.
 - Find how many ghost cells the default reconstruction needs. See The reconstruction framework, @sec-ch04-framework.
 - Understand what the CFL number means and which value to use. See Time-step bound: acoustic, implicit-advective, shear and diffusive, @sec-ch09-cfl.
@@ -43,7 +41,7 @@
 - Find which slope limiter is on by default. See PLM, the van Leer harmonic-mean slope, @sec-ch04-plm.
 - Find which time integrator is used and its order. See Explicit SSP Runge-Kutta stages in Shu-Osher form, @sec-ch09-rk.
 - Tell primitive, conserved and hydro variables apart. See Conventions at a glance, @sec-appa-conventions.
-- Add a new diagnostic or output field, select it and find it in the output file. See Add a new output field, @sec-ch14-add-output-field.
+- Add a new diagnostic or output field, select it and find it in the output file. See Output writers, @sec-ch15-output.
 - Add a new Riemann solver. See The reconstruction framework, @sec-ch04-framework.
 - Find whether the vertical coordinate is height or pressure. See Conventions at a glance, @sec-appa-conventions.
 - Run the first example (the Straka cold bubble) on a single GPU. See [Install and run](#sec-preface-install).
@@ -97,32 +95,15 @@
 - Drive convection with bottom heating and top cooling. See Body heating, top cooling and bottom heating, @sec-ch07-heating.
 - Relax the bottom layer toward a temperature, rest and a vapour source. See Bottom relaxation of temperature, velocity and composition, @sec-ch07-relax.
 - Add Rayleigh sponge layers near the top and bottom. See Sponge layers: Rayleigh drag near the top and bottom boundaries, @sec-ch07-sponge.
-- Print the cycle-line budget every ten cycles. See Cycle-line budget: volume integrals of the conserved state, one line per `ncycle_out` cycles, @sec-ch13-cycle.
-- Turn on the limiter so the positivity meters count. See Positivity-limiter meters: `limcut`, `thetamin`, `thetasevere`, @sec-ch13-limiter-meters.
-- Run with VIC so the clamp meter is printed. See VIC clamp meter: how far the availability clamp broke the face telescoping, @sec-ch13-vicclamp.
-- Print the gravity-work fixer budget (fixgrav=). See Gravity-work fixer budget: the meters, the accounting and `fixgrav=`, @sec-ch13-fixgrav.
-- Set the stop reasons in the integration block and read the termination status. See Redo causes and termination status: what the log says about a rejected step and the end of a run, @sec-ch13-redo-view.
-- Write a NetCDF stream with diagnostics, the VIC correction and column paths. See Output-field diagnostics: `div`, `curl`, `theta_v`, `ic_*`, paths and means on request, @sec-ch13-output-diag.
-- Run the mass-conservation regression check on the two-block Straka deck. See Mass-conservation regression checks: which test holds which total, to what tolerance, @sec-ch13-regression.
-- Launch two processes with two blocks each on one node. See Launch environment and rendezvous, @sec-ch14-launch.
-- Set SyncOptions.phyid for a second sync from Python. See Exchange message matching and in-process copies, @sec-ch14-msgmatch.
-- Run four blocks in one process on one GPU. See Several blocks per process and GPU streams, @sec-ch14-bpp.
-- Know when collectives run (more than one process) and that they have no option. See Collectives and global decisions, @sec-ch14-collectives.
-- Write a NetCDF stream of the primitives and two diagnostics in double precision. See NetCDF output: per-block files and the combine, @sec-ch14-netcdf.
-- Write PnetCDF output (needs a PNETCDF=ON build). See PnetCDF output, @sec-ch14-pnetcdf.
-- Write restart files and resume a run from one. See Restart files: write, bundle, read, @sec-ch14-restart.
-- Schedule a NetCDF stream with time-weighted mean and deviation, and stop at a set time. See Output scheduling, statistics and termination, @sec-ch14-schedule.
-- Combine per-block output and inspect it (pd-combine, pd-inspect). See Combine and inspect tools, @sec-ch14-tools.
-- Run the decomposition reproducibility tests (FULL_TESTS=ON). See Reproducibility: what is shown bit for bit and what is not, @sec-ch14-repro.
 - Add a new equation of state: implement its interface and register its deck selector. See How to add an equation of state, @sec-ch02-new-eos.
 
 ## Partly documented {.unnumbered .unlisted}
 
-- Build snapy with CUDA, run the smallest GPU case and confirm the computation runs on the GPU. See GPU execution, @sec-ch14-gpu.
+- Build snapy with CUDA, run the smallest GPU case and confirm the computation runs on the GPU. See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices.
 - Estimate how long a small example run takes on a laptop and how large its output is. See [Install and run](#sec-preface-install).
 - Go from a laptop with Python and no GPU to one finished example run, and confirm it ran correctly. See [Install and run](#sec-preface-install).
 - Find the supported GPU architectures, driver/CUDA versions, precisions and dependency versions. See External component interfaces, @sec-appe-components.
-- Launch one case across two nodes, assign processes to GPUs and verify each process uses its device. See Launch environment and rendezvous, @sec-ch14-launch.
+- Launch one case across two nodes, assign processes to GPUs and verify each process uses its device. See Layout and communication environment, @sec-ch12-layout.
 - Find which reconstruction, Riemann solver, limiter, CFL and implicit defaults apply when a paper does not name them, and read the used settings from the input. See YAML scheme selection and setup guards, @sec-ch12-yaml.
 - Change one setting of an example (resolution, end time, initial temperature) and rerun it. See [Install and run](#sec-preface-install).
 - Look up snapy names, units and sign conventions for winds, pressure, temperature, density and tracers. See Conventions at a glance, @sec-appa-conventions.
@@ -134,7 +115,7 @@
 - Pick the lower boundary condition for a planet with no surface. See Register and classify block faces, @sec-ch14-registry.
 - Replace a Rayleigh bottom drag. See Sponge layers: Rayleigh drag near the top and bottom boundaries, @sec-ch07-sponge.
 - Impose a bottom heat flux. See Body heating, top cooling and bottom heating, @sec-ch07-heating.
-- Set up condensable species and choose what happens to the condensate (rain out, retained, advected). See Saturation adjustment in the step, @sec-ch10-satadj.
+- Set up condensable species and choose what happens to the condensate (rain out, retained, advected). See Saturation adjustment in the step, @sec-ch08-satadj.
 - Decide between float32 and float64. See Expose the C++ API to Python, @sec-ch01-python.
 - Read the exact equation set snapy solves, with every source term. See Conservation laws and variables, @sec-ch02-laws.
 - Understand the overall discretization: finite volume and which variables are reconstructed. See The finite-volume update and the flux divergence, @sec-ch04-divergence.
@@ -162,31 +143,28 @@
 - Understand how moist thermodynamics is closed (latent heat, condensate heat capacity, EOS consistency). See Temperature-dependent moist thermodynamics, @sec-ch02-moist-mixture.
 - Find which standard benchmarks snapy is validated on, with reference numbers. See Explicit SSP Runge-Kutta stages in Shu-Osher form, @sec-ch09-rk.
 - Compare my run with a published or analytic result and decide what counts as agreement. See Reading verification evidence, @sec-ch16-metrics.
-- Diagnose a run that stopped with negative density or NaN. See Redo causes and termination status: what the log says about a rejected step and the end of a run, @sec-ch13-redo-view.
-- Check that total mass is conserved to round-off and find the test that shows the drift. See Mass-conservation regression checks: which test holds which total, to what tolerance, @sec-ch13-regression.
 - Check free-stream preservation and exact seam fluxes on curvilinear grids. See Grids and geometry evidence, @sec-ch16-ch03-tests.
 - Check that positivity limiters and vapour fixers conserve tracer and condensate mass. See The tracer flux positivity limiter, @sec-ch08-theta.
-- See how large the limiter corrections were in a run (logged meters). See Positivity-limiter meters: `limcut`, `thetamin`, `thetasevere`, @sec-ch13-limiter-meters.
 - Find which boundaries are closed or open and whether outflow or sponges leak mass or energy. See Select outgoing acoustic and advected perturbations, @sec-ch14-outflow.
 - Understand how a run is divided among processes and GPUs. See Layouts and rank maps, @sec-ch03-layouts.
-- Find which parts of a step run on the GPU and when data moves to the host. See GPU execution, @sec-ch14-gpu.
-- Check whether a GPU run is deterministic from run to run. See Reproducibility: what is shown bit for bit and what is not, @sec-ch14-repro.
-- Find whether a NaN or crash on one rank stops the job with a location or hangs. See Collectives and global decisions, @sec-ch14-collectives.
-- Find the test of uninterrupted-versus-restarted agreement and its tolerance. See Restart files: write, bundle, read, @sec-ch14-restart.
-- Arrange checkpoints around a wall-time limit and resume without overwriting output. See Restart files: write, bundle, read, @sec-ch14-restart.
-- Check after a restart that there is no gap or duplicated output time. See Restart files: write, bundle, read, @sec-ch14-restart.
-- Choose output formats, layout and frequency, and read variables, units, coordinates and times. See NetCDF output: per-block files and the combine, @sec-ch14-netcdf.
+- Find which parts of a step run on the GPU and when data moves to the host. See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices.
+- Check whether a GPU run is deterministic from run to run. See CPU, CUDA and MPS reproducibility, @sec-ch16-devices.
+- Find whether a NaN or crash on one rank stops the job with a location or hangs. See Step acceptance and redo: six causes, one collective decision, halving up to `max_redo`, @sec-ch09-redo.
+- Find the test of uninterrupted-versus-restarted agreement and its tolerance. See Restart, @sec-ch15-restart.
+- Arrange checkpoints around a wall-time limit and resume without overwriting output. See Restart, @sec-ch15-restart.
+- Check after a restart that there is no gap or duplicated output time. See Restart, @sec-ch15-restart.
+- Choose output formats, layout and frequency, and read variables, units, coordinates and times. See Output writers, @sec-ch15-output.
 - Add a new forcing module: implement the interface, register it and check its effect. See User stage forcings: TorchScript modules called every stage, @sec-ch07-user.
 - Find the exact signature of a forcing call, its input shapes with ghosts and whether it updates in place. See User stage forcings: TorchScript modules called every stage, @sec-ch07-user.
 - Prototype a forcing in Python without recompiling, and know its cost against C++. See User stage forcings: TorchScript modules called every stage, @sec-ch07-user.
 - Find whether a stiff forcing can be treated implicitly. See The forcing loop: parsing, registration and the stage increment, @sec-ch07-framework.
-- Show that my forcing changes mass, momentum and energy only as intended, per step. See Cycle-line budget: volume integrals of the conserved state, one line per `ncycle_out` cycles, @sec-ch13-cycle.
-- Test that a new condensate conserves total water and moist energy through a phase change. See Saturation adjustment in the step, @sec-ch10-satadj.
-- Add a new condensate species: declare its data and saturation formula and find its state-vector row. See Saturation adjustment in the step, @sec-ch10-satadj.
+- Test that a new condensate conserves total water and moist energy through a phase change. See Saturation adjustment in the step, @sec-ch08-satadj.
+- Add a new condensate species: declare its data and saturation formula and find its state-vector row. See Saturation adjustment in the step, @sec-ch08-satadj.
 - Keep an atmosphere at rest exactly at rest at a wall: hydrostatic ghosts. See Keep wall ghosts consistent with the hydrostatic reference, @sec-ch14-wb.
 - Know how a boundary condition behaves at block seams and across ranks. See Supply ghosts through layout exchange, @sec-ch14-exchange.
 - Find which tests a new module needs and how to register them. See Build options and test registration, @sec-ch12-build.
-- Find why adding GPUs can slow my run, and tell the causes apart. See GPU execution, @sec-ch14-gpu.
+- Check bitwise reproducibility across CPU/GPU, threads and ranks. See The bitwise gates, @sec-ch16-gates.
+- Find why adding GPUs can slow my run, and tell the causes apart. See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices.
 - Find the vertical coordinate and translate my old levels, model top and bottom. See Conventions at a glance, @sec-appa-conventions.
 - Reproduce an old forcing: Newtonian relaxation, internal heat flux or a radiative scheme. See Bottom relaxation of temperature, velocity and composition, @sec-ch07-relax.
 - Start from an old model's regridded equilibrated state and keep it balanced. See `balance_column`: projection of ghost-free columns onto the scheme's discrete balance (C++ and Python API), @sec-ch05-balcol.
@@ -197,24 +175,29 @@
 - Add a test for new code. See Build options and test registration, @sec-ch12-build.
 - Initialise the model from a sounding exported from another code. See `balance_column`: projection of ghost-free columns onto the scheme's discrete balance (C++ and Python API), @sec-ch05-balcol.
 - Reproduce a documented test case and check it against the documented result. See Reading verification evidence, @sec-ch16-metrics.
-- Check mass and energy conservation from the output files. See Cycle-line budget: volume integrals of the conserved state, one line per `ncycle_out` cycles, @sec-ch13-cycle.
 
 ## Undocumented {.unnumbered .unlisted}
 
 - Set up a problem of my own (e.g. a warm bubble in a chosen atmosphere) starting from an example. Not provided: no problem-design tutorial; only the initial-state contract exists (@sec-ch01-initialization).
 - Find how Coriolis and geometric sources interact with the well-balanced reconstruction. Not provided: no section states the interaction.
 - List the numerical dissipation of the scheme (Riemann solver, limiters) apart from physical diffusion. Not provided: no list of numerical dissipation and no physical-vs-numerical split.
+- Diagnose a run that stopped with negative density or NaN. Not provided: its answering section ("Redo causes and termination status", in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
+- Check that total mass is conserved to round-off and find the test that shows the drift. Not provided: its answering section ("Mass-conservation regression checks", in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
+- See how large the limiter corrections were in a run (logged meters). Not provided: its answering section ("Positivity-limiter meters", in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
 - Identify the latest usable checkpoint after a node or storage failure. Not provided: the book states no completeness guarantee for an interrupted write and no procedure for finding the latest usable checkpoint after a failure.
+- Show that my forcing changes mass, momentum and energy only as intended, per step. Not provided: its answering section ("Cycle-line budget", in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
 - Record what a paper needs: code version, resolved configuration, dependencies, hardware. Not provided: no publication-record checklist; output does not record a resolved configuration.
 - Compare thermodynamic constants with sources against my old model. Not provided: saturation vapour pressures not covered; deck values cited only to deck lines; cv_R=2.5 unsourced.
 - Find which results-changing fixes went into which versions. Not provided: no per-version list of results-changing fixes.
 - Cite snapy and the document for the numerics of a version. Not provided: no citation guidance or reference list.
 - Estimate device and host memory before a production run and reduce it. Not provided: no memory estimate at the pin.
 - Find a performance baseline for each release. Not provided: no performance baseline for any release.
+- Register a process group and call a snapy collective across two processes. Not provided: its answering section (the process-group backends section with the generated collective contract, in the pre-V3 parallelism chapter) was removed with that chapter; no V3 section documents the process-group backends yet.
 - Run a 1-D shock tube example. Not provided: no shock-tube (Sod) deck or card in the book.
 - Relate cubed-sphere panel orientation to FV3 or MITgcm. Not provided: the panel frame is defined in @sec-ch03-gnomonic, but there is no mapping to FV3 or MITgcm panel numbering or orientation.
 - Understand the pole treatment on the spherical-polar grid. Not provided: no section treats the poles; @sec-ch03-sphpolar only requires x2 within [0, pi]; "pole" occurs once, in @sec-ch03-synctype ("away from a pole").
-- Restart a run from a NetCDF dump. Not provided: restart reads only .restart bundles (load_pt_from_bundle, @sec-ch14-restart); no reader starts a run from a NetCDF output file.
+- Restart a run from a NetCDF dump. Not provided: restart reads only .restart bundles (load_pt_from_bundle, @sec-ch15-restart); no reader starts a run from a NetCDF output file.
+- Check mass and energy conservation from the output files. Not provided: its answering section ("Cycle-line budget", in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
 
 ## Outside scope {.unnumbered .unlisted}
 

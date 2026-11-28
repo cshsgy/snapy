@@ -93,7 +93,7 @@ Two blocks with one per process need two processes. With these keys in a copy of
 torchrun --no-python --nproc-per-node=2 --master-port=29573 ./straka.release deck.yaml
 ```
 
-and see @sec-ch14-launch for the launch environment.
+and see @sec-ch12-layout for the launch environment.
 
 **What the parser accepts and refuses.** Nothing is parsed for the average. A split $x_1$ axis needs
 `layout: cubed`: the `slab` and `cubed-sphere` layouts refuse `nb1` > 1 at construction. The other refusals of a

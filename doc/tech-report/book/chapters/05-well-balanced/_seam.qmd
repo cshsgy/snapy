@@ -127,7 +127,7 @@ saved as `deck.yaml` in `build/bin` ([Install and run](#sec-preface-install)), l
 torchrun --no-python --nproc-per-node=2 --master-port=29573 ./straka.release deck.yaml
 ```
 
-and see @sec-ch14-launch for the launch environment.
+and see @sec-ch12-layout for the launch environment.
 
 **What the parser accepts and refuses.** `distribute:` accepts only its listed keys and reads `nb1` as the number of
 blocks along $x_1$ ({{< code src/layout/layout.cpp LayoutOptionsImpl::from_yaml >}}). The slab layout refuses

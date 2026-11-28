@@ -1,12 +1,13 @@
 ## Expose the C++ API to Python (`import snapy`) {#sec-ch01-python}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.12; python/__init__.py; python/csrc/snapy.cpp; python/csrc/pymesh.cpp; python/csrc/pylayout.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.3; python/__init__.py; python/csrc/snapy.cpp; python/csrc/pymesh.cpp; python/csrc/pylayout.cpp;
+         python/csrc/pyhydro.cpp; src/output/restart.cpp;
          pyproject.toml; tests/CMakeLists.txt; tests/test_python_import_path.py; tests/test_jit_user_forcing.py
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -52,9 +53,10 @@ adds `Reconstruct.set_x1_faces`, which installs per-face $x_1$ rows from a face 
 entries (buffers `interp1.cm_x1`, `interp1.cp_x1`, `interp2.cm_x1`, `interp2.cp_x1`; refused for interpolants other
 than `weno5` and `cp5`), and the free builders `weno5_x1_coeffs` and `cp5_x1_coeffs`, which return the rows of a face
 vector with no block, `(cm, cp)` of $n_f-5$ rows of 48 and 5 columns; `bind_hydro`
-({{< code python/csrc/pyhydro.cpp bind_hydro >}}) gives `balance_column` the argument `stretched=False`
-(@sec-ch05-balcol) and exposes the hydro option `conversion_order`, the order of the $x_1$ cell-average to
-point conversion of the primitives (@sec-ch04-conv4), whose stub is {{< code python/snapy/hydro.pyi >}}. The stubs are in {{< code python/snapy/reconstruction.pyi >}}. {{< code pyproject.toml >}} declares the build requirements (torch pinned
+({{< code python/csrc/pyhydro.cpp bind_hydro >}}) gives `balance_column` the arguments `stretched=False`,
+`conversion_order=2` and `eos=None` (@sec-ch05-balcol), and through the binding generated from the option schema
+exposes the hydro option `conversion_order`, the order of the $x_1$ cell-average to point conversion of the primitives
+(@sec-ch04-conv4), whose stub is {{< code python/snapy/hydro.pyi >}}. The stubs are in {{< code python/snapy/reconstruction.pyi >}}. {{< code pyproject.toml >}} declares the build requirements (torch pinned
 to one version, kintera, and on Linux commux and pinc) apart from the run-time requirements. It also declares the two
 console scripts `pd-combine` and `pd-inspect`. The Python ctests import the package under `SNAPY_TEST_PYTHONPATH` when
 that cache path is set ({{< code tests/CMakeLists.txt >}}; @sec-ch12-build). Import and binding introduce no spatial
@@ -73,8 +75,8 @@ make_fig()
 
 **Why the initializer sets torch's defaults.** Three facts of the code.
 
-1. The default dtype is set to float64 because the solver's buffers are float64
-   ({{< code python/__init__.py >}}; {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}).
+1. The default dtype is set to float64 because the block's state is float64 under the default precision policy
+   ({{< code python/__init__.py >}}; {{< code src/mesh/precision_policy.hpp PrecisionPolicy >}}).
 2. The thread counts are set to one so that a Python driver does not oversubscribe the cores that a `Mesh`
    worker pool uses (@sec-ch01-mesh).
 3. `MeshBlock.forward` releases the GIL so that a C++ stage can run while Python waits
@@ -90,7 +92,7 @@ make_fig()
 | layout | {{< code python/csrc/pylayout.cpp bind_layout >}} | `set_process_group` | none |
 | stretched $x_1$ options | {{< code python/csrc/pycoord.cpp bind_coord >}} | `x1f_interior` | none |
 | per-face $x_1$ rows | {{< code python/csrc/pyrecon.cpp bind_recon >}} | `set_x1_faces` | none |
-| `balance_column` | {{< code python/csrc/pyhydro.cpp bind_hydro >}} | `stretched` | none |
+| `balance_column` | {{< code python/csrc/pyhydro.cpp bind_hydro >}} | `stretched`, `conversion_order`, `eos` | none |
 | hydro options | {{< code python/csrc/pyhydro.cpp bind_hydro >}} | `conversion_order` | `dynamics/conversion-order` |
 | packaging | {{< code pyproject.toml >}} | `dependencies` | none |
 | scripts | {{< code pyproject.toml >}} | `pd-combine` | none |
@@ -127,7 +129,7 @@ vars, t = block.initialize({"hydro_w": w})
 
 A restart goes through `block.initialize_from_restart(path)`, which returns the saved time. Refused: an import without
 the three external packages installed (an `ImportError` from the initializer). A restart path is dispatched by
-`load_restart` ({{< code src/input/read_restart_file.cpp load_restart >}}): a file that starts with the bundle magic
+`load_restart` ({{< code src/output/restart.cpp load_restart >}}): a file that starts with the bundle magic
 line is read as a restart bundle. Any other path goes straight to kintera's tensor loader with no suffix check, so a
 wrong file fails inside kintera. The row constants a driver indexes `hydro_u` with are `snapy.kIDN`, `kIV1`, `kIV2`,
 `kIV3`, `kIPR` and `kICY`.
@@ -144,17 +146,28 @@ wrong file fails inside kintera. The row constants a driver indexes `hydro_u` wi
 The assertions are the top-level `assert` statements of {{< code tests/test_python_import_path.py >}} and the
 `assert_close` in `main` of {{< code tests/test_jit_user_forcing.py main >}}.
 
-Both tests run on CPU, one process; `test_python_import_path_python` exits 125 when the cache path is unset.
-Neither has been run for this report at the pin: **pending a pinned ctest run**. No report check exists for this
-section. No ctest calls the stretched-$x_1$ bindings from Python (the C++ tests of @sec-ch03-globalgrid cover the
-functions they bind); they were called once at the pin, from the package built from the source tree, and returned
-rows of the documented shapes and the four `_x1` buffers.[^py-bind68]
+Both tests run on CPU, one process; `test_python_import_path_python` exits 125 when the cache path is unset. At the
+pin `test_jit_user_forcing_python` passed under ctest on both builds; `test_python_import_path_python` passed when run
+with its ctest command line and environment through an interpreter whose torch is intact (the workspace's ctest
+interpreter could not import torch).[^ch01-python-ctest] No report check exists for this section. No ctest calls the
+stretched-$x_1$ bindings from Python (the C++ tests of @sec-ch03-globalgrid cover the functions they bind); they were
+called once at the pin, from the package built from the source tree, and returned rows of the documented shapes and
+the four `_x1` buffers.[^ch01-py-bind]
 
-[^py-bind68]: snapy@68f4e066974ede87e4379285c4fba895b970b7f1 built from source (CPU Release; the Python package by
-    `pip install --no-deps --no-build-isolation --target $SITE .` against that build), Python 3.11.13, torch 2.10.0;
-    `PYTHONPATH=$SITE python` calling `weno5_x1_coeffs` and `cp5_x1_coeffs` on a 13-face vector (shapes (8, 48) and
-    (8, 5)), `CoordinateOptions().stretched_x1()` (False), and `Reconstruct(op).set_x1_faces` on a `weno5` module; a
-    one-off call, not a committed check.
+[^ch01-python-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^test_jit_user_forcing_python$'` with torch
+    2.10.0+cu126, kintera 2.6.13 and pyharp 2.8.1 on `PYTHONPATH`, clean CPU-only and clean CUDA (sm_61) Release
+    builds, one process; and the command line ctest logs for `test_python_import_path_python`, with its environment
+    (`PYTHONPATH` the package then `caller_pythonpath_marker`), run by the Python 3.11.13 interpreter of a workspace
+    venv holding those versions]; logs `ctest-ch01-cpu-py.log`, `ctest-ch01-cuda-py.log`, `importpath-ch01-cpu.log`
+    and `importpath-ch01-cuda.log`.
+
+[^ch01-py-bind]: snapy@73c45a7c8c991209924e1137992352c335575062 built from source (CPU Release; the Python package by
+    `pip install --no-deps --no-build-isolation --target $SITE .` against that build), Python 3.11.13, torch
+    2.10.0+cu126; `PYTHONPATH=$SITE python` calling `weno5_x1_coeffs` and `cp5_x1_coeffs` on a 13-face vector (shapes
+    (8, 48) and (8, 5)), `CoordinateOptions().stretched_x1()` (False), and `Reconstruct(op).set_x1_faces` on a `weno5`
+    module (buffers `interp1.cm_x1`, `interp1.cp_x1`, `interp2.cm_x1`, `interp2.cp_x1`); a one-off call, not a
+    committed check; log `py-bindings-73c45a7c.log`.
 
 ### Limits
 

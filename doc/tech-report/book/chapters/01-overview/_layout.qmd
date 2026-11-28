@@ -1,11 +1,12 @@
 ## Locate tensor rows, faces and ghost slabs (`NMASS` / `PartOptions`) {#sec-ch01-layout}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.10; src/snap.h; src/coord/coordinate.hpp; src/mesh/meshblock.hpp; src/mesh/meshblock.cpp; src/recon/reconstruct.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.3; src/snap.h; src/coord/coordinate.hpp; src/mesh/meshblock.hpp; src/mesh/meshblock.cpp;
+         src/mesh/state_store.hpp; src/recon/reconstruct.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -82,7 +83,7 @@ make_fig()
 | slab options | {{< code src/mesh/meshblock.hpp PartOptions >}} | `PartOptions` | `PartOptions` |
 | slab | {{< code src/mesh/meshblock.cpp MeshBlockImpl::part >}} | `part` | none |
 | face pair | {{< code src/recon/reconstruct.cpp _apply_inplace >}} | `_apply_inplace` | none |
-| buffers | {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}} | `_hydro_u0` | none |
+| buffers | {{< code src/mesh/state_store.hpp StateStore >}} | `u0`, `s0` | none |
 
 : Implementation anchors for the storage layout. {#tbl-ch01-layout-code}
 
@@ -131,8 +132,16 @@ enum {
 The assertions are {{< code tests/test_scalar.cpp DeviceTest.initialize_and_transport_scalar >}} and the
 top-level `assert` of {{< code tests/test_mesh_exchange.py >}}.
 
-Both tests run on CPU (`test_scalar.<b>` also on CUDA through the shared device list). Neither has been run
-for this report at the pin: **pending a pinned ctest run**. No report check exists for this section.
+Both tests run on CPU, and `test_scalar.<b>` also on CUDA through the shared device list. At the pin both passed on
+both builds; `test_scalar.release` ran 4 of its 8 cases on CPU (the CUDA cases skip there) and all 8 on
+CUDA.[^ch01-layout-ctest] No report check exists for this section.
+
+[^ch01-layout-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_scalar\.release|test_mesh_exchange_python)$'`,
+    clean CPU-only Release build, CPU, FP64 and FP32 as the fixture sets, one process; and the same command on a clean
+    CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1,
+    nvcc 12.9, Python 3.11.13]; logs `ctest-ch01-cpu.log`, `ctest-ch01-cuda.log`, `ctest-ch01-cpu-py.log` and
+    `ctest-ch01-cuda-py.log`.
 
 ### Limits
 

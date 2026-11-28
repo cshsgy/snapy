@@ -39,13 +39,13 @@ library's source lists, and 9 of them hold one `.cu` file each, all in its CUDA 
 |---|---|---|
 | `src/` | the C++ core: the `snap` shared library, plus a CUDA library when `CUDA` is on; one directory per module (@tbl-appj-src) | @sec-ch01 |
 | `snap` | a symbolic link to `src`, so the code includes its own headers as `<snap/...>` | none |
-| `python/` | the `snapy` package (`package_dir` in {{< code setup.py >}}): bindings in `csrc/` compiled into the extension `snapy.snapy`, type stubs in `snapy/`, the `pd-combine` and `pd-inspect` tools in `api/` (the `[project.scripts]` of {{< code pyproject.toml >}}) | @sec-ch01-python, @sec-ch14-tools |
+| `python/` | the `snapy` package (`package_dir` in {{< code setup.py >}}): bindings in `csrc/` compiled into the extension `snapy.snapy`, type stubs in `snapy/`, the `pd-combine` and `pd-inspect` tools in `api/` (the `[project.scripts]` of {{< code pyproject.toml >}}) | @sec-ch01-python, @sec-ch15-tools |
 | `tests/` | the ctest suite: C++ and Python tests and the `run_*` drivers registered in {{< code tests/CMakeLists.txt >}} | @sec-appc, @sec-ch16 |
 | `examples/` | example drivers (`.cpp`, among them `run_hydro.cpp`) and their input decks (`.yaml`) | [Install and run](#sec-preface-install), @sec-ch10-kinetics |
 | `cmake/` | build macros, `Find*` modules for the dependencies, fetch scripts for Eigen, fmt, GoogleTest, kintera, UCX and yaml-cpp | @sec-ch12-build, @sec-ch01-dependencies |
-| `api/` | `pd-run` and `slurm.sbatch`, launch scripts installed with the package (`script-files` in {{< code pyproject.toml >}}) | @sec-ch14-launch |
+| `api/` | `pd-run` and `slurm.sbatch`, launch scripts installed with the package (`script-files` in {{< code pyproject.toml >}}) | no V3 section yet |
 | `tools/` | developer scripts: `gen_options.py`, which CMake and `setup.py` run to generate the option code from `src/options/` ({{< code tools/gen_options.py >}}), the execution benchmark `bench_execution.py` and `lane_c_lines.py` | @sec-ch15-options |
-| `external/` | a copy of Gloo, put on the include path of the `snap` library | @sec-ch14-backends |
+| `external/` | a copy of Gloo, put on the include path of the `snap` library (the Gloo process group, `BACKEND=gloo`) | @sec-ch12-layout |
 | `patches/` | patches the build applies to the fetched Eigen and yaml-cpp | none |
 | `docs/` | the Sphinx documentation and derivation notes | none |
 | `.github/` | the CI, release and deployment workflows | none |
@@ -61,13 +61,13 @@ library's source lists, and 9 of them hold one `.cu` file each, all in its CUDA 
 | `bc/` | external boundary functions, internal (solid) boundaries | yes, with CUDA | @sec-ch14b |
 | `chemistry/` | the chemistry step a block or a Mesh registers (`ChemistrySource`, kintera kinetics) | yes | @sec-appe-components |
 | `coord/` | coordinate systems and metrics: Cartesian, spherical-polar, gnomonic cubed sphere | yes, with CUDA | @sec-ch03 |
-| `diagnostics/` | the budget read off the flux register, and the consumer interface for diagnostics that read the register | yes | @sec-ch06-conserves, @sec-ch13 |
+| `diagnostics/` | the budget read off the flux register, and the consumer interface for diagnostics that read the register | yes | @sec-ch06-conserves; the pre-V3 diagnostics chapter, which returns with the V3 chapter 10 |
 | `eos/` | equations of state: ideal gas, ideal moist, moist mixture, shallow water, tabulated (`aneos/`); the EOS status (`EfStatus`) | yes, with CUDA | @sec-ch02, @sec-ch08-efstatus |
 | `forcing/` | forcing modules: constant gravity, Coriolis and axial momentum, diffusion, heating, relaxation, sponges | yes | @sec-ch07, @sec-ch06-cell |
 | `hydro/` | the hydro module: its options, the sweep, the flux register, flux positivity, well-balanced references, gravity work, `balance_column` | yes, with CUDA | @sec-ch01-hydro, @sec-ch04, @sec-ch05, @sec-ch08-theta |
 | `implicit/` | the vertically implicit correction: assembly, block sweep, redistribution, its gravity work | yes, with CUDA | @sec-ch06-vic, @sec-ch09-vic-options |
 | `input/` | deck key checks | yes | @sec-ch01-options |
-| `layout/` | block layouts (slab, cubed, cubed sphere), the exchange, the seam register, process groups over Gloo or UCX | yes | @sec-ch03-layouts, @sec-ch03-seamreg, @sec-ch14-backends |
+| `layout/` | block layouts (slab, cubed, cubed sphere), the exchange, the seam register, process groups over Gloo or UCX | yes | @sec-ch03-layouts, @sec-ch03-seamreg, @sec-ch12-layout, @sec-ch13-ghost |
 | `math/` | headers only: LU routines used by `implicit/` | headers | @sec-ch09-vic-pivot |
 | `mesh/` | `MeshBlock` in six parts, `Mesh`, the stage executor, its segments, the state store and the precision policy (@tbl-appj-v3) | yes | @sec-ch01-construction, @sec-ch01-mesh, @sec-ch16-capture |
 | `options/` | the options schema in YAML, one file per options block; `tools/gen_options.py` generates the option code from it at build time | generated | @sec-ch15-options, @sec-appi |
@@ -92,7 +92,7 @@ library, except `layout/`, whose glob is listed but holds none. {#tbl-appj-src}
 | {{< code src/mesh/meshblock_advance.cpp >}} | part BlockAdvance: the time step and one stage | @sec-ch09-cfl, @sec-ch09-rk |
 | {{< code src/mesh/meshblock_exchange.cpp >}} | part BlockExchange: exchange phases and boundary functions | @sec-ch03-exchange, @sec-ch14-timing |
 | {{< code src/mesh/meshblock_redo.cpp >}} | part BlockRedo: the retry flags, the decision, the restore | @sec-ch09-redo, @sec-ch08-redo |
-| {{< code src/mesh/meshblock_output.cpp >}} | part BlockOutput: outputs, the cycle diagnostics, the end of a run | @sec-ch13-cycle, @sec-ch15-output |
+| {{< code src/mesh/meshblock_output.cpp >}} | part BlockOutput: outputs, the cycle diagnostics, the end of a run | @sec-ch15-output; the cycle diagnostics: the pre-V3 section “Cycle-line budget”, which returns with the V3 chapter 10 |
 | {{< code src/mesh/meshblock_restart.cpp >}} | part BlockRestart: initialization from a restart file | @sec-ch15-restart |
 | {{< code src/mesh/meshblock_options.cpp >}} | `MeshBlockOptions` from the deck, among them the execution keys | @sec-ch15-options |
 | {{< code src/mesh/mesh.cpp >}} | `Mesh`: several blocks per process, their exchange and the global phase | @sec-ch01-mesh |

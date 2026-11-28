@@ -107,7 +107,7 @@ dynamics:
 ```
 
 The radii are in metres and the panel angles in units of $\pi$. With `blocks_per_process: 1` the deck needs six
-processes (@sec-ch14-launch). That test file is the complete deck; on a build at the pin
+processes (@sec-ch13-layouts; the launch environment is @sec-ch12-layout). That test file is the complete deck; on a build at the pin
 ([Install and run](#sec-preface-install)) it runs a short rest run of it with
 `ctest --test-dir build -R test_cubed_sphere_cell_volume_python`.
 

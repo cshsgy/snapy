@@ -18,7 +18,9 @@ The count of failing tags per chapter may only fall. tools/provenance-baseline.j
 when the file is missing, when a chapter's count differs from its baseline (a rise, or a fall not yet recorded), and,
 given the target branch (`--base-ref`), when the baseline rises against the target's copy: a new chapter entry is a
 rise from 0. The comparison reads the target's copy as tools/ratchet_gate.py does, and allows a rise only when the
-code pin moves. `--update` writes the current counts.
+code pin moves; tag problems of a file that git sees as renamed from another chapter, matched one for one with that
+file's problems at the target, count against the source chapter there (tools/relocation_credit.py). `--update`
+writes the current counts.
 
 Shas are resolved like tools/code_anchors.py resolves the pin: a local clone (`SNAPY_REPO`, then the repository
 holding this report), else a cache under `SNAPY_REPORT_CACHE` fetched from GitHub with its history, so that "the pin
@@ -43,6 +45,11 @@ _CODE = re.compile(r"`[^`]+`")
 
 
 # --- the book -----------------------------------------------------------------------------------------------------
+
+def _counted(rel):
+    """Whether this gate reads the file at `rel` (relative to book/): the filter of _sources()."""
+    return rel.endswith(".qmd") and not rel.startswith(("_", "."))
+
 
 def _sources(book):
     for q in sorted(Path(book).rglob("*.qmd")):
@@ -229,10 +236,22 @@ def base_ref(report):
     return f"origin/{TARGET}"
 
 
-def raised(report, ref, baseline):
+def file_findings(rel, text, resolve):
+    """The identities of one file's tag problems: (sha field, reason), one per problem."""
+    out = []
+    for m in _TAG.finditer(text):
+        tag = dict(file=rel, fields=_fields(m.group(1)), text=m.group(1) + _context(text, m.end()))
+        out += [(tag["fields"]["sha"], why) for why in problems(tag, resolve)]
+    return out
+
+
+def raised(report, ref, baseline, resolve=None):
     """Chapters whose baseline rises against the baseline at `ref` (tools/ratchet_gate.py's baseline_raised, for
-    this file). A `ref` that names no commit is a problem; no baseline at `ref` means this change introduces it."""
+    this file). A `ref` that names no commit is a problem; no baseline at `ref` means this change introduces it.
+    Tag problems of files git sees as renamed into another chapter, matched one for one with the same file's
+    problems at `ref`, move from the source chapter's count at `ref` to the target's (tools/relocation_credit.py)."""
     from ratchet_gate import _git_show
+    from relocation_credit import adjusted, credit, describe, relocated_files
     if _git(report, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}").returncode != 0:
         return [f"base ref {ref!r} names no commit here (fetch it first): the baseline cannot be compared"]
     old = _git_show(Path(report), ref, BASELINE)
@@ -242,6 +261,14 @@ def raised(report, ref, baseline):
     if old_pin and old_pin.group(1) != read_pin(report):
         return []  # the pin moves in this change: which shas count moves with it
     old = json.loads(old)
+    resolve = resolve or Resolver(Path(report), read_pin(report))
+    credits = credit(relocated_files(Path(report), ref, _chapter, _counted),
+                     lambda rel: file_findings(rel, _git_show(Path(report), ref, f"book/{rel}") or "", resolve),
+                     lambda rel: file_findings(rel, (Path(report) / "book" / rel).read_text(encoding="utf-8"),
+                                               resolve))
+    if credits:
+        print(f"[provenance] relocation credit (renamed files only): {describe(credits)}")
+    old = adjusted(old, credits)
     return [f"{ch}: the baseline rises {old.get(ch, 0)} -> {baseline.get(ch, 0)} against {ref}"
             for ch in sorted(set(baseline) | set(old)) if baseline.get(ch, 0) > old.get(ch, 0)]
 
@@ -267,7 +294,7 @@ def check(report, baseline=None, resolve=None, ref=None):
             msgs.append(f"{ch}: {n} tag problem(s), baseline {b}; the baseline must equal the count "
                         "(record a fall with python3 tools/check_provenance.py --update)")
     if ref:
-        msgs += raised(report, ref, base)
+        msgs += raised(report, ref, base, resolve)
     return (1 if msgs else 0), msgs, found
 
 

@@ -1,6 +1,6 @@
-"""Exchange before a single-block stage; snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; no measured data."""
+"""Exchange before a single-block stage; snapy@73c45a7c8c991209924e1137992352c335575062; no measured data."""
 from ..flow import make_flow
 
 
 def make_fig():
-    return make_flow(['caller modifies interior', 'conserved exchange', 'advance_local', 'physical boundary fill'])
+    return make_flow(['caller modifies interior', 'conserved exchange', "the stage's ops", 'physical boundary fill', 'axial closure'])

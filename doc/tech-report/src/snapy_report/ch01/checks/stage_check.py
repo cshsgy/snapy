@@ -1,12 +1,14 @@
 """Check Chapter 1 stage algebra without snapy.
 
-Formula pin: snapy@68f4e066974ede87e4379285c4fba895b970b7f1 (C1-C3 unchanged from snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; C4 new).
+Formula pin: snapy@73c45a7c8c991209924e1137992352c335575062. carry_dry_source there adds the anomaly reference to its
+base density when anomaly storage is on, which leaves the identity in totals unchanged; the port uses totals.
 Run: python3 stage_check.py from any working directory.
-C1 checks the coefficient product cw in HydroImpl::forward (src/hydro/hydro_forward.cpp).
-C2 mirrors the upwind/shift/difference of MeshBlockImpl::advance_local (src/mesh/meshblock.cpp).
-C3 checks carry_dry_source in MeshBlockImpl::advance_local, including its zero-base fallback.
+C1 checks the stage-weight product w2_s * prod_{t>s} w1_t, the weight FluxRegister::end_stage
+(src/hydro/flux_register.cpp) gives a stage's flux total in the step sum (S <- w1 S + w2 dt T).
+C2 mirrors the upwind/shift/difference of MeshBlockImpl::stage_advance (src/mesh/meshblock_advance.cpp).
+C3 checks MeshBlockImpl::carry_dry_source (src/mesh/meshblock_advance.cpp), including its zero-base fallback.
 C4 ports the donor cap of the implicit tracer transfer, donor_cap_cpu and donor_cap_cuda
-(src/implicit/implicit_dispatch.cpp, .cu) at snapy@68f4e066974ede87e4379285c4fba895b970b7f1.
+(src/implicit/implicit_dispatch.cpp, .cu).
 These are symbolic identities and numpy formula checks, not C++ runtime tests.
 All cited ranges are at the full formula pin above.
 """

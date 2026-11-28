@@ -247,7 +247,7 @@ def test_api_snippets_are_not_producing_commands(run):
         "no command (no `run:` field with a backticked command)"]
 
 
-@pytest.mark.parametrize("relative", ['chapters/14-parallelism-io/_backends.qmd', 'chapters/14-parallelism-io/_bpp.qmd', 'chapters/14-parallelism-io/_gpu.qmd', 'chapters/14-parallelism-io/_repro.qmd', 'chapters/14-parallelism-io/_tools.qmd', 'chapters/16-verification/_ch01.qmd', 'chapters/16-verification/_ch02-thermodynamics.qmd', 'chapters/16-verification/_ch03-grids-geometry.qmd', 'chapters/16-verification/_ch04-spatial-discretization.qmd', 'chapters/16-verification/_ch05-well-balanced.qmd', 'chapters/16-verification/_ch10-moist-coupling.qmd', 'chapters/16-verification/_ch11.qmd', 'chapters/16-verification/_ch12-configuration.qmd'])
+@pytest.mark.parametrize("relative", ['chapters/16-verification/_ch01.qmd', 'chapters/16-verification/_ch02-thermodynamics.qmd', 'chapters/16-verification/_ch03-grids-geometry.qmd', 'chapters/16-verification/_ch04-spatial-discretization.qmd', 'chapters/16-verification/_ch05-well-balanced.qmd', 'chapters/16-verification/_ch10-moist-coupling.qmd', 'chapters/16-verification/_ch11.qmd', 'chapters/16-verification/_ch12-configuration.qmd'])
 def test_recovered_ci_and_n8_records_have_commands(relative):
     records = [t for t in cp.tags(TOOLS.parent / "book") if t["file"] == relative]
     assert records

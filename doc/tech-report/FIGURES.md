@@ -169,15 +169,7 @@ Regenerate every figure: `python3 tools/render_figures.py` (to `build/figures/<c
 
 | figure | section file | code | data (written by) |
 |---|---|---|---|
-| `fig-ch10-borrow-bars` | `10-moist-coupling/_borrow.qmd` | `snapy_report/ch10/figures/fig_borrow_bars.py` | `src/snapy_report/ch10/data/borrow_bars.csv` (`snapy_report/ch10/checks/borrow_check.py`) |
-| `fig-ch10-deps` | `10-moist-coupling.qmd` | `snapy_report/ch10/figures/fig_deps.py` | - |
-| `fig-ch10-fixvapor-column` | `10-moist-coupling/_fixvapor.qmd` | `snapy_report/ch10/figures/fig_fixvapor_column.py` | `src/snapy_report/ch10/data/fixvapor_column.csv` (`snapy_report/ch10/checks/fixvapor_check.py`, `snapy_report/ch10/evidence/fixvapor_column_run.py`) |
-| `fig-ch10-kinetics-extent` | `10-moist-coupling/_kinetics.qmd` | `snapy_report/ch10/figures/fig_kinetics_extent.py` | `src/snapy_report/ch10/data/kinetics_extent.csv` (`snapy_report/ch10/checks/kinetics_check.py`) |
-| `fig-ch10-redo-flow` | `10-moist-coupling/_redo.qmd` | `snapy_report/ch10/figures/fig_redo_flow.py`<br>`snapy_report/ch01/flow.py` | - |
-| `fig-ch10-satadj-timeline` | `10-moist-coupling/_satadj.qmd` | `snapy_report/ch10/figures/fig_satadj_timeline.py`<br>`snapy_report/ch01/flow.py` | - |
-| `fig-ch10-sed-donor` | `10-moist-coupling/_sed.qmd` | `snapy_report/ch10/figures/fig_sed_donor.py` | - |
-| `fig-ch10-sed-vsed` | `10-moist-coupling/_sed.qmd` | `snapy_report/ch10/figures/fig_sed_vsed.py` | `src/snapy_report/ch10/data/sed_vsed.csv` (`snapy_report/ch10/checks/sed_check.py`) |
-| `fig-ch10-tracer-face` | `10-moist-coupling/_tracer.qmd` | `snapy_report/ch10/figures/fig_tracer_face.py` | - |
+| `fig-ch10-register-order` | `10-moist-coupling.qmd` | `snapy_report/ch10/figures/fig_register_order.py`<br>`snapy_report/ch01/flow.py` | - |
 
 ## ch11
 
@@ -207,12 +199,11 @@ Regenerate every figure: `python3 tools/render_figures.py` (to `build/figures/<c
 
 | figure | section file | code | data (written by) |
 |---|---|---|---|
-| `fig-ch13-cycle-line` | `13-diagnostics/_cycle.qmd` | `snapy_report/ch13/figures/fig_cycle_line.py` | - |
-| `fig-ch13-limiter-meters` | `13-diagnostics/_limiter-meters.qmd` | `snapy_report/ch13/figures/fig_limiter_meters.py`<br>`snapy_report/ch13/checks/limiter_meters_check.py` | - |
-| `fig-ch13-output-diag` | `13-diagnostics/_output-diag.qmd` | `snapy_report/ch13/figures/fig_output_diag.py` | - |
-| `fig-ch13-redo-view` | `13-diagnostics/_redo-view.qmd` | `snapy_report/ch13/figures/fig_redo_view.py` | - |
-| `fig-ch13-regression` | `13-diagnostics/_regression.qmd` | `snapy_report/ch13/figures/fig_regression_matrix.py` | - |
-| `fig-ch13-vicclamp` | `13-diagnostics/_vicclamp.qmd` | `snapy_report/ch13/figures/fig_vicclamp.py` | - |
+| `fig-ch13-exchange-cut` | `13-mesh-exchange/_cuts.qmd` | `snapy_report/ch13/figures/fig_exchange_cut.py` | - |
+| `fig-ch13-layouts` | `13-mesh-exchange/_layouts.qmd` | `snapy_report/ch03/figures/fig_layouts_morton.py` | - |
+| `fig-ch13-mesh-agree` | `13-mesh-exchange/_agree.qmd` | `snapy_report/ch13/figures/fig_mesh_agree.py` | - |
+| `fig-ch13-wait-abort` | `13-mesh-exchange/_ghost.qmd` | `snapy_report/ch13/figures/fig_wait_abort.py` | - |
+| `fig-ch13-x1split` | `13-mesh-exchange/_x1split.qmd` | `snapy_report/ch03/figures/fig_x1seams_relay.py` | - |
 
 ## ch14
 

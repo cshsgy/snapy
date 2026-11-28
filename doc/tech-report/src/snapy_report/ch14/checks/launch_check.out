@@ -1,3 +1,0 @@
-[C1] PASS r -> (p, l) -> r is the identity: b = 1..16, 1-24 processes: 4896 ranks, 0 mismatches
-[C2] PASS (p, l) -> r maps the P b pairs onto 0..P b - 1, with no gap or repeat: 4896 pairs, 0 layouts not a bijection
-[C3] PASS blocks_per_process below 1 acts as 1: block rank = process rank: b = 0 and -1, ranks 0-63

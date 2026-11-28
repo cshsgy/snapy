@@ -1,3 +1,0 @@
-[C1] PASS the recurrence gives the step-weighted mean and the population deviation of the two-pass formula: 20 runs of 200 unequal steps (half after a reset): max rel. error mean 1.3e-15, sigma 1.9e-15
-[C2] PASS the state at the first call carries no weight; each later state carries the step ending at it: q = 100, 1, 4 at t = 0, 1, 3: mean 3 (= (1*1 + 2*4)/3), W = 3
-[C3] PASS sigma = sqrt(M2 / W) with no small-sample correction; a constant field has M2 = 0 exactly: q = 1, 3 with equal steps: sigma 1 (sample form would give 1.41421); constant: M2 = 0

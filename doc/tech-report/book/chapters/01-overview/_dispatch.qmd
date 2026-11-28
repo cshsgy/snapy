@@ -1,19 +1,20 @@
 ## Dispatch tensor kernels by device (`CUDA`) {#sec-ch01-dispatch}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.9; src/hydro/hydro_dispatch.hpp; src/hydro/hydro_dispatch.cpp; src/hydro/hydro_dispatch.cu; src/utils/loops.cuh;
-         src/recon/recon_dispatch.cu; CMakeLists.txt; src/CMakeLists.txt; tests/test_weno5_cuda_line.cpp; tests/device_testing.hpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.3; src/hydro/hydro_dispatch.hpp; src/hydro/hydro_dispatch.cpp; src/hydro/hydro_dispatch.cu;
+         src/utils/loops.cuh; src/recon/recon_line.cuh; src/recon/recon_dispatch.cu; src/layout/layout.cpp; CMakeLists.txt;
+         src/CMakeLists.txt; tests/test_weno5_cuda_line.cpp; tests/device_testing.hpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
 
 Most of snapy is written as tensor operations that run wherever the tensor lives. The custom kernels, the parts
 written by hand for speed, go through a dispatch stub. Each stub is one declared operation with a CPU implementation,
-a CUDA implementation when the build has CUDA, and in a few cases an MPS[^rg-a202870e5a6b] one. This section shows that stub for one
+a CUDA implementation when the build has CUDA, and in a few cases an MPS one. This section shows that stub for one
 operation, the hydrostatic reference, and the two kinds of CUDA loop the kernels use.
 
 ::: {.callout-note title="At a glance"}
@@ -27,7 +28,7 @@ operation, the hydrostatic reference, and the two kinds of CUDA loop the kernels
 
 **Guarantee / limits.** A map; a kernel without a registration for the requested device fails at dispatch.
 
-**Evidence.** `test_weno5_cuda_line.<b>` (CUDA builds only; $<10^{-12}$ against CPU); see the Tests layer.
+**Evidence.** @tbl-ch01-dispatch-tests; `test_weno5_cuda_line.<b>` (CUDA builds only; $<10^{-12}$ against CPU), `test_coordinate.<b>`.
 :::
 
 ### Derivation
@@ -46,11 +47,11 @@ over columns; the same file registers it for every CPU capability and registers 
 Pointwise CUDA work uses the offsets of a `TensorIterator` in `gpu_kernel`
 ({{< code src/utils/loops.cuh gpu_kernel >}}). Line work uses `stencil_kernel`
 ({{< code src/utils/loops.cuh stencil_kernel >}}). The reconstruction switches to a tiled kernel when a line exceeds
-1024 cells, and `recon_tile_width` ({{< code src/recon/recon_dispatch.cu recon_tile_width >}}) checks the index range,
-the stencil shape and the 48 KiB shared-memory limit. The CMake option `CUDA` ({{< code CMakeLists.txt >}}) enables
+1024 cells, and `recon_tile_width` ({{< code src/recon/recon_line.cuh recon_tile_width >}}), called from
+{{< code src/recon/recon_dispatch.cu >}}, checks the index range, the stencil shape and the 48 KiB shared-memory limit. The CMake option `CUDA` ({{< code CMakeLists.txt >}}) enables
 the CUDA language, and the source list of the library adds the `.cu` files only in a CUDA build
-({{< code src/CMakeLists.txt >}}). The run-time device comes from the layout options (`LayoutOptionsImpl::from_yaml`,
-{{< code src/layout/layout.cpp LayoutOptionsImpl::from_yaml >}}). Dispatch adds no truncation order; device agreement
+({{< code src/CMakeLists.txt >}}). The run-time device comes from the layout options, whose constructor reads `DEVICE` and `DEVICE_ID`
+({{< code src/layout/layout.cpp LayoutOptionsImpl::LayoutOptionsImpl >}}). Dispatch adds no truncation order; device agreement
 needs a test per operator.
 
 @fig-ch01-dispatch-flow shows the call sequence.
@@ -73,7 +74,7 @@ make_fig()
    error at the call.
 3. The CUDA loops are shaped by the data: pointwise work over a `TensorIterator`, line work over one line per thread
    block, and a tiled kernel above 1024 cells. The tile must fit the 48 KiB shared-memory limit
-   ({{< code src/recon/recon_dispatch.cu recon_tile_width >}}).
+   ({{< code src/recon/recon_line.cuh recon_tile_width >}}).
 
 ### Code
 
@@ -85,10 +86,10 @@ make_fig()
 | cuda | {{< code src/hydro/hydro_dispatch.cu hydro_ref_x1_cuda >}} | `hydro_ref_x1_cuda` | `CUDA` |
 | pointwise | {{< code src/utils/loops.cuh gpu_kernel >}} | `gpu_kernel` | `CUDA` |
 | line | {{< code src/utils/loops.cuh stencil_kernel >}} | `stencil_kernel` | `CUDA` |
-| tiled | {{< code src/recon/recon_dispatch.cu recon_tile_width >}} | `recon_tile_width` | `CUDA` |
+| tiled | {{< code src/recon/recon_line.cuh recon_tile_width >}} | `recon_tile_width` | `CUDA` |
 | build | {{< code CMakeLists.txt >}} | `CUDA` | `CUDA` |
 | cuda sources | {{< code src/CMakeLists.txt >}} | `cu_src_files` | `CUDA` |
-| device | {{< code src/layout/layout.cpp LayoutOptionsImpl::from_yaml >}} | `device` | `DEVICE` |
+| device | {{< code src/layout/layout.cpp LayoutOptionsImpl::LayoutOptionsImpl >}} | `device` | `DEVICE` |
 
 : Implementation anchors for device dispatch. {#tbl-ch01-dispatch-code}
 
@@ -98,7 +99,7 @@ make_fig()
    ({{< code src/hydro/hydro_dispatch.cu hydro_ref_x1_cuda >}}).
 3. Loop shapes on CUDA: `gpu_kernel` ({{< code src/utils/loops.cuh gpu_kernel >}}), `stencil_kernel`
    ({{< code src/utils/loops.cuh stencil_kernel >}}), `recon_tile_width`
-   ({{< code src/recon/recon_dispatch.cu recon_tile_width >}}).
+   ({{< code src/recon/recon_line.cuh recon_tile_width >}}).
 
 **How to use it.** Build with CUDA and pick the device at launch:
 
@@ -114,12 +115,13 @@ with UCX[^rg-83fb6f9bc319] but without commux's CUDA sidecar ({{< code src/CMake
 ({{< code src/hydro/hydro_dispatch.hpp hydro_ref_x1_fn >}}):
 
 ```cpp
-using hydro_ref_x1_fn = void (*)(
-    torch::Tensor const& w, torch::Tensor const& dx1f,
-    torch::Tensor const& anchor, torch::Tensor const& psf_lo,
-    torch::Tensor const& psf_hi, torch::Tensor const& pref,
-    torch::Tensor const& dsf, torch::Tensor const& dref, int iu, double grav,
-    bool uniform, bool phys_in, bool phys_out, bool wall_clamp);
+using hydro_ref_x1_fn =
+    void (*)(torch::Tensor const& w, torch::Tensor const& dx1f,
+             torch::Tensor const& anchor, torch::Tensor const& psf_lo,
+             torch::Tensor const& psf_hi, torch::Tensor const& pref,
+             torch::Tensor const& dsf, torch::Tensor const& dref, int iu,
+             double grav, int x1_grid, bool phys_in, bool phys_out,
+             bool wall_clamp, torch::Tensor const& rows);
 
 DECLARE_DISPATCH(hydro_ref_x1_fn, call_hydro_ref_x1);
 ```
@@ -141,20 +143,25 @@ The assertion is `expect_matches_cpu` ({{< code tests/test_weno5_cuda_line.cpp e
 `DeviceTest` fixture ({{< code tests/device_testing.hpp DeviceTest >}}).
 
 The line test is registered only in a CUDA build and skips without a device; the coordinate test runs its CPU
-cases always. Neither has been run for this report at the pin: **pending a pinned ctest run**. No report check
-exists for this section.
+cases always. At the pin `test_weno5_cuda_line.release` passed with its 3 cases run on the CUDA build, and
+`test_coordinate.release` passed on both builds: 50 cases run and 32 skipped on CPU (the CUDA cases), all 82 on
+CUDA.[^ch01-dispatch-ctest] No report check exists for this section.
+
+[^ch01-dispatch-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_weno5_cuda_line\.release|test_coordinate\.release)$'`,
+    clean CPU-only Release build, CPU, FP64 and FP32 as the fixture sets, one process; and the same command on a clean
+    CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1,
+    nvcc 12.9]; logs `ctest-ch01-cpu.log` and `ctest-ch01-cuda.log`.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 The shared `DeviceTest` list has CPU and CUDA cases in float32 and float64; its MPS entry is commented out, and
-a CUDA case skips when the build has no CUDA. Registrations alone are not test evidence; no CUDA or MPS
-execution was performed for this chapter. The tiling test covers the reconstruction, not every other stencil
+a CUDA case skips when the build has no CUDA. Registrations alone are not test evidence; the CUDA cases ran on one
+GTX 1080 Ti (sm_61), and no MPS execution was performed for this chapter. The tiling test covers the reconstruction, not every other stencil
 user.
 :::
 
 <!-- reader glossary notes -->
-[^rg-a202870e5a6b]: MPS — Metal Performance Shaders
-
 [^rg-83fb6f9bc319]: UCX — Unified Communication X
 <!-- end reader glossary notes -->

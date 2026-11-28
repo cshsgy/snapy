@@ -294,6 +294,7 @@ sections:
     - step rejection and redo: [redo, retry a step, max_redo]
     - blow-up, NaN and negative density: [crash, instability]
     - time step, halving after a failure
+    - global decisions across ranks: [collectives, time step agreement]
   sec-ch09-rk:
     - time integrator: [Runge-Kutta, SSP-RK, rk3, integration type]
     - time order of accuracy
@@ -343,17 +344,22 @@ sections:
   sec-ch08-carry:
     - positivity limiter, energy carried
   sec-ch08-satadj:
-    - saturation adjustment, in the step
+    - saturation adjustment, in the step: [condensation]
     - phase equilibrium, once per step
+    - condensation and evaporation, equilibrium
+    - condensable species: [NH3, H2O, water vapour, clouds]
+    - saturation vapour pressure
   sec-ch08-sed:
-    - sedimentation, settling flux
+    - sedimentation, settling flux: [falling condensate, settling, fall speed]
     - terminal velocity, of condensates
+    - precipitation: [rain, rainout]
+    - energy conservation, sedimentation
   sec-ch08-efstatus:
     - EfStatus
     - positivity census
     - limiter meters
   sec-ch08-drycarry:
-    - passive scalars, with dry-mass sources
+    - passive scalars, with dry-mass sources: [tracers per dry air]
   sec-ch08-eoslimiter:
     - floors, density and pressure: [density floor, pressure floor, temperature floor]
     - negative density or pressure: [positivity]
@@ -366,6 +372,7 @@ sections:
   sec-ch08-redo:
     - negative density or pressure, redo
     - step rejection and redo, floor test
+    - step rejection and redo, moist causes
   sec-ch08-roundoff:
     - precision, round-off thresholds
     - round-off thresholds, positivity
@@ -419,28 +426,28 @@ sections:
   sec-ch07-x1profile:
     - viscosity, height-dependent profile
 
-  # Chapter 10. Moist physics coupling
-  sec-ch10-borrow:
-    - negative condensate, repair
-  sec-ch10-fixvapor:
-    - negative vapour, column repair
+  # Chapter 10. The flux register, monitor amounts and conservation budgets
+  sec-ch10-posts:
+    - flux register: [FluxRegister, register posts]
+    - face fluxes, stage totals
+  sec-ch10-prescribed:
+    - prescribed faces: [wall flux, boundary.prescribed]
+    - walls, flux booked at
+  sec-ch10-wallbatch:
+    - wall batch: [WallBatch]
+  sec-ch10-amounts:
+    - monitor amounts: [amounts, stage fold]
+    - step fields
+  sec-ch10-counts:
+    - monitor counts: [counters, face floor counts]
+    - retry flags
+  sec-ch10-rollback:
+    - step rejection and redo, register rollback
+  sec-ch10-budget:
+    - conservation budget: [budget series, budget output]
+    - energy conservation, budget
   sec-ch10-kinetics:
-    - precipitation: [rain, rainout]
-    - condensation and evaporation, rates: [kinetics, microphysics]
-  sec-ch10-redo:
-    - step rejection and redo, moist causes
-  sec-ch10-satadj:
-    - saturation adjustment: [condensation]
-    - condensation and evaporation, equilibrium
-    - condensable species: [NH3, H2O, water vapour, clouds]
-    - saturation vapour pressure
-  sec-ch10-sed:
-    - sedimentation: [falling condensate, settling, fall speed]
-    - precipitation
-    - energy conservation, sedimentation
-  sec-ch10-tracer:
-    - passive scalars: [tracers per dry air]
-    - mass fraction bounds
+    - condensation and evaporation, rates: [kinetics, microphysics, chemistry step]
 
   # Chapter 11. Execution: the stage executor and CUDA graphs
   sec-ch11-segments:
@@ -465,6 +472,8 @@ sections:
     - long reconstruction lines, tiling on CUDA
     - CUDA tests, when they run: [snapy_cuda_test_enabled, CUDA test gate]
     - host read-back, per step: [device synchronisation]
+    - GPU: [GPU run, CUDA, device]
+    - running on a GPU: [cluster GPU, smallest GPU case]
   sec-ch11-s4:
     - eager-path cost: [launch gap, S4 bound]
     - S4 catalogue, where launches were reduced
@@ -488,6 +497,9 @@ sections:
     - deck switches, flux covariance
   sec-ch12-layout:
     - environment for ranks and devices: [BACKEND, MASTER_PORT, DEVICE]
+    - communication backends: [Gloo, UCX, MPI]
+    - multiple processes, launching: [torchrun, pd-run, multinode, two nodes, MPI launch]
+    - ranks and GPUs, assigning
   sec-ch12-macros:
     - compile-time definitions: [configure.h]
   sec-ch12-mass-covariance:
@@ -505,26 +517,24 @@ sections:
     - defaults, scheme settings
     - incompatible settings refused
 
-  # Chapter 13. Conservation budgets and diagnostics
-  sec-ch13-cycle:
-    - mass and energy budgets, log line: [cycle line, ncycle_out]
-    - conservation, monitoring a run
-    - conservation from output files: [NetCDF totals]
-  sec-ch13-fixgrav:
-    - energy fixer, budget
-  sec-ch13-limiter-meters:
-    - positivity limiter, how much it acted: [limcut, thetamin]
-  sec-ch13-output-diag:
-    - diagnostics in output: [divergence, vorticity, virtual potential temperature]
-    - output variables
-  sec-ch13-redo-view:
-    - log messages, rejected steps: [redo causes]
-    - run stopped, why
-  sec-ch13-regression:
-    - mass conservation, tests
-    - conservation tests
-  sec-ch13-vicclamp:
-    - implicit scheme, clamp meter
+  # Chapter 13. Mesh, layout, exchange and multi-block runs
+  sec-ch13-layouts:
+    - layouts, block placement: [slab layout, cubed layout, cubed-sphere layout, distribute]
+    - ranks and panels of blocks: [loc_of, neighbor_rank, panel_of]
+    - blocks per process: [blocks_per_process]
+  sec-ch13-ghost:
+    - ghost exchange, several blocks in one process: [same-process rendezvous, halo exchange]
+    - failed block, other blocks stop waiting: [local_wait, block job failure]
+    - run hangs, a block failed
+    - several blocks per process: [GPU streams]
+    - messages between blocks
+  sec-ch13-cuts:
+    - CUDA graphs, several blocks: [exchange cut, multi-block capture, align_captures]
+    - capture out of memory: [execution eager]
+  sec-ch13-agree:
+    - Mesh runs eager, why: [Mesh-agree, a Mesh whose blocks disagree]
+  sec-ch13-x1split:
+    - vertical split into blocks: [nb1, x1 seam split, stacked blocks]
 
   # Chapter 14. Boundary conditions and immersed solids
   sec-ch14-custom:
@@ -551,47 +561,12 @@ sections:
   sec-ch14-wb:
     - boundary condition and the hydrostatic state
 
-  # Chapter 14. Parallelism, GPU, restart/IO and reproducibility
-  sec-ch14-backends:
-    - communication backends: [Gloo, UCX, MPI]
-  sec-ch14-bpp:
-    - several blocks per process: [blocks_per_process, GPU streams]
-  sec-ch14-collectives:
-    - global decisions across ranks: [collectives, time step agreement]
-  sec-ch14-gpu:
-    - GPU: [GPU run, CUDA, device]
-    - running on a GPU: [cluster GPU, smallest GPU case]
-  sec-ch14-launch:
-    - multiple processes, launching: [torchrun, pd-run, multinode, two nodes, MPI launch]
-    - ranks and GPUs, assigning
-  sec-ch14-msgmatch:
-    - messages between blocks
-  sec-ch14-netcdf:
-    - adding an output field: [new diagnostic, user_out_var, field registration]
-    - precision, output files: [double_precision]
-    - output: [NetCDF output, output files]
-    - output files, combining per-block
-    - units, of output fields: [output units]
-    - output, reading in Python: [plotting output, xarray, netCDF4]
-  sec-ch14-pnetcdf:
-    - output, parallel: [PnetCDF]
-  sec-ch14-repro:
-    - reproducibility: [determinism, bitwise reproducibility]
-    - CPU and GPU agreement
-  sec-ch14-restart:
-    - restart: [checkpoint, resume a run, restart file]
-    - restart, from a checkpoint
-  sec-ch14-schedule:
-    - output frequency: [output dt, output schedule]
-    - output, time averages
-  sec-ch14-tools:
-    - output files, combining and inspecting: [pd-combine, pd-inspect]
-
   # Chapter 16. Verification and reproducibility
   sec-ch16-gates:
     - bitwise gate: [byte-for-byte comparison, face-deck harness, dump set]
     - reproducibility, between two builds
     - refactor, checking it changes no result
+    - reproducibility: [determinism, bitwise reproducibility]
   sec-ch16-capture:
     - capture sweep: [captured, refused or failed tests]
     - CUDA graph, which tests capture
@@ -605,6 +580,7 @@ sections:
   sec-ch16-devices:
     - reproducibility, across devices: [CPU and CUDA agreement, MPS tolerance]
     - MPS, what is compared
+    - CPU and GPU agreement
   sec-ch16-metrics:
     - verification evidence, reading: [convergence order, two-grid order estimate]
     - agreement with a reference result
@@ -647,10 +623,20 @@ sections:
     - output slices and sums: [x1_slice, output_sumx1, include_ghost_zones]
     - output files, combining the blocks: [combine, domain_decomposition, NumFilesInSet]
     - output precision: [double_precision, float32 output]
+    - adding an output field: [new diagnostic, user_out_var, field registration]
+    - precision, output files
+    - output: [NetCDF output, output files]
+    - units, of output fields: [output units]
+    - output, reading in Python: [plotting output, xarray, netCDF4]
+    - output, parallel: [PnetCDF]
+    - output frequency: [output dt, output schedule]
+    - output, time averages
   sec-ch15-restart:
     - restart, what it saves: [restart bundle, hydro_u_stored, restart metadata]
     - restart, schedule after resume: [file numbers after restart, schedule keys]
     - restart, refused files: [reference grid mismatch, restart metadata version]
+    - restart: [checkpoint, resume a run, restart file]
+    - restart, from a checkpoint
   sec-ch15-tools:
     - output files, combining and inspecting: [pd-combine, pd-inspect, NCO]
 

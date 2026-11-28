@@ -1,6 +1,6 @@
-"""Advance several blocks in one process; snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; no measured data."""
+"""Advance several blocks in one process; snapy@73c45a7c8c991209924e1137992352c335575062; no measured data."""
 from ..flow import make_flow
 
 
 def make_fig():
-    return make_flow(['caller event', 'per-block workers', 'advance / local budgets', 'global fixer', 'exchange / joined events'])
+    return make_flow(['agree and align', 'per-block workers run the stages', 'global phase: closure, chemistry', 'exchange'])

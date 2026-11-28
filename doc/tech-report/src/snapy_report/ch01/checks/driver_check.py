@@ -1,9 +1,9 @@
 """Executable check of the example driver's step loop (chapter 1, _driver.qmd).
 
-What is checked: the time loop of main in examples/run_hydro.cpp, the step of MeshBlockImpl::max_time_step
-(src/mesh/meshblock.cpp, 2^-r times cfl times the bound) and the cycle and redo bookkeeping of
-MeshBlockImpl::apply_redo (src/mesh/meshblock.cpp) at snapy@c0c38593d3d3f37bebe204a590610fd7daa05a5f, ported as a state
-machine driven by a scripted sequence of check_redo results. Claims C1-C3.
+What is checked: the time loop of main in examples/run_hydro.cpp, the step of MeshBlockImpl::global_time_step
+(src/mesh/meshblock_advance.cpp, 2^-r times cfl times the bound) and the cycle and redo bookkeeping of
+MeshBlockImpl::apply_redo (src/mesh/meshblock_redo.cpp) at snapy@73c45a7c8c991209924e1137992352c335575062, ported as a
+state machine driven by a scripted sequence of check_redo results. Claims C1-C3.
 
 Run: python3 driver_check.py   (numpy only; exits with the number of failed claims)
 """

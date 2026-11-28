@@ -25,7 +25,7 @@ holds, how it is bundled over blocks, and how a resumed run continues its output
 twice. The two command-line tools that read what a run leaves behind, `pd-combine` and `pd-inspect`, are
 @sec-ch15-tools.
 
-Three neighbouring topics are elsewhere. Which boundary a face gets, and what the names mean, is @sec-ch14; this
+Three neighbouring topics are elsewhere. Which boundary a face gets, and what the names mean, is @sec-ch14b; this
 chapter only shows where the `boundary-condition`[^rg-1e296ee737f4] keys are read. The `distribute`[^rg-6422110faeed] keys and the block layout are
 @sec-ch13. The execution keys (`integration/execution`) are @sec-ch11, and the budget output (`type: budget`) is
 part of @sec-ch10. @sec-appd lists the environment variables, and @sec-appi lists every deck key with its default.

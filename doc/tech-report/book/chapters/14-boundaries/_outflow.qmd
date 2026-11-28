@@ -298,7 +298,7 @@ is claimed.
 
 [^rg-91a96c0f7810]: $y_n$ — mass fraction of species $n$ **per unit total mass**, $\rho_n = \rho y_n$, dimensionless [-]; this is snapy's composition variable and the only one the state vector carries
 
-[^rg-589b9dd4f344]: $r_n$ — mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch10-tracer). Never written $r$ without its species subscript, because $r$ alone is the radius (§1)
+[^rg-589b9dd4f344]: $r_n$ — mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch08-drycarry). Never written $r$ without its species subscript, because $r$ alone is the radius (§1)
 
 [^rg-b87260aaaa6b]: PLM — piecewise-linear method
 

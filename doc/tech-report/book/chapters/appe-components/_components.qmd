@@ -48,8 +48,8 @@ off Apple.
 | kintera | moist EOS, saturation adjustment, the chemistry step | at least 2.6.13 in CMake (`find_package(Kintera 2.6.13 REQUIRED)`) and in the Python build and runtime metadata (`kintera>=2.6.13`) |
 | pyharp / CMake Harp | integrator options, stage weights and stage combination | required by CMake; no version minimum |
 | pydisort / CMake Disort | C++ shared-library link and Python package import | required by CMake; no version minimum |
-| commux | the process group over UCX (@sec-ch14) | `commux>=0.1.4` on Linux in the Python build and runtime metadata; CMake links `commux::commux` when UCX is found |
-| pinc | locates the PnetCDF headers and library (@sec-ch14) | `pinc>=0.2.0` on Linux in the Python build and runtime metadata; a `PNETCDF=ON` configure stops without it |
+| commux | the process group over UCX (`BACKEND=ucx`, @sec-ch12-layout) | `commux>=0.1.4` on Linux in the Python build and runtime metadata; CMake links `commux::commux` when UCX is found |
+| pinc | locates the PnetCDF headers and library (no V3 section yet) | `pinc>=0.2.0` on Linux in the Python build and runtime metadata; a `PNETCDF=ON` configure stops without it |
 | PyTorch | tensors, autograd-free kernels, the process-group store | `torch==2.10.0` in the Python build metadata only; the runtime metadata declares no torch |
 
 : Requirements, distinct from the package pins and from any tested combination. {#tbl-appe-requirements}

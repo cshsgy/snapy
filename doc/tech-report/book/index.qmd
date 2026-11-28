@@ -20,12 +20,11 @@ section has the same layers: a summary, the derivation, the numerical method, th
 | @sec-ch07 | Every source term besides the flux divergence and gravity: the forcing loop, axial angular momentum, Coriolis, viscosity and heat conduction, heating, relaxation, sponges and user stage forcings |
 | @sec-ch08 | The moist side of a stage and what keeps the state admissible: saturation adjustment, sedimentation, the flux positivity limiter, the equation-of-state floors, their records and the redo decision |
 | @sec-ch09 | Advancing in time: the Runge–Kutta stages, the time-step bound, step acceptance and redo, and the implicit column solve |
-| @sec-ch10 | How phase change, condensates and passive tracers enter the step |
+| @sec-ch10 | The flux register every face flux goes through: its posts, the prescribed faces, the wall batch, the step amounts, the monitor counts, the rollback of a rejected step, and the conservation budget read from it |
 | @sec-ch11 | How a stage runs: its segments, the stage executor, CUDA-graph capture and replay, the refusal list, and the default execution |
 | @sec-ch12 | Build options, environment switches, YAML scheme selection and which switch combinations are tested |
-| @sec-ch13 | The conservation budgets and diagnostics the model prints, and the tests that read them |
+| @sec-ch13 | The Mesh: how blocks are laid out and ranked, the ghost exchange between the blocks of one process and the same-process waits, exchange cuts and multi-block capture, Mesh-agree and the $x_1$ seam split |
 | @sec-ch14b | The boundary conditions, the ghost fill and exchange order, and immersed solids |
-| @sec-ch14 | Several processes and devices, output and restart files, and reproducibility |
 | @sec-ch15 | How deck keys become options, how output is written and combined, and how a run is restarted |
 | @sec-ch16 | How the code is verified: the bitwise gates, the capture sweep, launch counting, regression provenance and device reproducibility, then the verification catalogue: which test supports which claim, and how to rerun it |
 | @sec-ch17 | The limits of every chapter in one place: where snapy can be wrong, restricted or awkward |
@@ -65,7 +64,7 @@ pip install .
 ```
 <!-- end reader-reference: install -->
 
-`-DUCX=OFF` builds the Gloo backend only, which is all a single machine needs; @sec-ch14-backends describes UCX.
+`-DUCX=OFF` builds the Gloo backend only, which is all a single machine needs; @sec-ch12-layout lists the `BACKEND` choice and the UCX variables.
 The build also compiles the tests (`BUILD_TESTS` is on by default). A test named in a Tests layer runs with
 `ctest --test-dir build -R <name>`; to reproduce a documented test case and check it against the book, follow
 @sec-ch16-metrics. The last line installs the Python package from the same build, which the Python
@@ -94,7 +93,7 @@ block per process, so $N = 2$ (about 20 s):
 torchrun --no-python --nproc-per-node=2 --master-port=29573 ./straka.release straka_proc2.yaml
 ```
 
-Pick any free port for `--master-port` (@sec-ch14-launch). A process count that does not match the deck stops at
+Pick any free port for `--master-port` (@sec-ch12-layout). A process count that does not match the deck stops at
 construction with "world_size (1) does not match layout partitioning (2)".
 
 The 2-D warm-bubble test is `bryan.yaml`, a moist warm bubble on one block ($x_1$ by $x_2$, 200 by 400 cells): its
@@ -116,7 +115,7 @@ with `cuda`, the block runs on `cuda:<DEVICE_ID>`, or on the local rank's GPU wh
 ({{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::device_str >}}).
 The driver prints "Running on CUDA" before the first step when it got a GPU
 (`main` of {{< code examples/straka.cpp main >}});
-without that line it is running on the CPU. @sec-ch14-gpu covers the rest of GPU execution.
+without that line it is running on the CPU. @sec-ch11-devices covers the rest of GPU execution.
 
 **Which driver for which deck.** `straka.release` runs dry Cartesian decks such as `straka_single.yaml`;
 `bryan.release` runs the moist `bryan.yaml`; `run_hydro.release -i <deck>` needs a deck with a `reactions:` card,

@@ -48,7 +48,7 @@ variables and their defaults, and the one rule a run with more than one process 
 ### Derivation
 
 No continuum derivation applies. Rank metadata selects the process topology; the block layout and the neighbour
-exchange of @sec-ch03 and @sec-ch14 then follow it. A common rendezvous port is necessary for the processes to
+exchange of @sec-ch03 and @sec-ch13-ghost then follow it. A common rendezvous port is necessary for the processes to
 join one group, so automatic port selection is admissible only for one process. Check line `[C8]` enumerates
 the 53 independent port assignments over port sets of size two and three and one to three processes: the group
 forms for every assignment only with a single process, and a port given to all of them forms it at every size
@@ -161,7 +161,7 @@ It models the stated contract; it does not execute the compiled solver.
 ::: {.callout-warning title="Limits"}
 No network or multi-rank run is performed here. A YAML backend value cannot override the environment. A
 run-time backend selection does not prove that its library was compiled and linked. `LOCAL_RANK` has a second
-default in the Python launch helper, the rank modulo the GPU count (@sec-ch14).
+default in the Python launch helper, the rank modulo the GPU count (@sec-ch11-devices).
 
 The complete switch inventory is @sec-ch12-matrix.
 :::

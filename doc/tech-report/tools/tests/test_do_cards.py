@@ -154,31 +154,6 @@ def test_every_cmake_false_value_counts_as_off(cached):
     assert c.missing_build_option(off, f"PNETCDF:BOOL={cached}\n") is None
 
 
-def test_a_build_with_the_option_runs_the_card_and_reports_its_failure(tmp_path):
-    """PNETCDF:BOOL=1 is on: the runner must run the card, so a driver that always fails fails the card (no skip)."""
-    pytest.importorskip("yaml")
-    build = tmp_path / "build"
-    (build / "bin").mkdir(parents=True)
-    (build / "CMakeCache.txt").write_text("CMAKE_HOME_DIRECTORY:INTERNAL=/nonexistent\nPNETCDF:BOOL=1\n")
-    driver = build / "bin" / "straka.release"
-    driver.write_text("#!/bin/sh\necho the fixture driver always fails\nexit 3\n")
-    driver.chmod(0o755)
-    env = dict(os.environ, SNAP_PIN_BUILD=str(build), PYTHONPATH=os.pathsep.join(p for p in sys.path if p))
-    out = subprocess.run([sys.executable, "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider",
-                          str(TOOLS / "tests" / "test_do_cards_run.py"), "-k", "ch14-pnetcdf"],
-                         cwd=tmp_path, env=env, capture_output=True, text=True).stdout
-    assert "1 failed" in out and "skipped" not in out, out[-600:]
-    assert "the fixture driver always fails" in out
-
-
-def test_ch14_pnetcdf_is_a_needs_build_option_card():
-    data = c.load((TOOLS / "do-cards.yaml").read_text())
-    card = next(r for r in data["cards"] if r["id"] == "ch14-pnetcdf")
-    assert card["class"] == "needs-build-option"
-    assert card["build_option"] == {"name": "PNETCDF", "value": "ON"}
-    assert card["expect"] == "exit 0"
-
-
 # --- the real book and data file ----------------------------------------------------------------------------------
 
 def test_the_real_data_file_matches_the_sources():
@@ -186,7 +161,7 @@ def test_the_real_data_file_matches_the_sources():
     status, msgs = c.check(report)
     assert (status, msgs) == (0, [])
     data = c.load((report / "tools" / "do-cards.yaml").read_text(encoding="utf-8"))
-    assert len(data["cards"]) == len(c.source_cards(report / "book")) == 78
+    assert len(data["cards"]) == len(c.source_cards(report / "book")) == 59
 
 
 def test_the_construction_card_has_no_runnable_claim_or_exception():

@@ -12,7 +12,7 @@ reviewer:
 ### Summary
 
 This is a pointer section: the interpolation weights and the coordinate transforms belong to @sec-ch03, and
-the communication scheduling, buffers and tags belong to the chapter on the mesh and its exchange. What is derived here is the one identity
+the communication scheduling and buffers belong to @sec-ch13-ghost (the message tags have no V3 section yet). What is derived here is the one identity
 the layout itself implements, the corner synthesis, together with the ownership facts the boundary chapter
 relies on: which exchanges interpolate, which do not, and when the corners are filled.
 

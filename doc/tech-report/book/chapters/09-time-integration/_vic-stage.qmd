@@ -146,7 +146,7 @@ through `MeshBlock::forward` or `Mesh::forward`, so that the stage index is publ
 
 `dt_corr` is $\Delta t_c$ of @eq-ch09-vic-stage, and `stages.size() >= 3` is the restriction to `rk3` and `rk3s4`
 (`[C2]`). `StepDt` holds the step either on the host or, in a captured CUDA stage, on the device, where `scaled`
-forms the same product (@sec-ch14). Refused:
+forms the same product (@sec-ch11-graphsafe). Refused:
 nothing; a missing stage index is a warning, "rk_stage was not published before the implicit correction", not an
 error.
 

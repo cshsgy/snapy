@@ -1,6 +1,6 @@
 """Executable check of the key validation of the options readers (chapter 1, _options.qmd).
 
-What is checked: check_keys (src/input/check_keys.cpp at snapy@6fbb39750f62b83df096058a4746e77d0a634bc5),
+What is checked: check_keys (src/input/check_keys.cpp at snapy@73c45a7c8c991209924e1137992352c335575062),
 ported on Python dicts in place of YAML nodes, with the message format of the TORCH_CHECK. Claims C1-C3.
 
 Run: python3 options_check.py   (numpy only; exits with the number of failed claims)
@@ -24,7 +24,8 @@ def check_keys(node, path, keys, other="", other_keys=()):
     return None
 
 
-INTG = ["implicit-scheme", "implicit-advection-cfl", "shear-cfl"]
+INTG = ["implicit-scheme", "implicit-advection-cfl", "shear-cfl", "implicit-precision",
+        "implicit-fallback-fp64", "execution", "execution-strict"]  # src/implicit/implicit_hydro.cpp at the pin
 PYHARP = ["type", "cfl", "tlim", "nlim", "ncycle_out", "verbose"]
 
 

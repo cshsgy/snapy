@@ -62,7 +62,7 @@
   },
   "ch01": {
    "history": 0,
-   "offpin": 57,
+   "offpin": 0,
    "status": 0,
    "xref": 0
   },
@@ -116,7 +116,13 @@
   },
   "ch10": {
    "history": 0,
-   "offpin": 67,
+   "offpin": 1,
+   "status": 0,
+   "xref": 0
+  },
+  "ch11": {
+   "history": 0,
+   "offpin": 0,
    "status": 0,
    "xref": 0
   },
@@ -128,13 +134,13 @@
   },
   "ch13": {
    "history": 0,
-   "offpin": 15,
+   "offpin": 0,
    "status": 0,
    "xref": 0
   },
   "ch14": {
    "history": 0,
-   "offpin": 135,
+   "offpin": 64,
    "status": 0,
    "xref": 0
   },

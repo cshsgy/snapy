@@ -1,12 +1,13 @@
 ## Driver loop and accepted steps (`integration:`) {#sec-ch01-driver}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.1; examples/run_hydro.cpp; examples/straka.cpp; src/mesh/meshblock.cpp; tests/run_restart_cycle_limit.py;
-         tests/test_check_redo_parallel.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1; examples/run_hydro.cpp; examples/straka.cpp; src/mesh/meshblock_advance.cpp;
+         src/mesh/meshblock_redo.cpp; src/mesh/meshblock_output.cpp; src/mesh/stage_executor.cpp; src/implicit/implicit_hydro.cpp;
+         tests/run_restart_cycle_limit.py; tests/test_check_redo_parallel.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -16,14 +17,14 @@ safe time step and calls every stage of the integrator. It then asks whether the
 outputs of an accepted step. This section shows that loop as the two shipped examples run it, so a reader can write a
 driver of their own or follow an existing one.
 
-**One time step, in order.** (1) `max_time_step` picks $\Delta t$[^rg-473f42b9b5af]. (2) Each stage of the integrator runs
-`MeshBlockImpl::advance_local`, which reconstructs the face states, solves the Riemann problems, limits the fluxes and
-forms their divergence, adds the forcings and the vertical implicit correction, applies the user stage forcings, takes
-the RK[^rg-251dacab968c] average with the conserved limiter, refills the solids, adjusts the phases and the gravity work on the last
-stage only, and fills the physical ghosts; @sec-ch02-laws lists these six steps with their owners. (3) `run_hydro`
-alone then runs the kinetics step. (4) `check_redo` accepts, redoes or stops. (5) On acceptance the clock advances and
-`make_outputs` writes. The Code layer below gives the anchors of (1), (3), (4) and (5)
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} for (2)).
+**One time step, in order.** (1) `max_time_step` picks $\Delta t$. (2) Each stage of the integrator calls
+`MeshBlockImpl::forward`, which runs the block's stage schedule (@sec-ch01-stage): the stage-entry exchange of a bare
+block, then the hydro and scalar tendencies (reconstruction, Riemann problems, flux limiting and divergence, the
+forcings and the vertical implicit correction), the user stage forcings, the RK[^rg-251dacab968c] average with the conserved limiter
+and the solid refill, and on the last stage the saturation adjustment and a registered chemistry step, and finally the
+physical ghosts; @sec-ch02-laws lists the operators with their owners. (3) `check_redo` accepts, redoes or stops.
+(4) On acceptance the clock advances and `make_outputs` writes. The Code layer below gives the anchors of (1), (3) and
+(4) ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::forward >}} for (2)).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** N/A, a code map: choose the step, run the stages, accept or redo, write outputs.
@@ -34,7 +35,7 @@ alone then runs the kinetics step. (4) `check_redo` accepts, redoes or stops. (5
 
 **Activation.** Caller supplied; the integration defaults belong to pyharp.
 
-**Guarantee / limits.** A map, no order; the example runs kinetics after the stages and before `check_redo`.
+**Guarantee / limits.** A map, no order; the example's chemistry runs inside the block's last stage.
 
 **Evidence.** `test_check_redo_parallel.<b>` (exact) and `test_restart_cycle_limit`; see the Tests layer.
 :::
@@ -54,14 +55,14 @@ clock and the cycle count where they were, and outputs follow only accepted step
 
 The driver keeps the clock unchanged when a step is rejected. A positive return from `check_redo` repeats the cycle
 and a negative return ends it. Only after a zero return does the clock advance and `make_outputs` run.
-`MeshBlockImpl::max_time_step` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::max_time_step >}}) takes the block's
-local bound, reduces it with MIN across the process group. It returns that times the Courant number $C$ and $2^{-n_{\mathrm{redo}}}$, with
+`MeshBlockImpl::max_time_step` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::max_time_step >}}) takes the block's
+local bound, reduces it with MIN across the process group ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::global_time_step >}}). It returns that times the Courant number $C$ and $2^{-n_{\mathrm{redo}}}$, with
 $n_{\mathrm{redo}}$ the number of redos of the current step. `make_outputs`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::make_outputs >}}) accumulates statistics on every call and writes a
+({{< code src/mesh/meshblock_output.cpp MeshBlockImpl::make_outputs >}}) accumulates statistics on every call and writes a
 file when the clock has reached the output's next time; `finalize`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize >}}) forces a last write. The single-block example `main` of
-{{< code examples/run_hydro.cpp main >}} writes an initial output only on a fresh start, and applies the kinetics step
-after all dynamics stages and before `check_redo`. The mesh example `main` of {{< code examples/straka.cpp main >}}
+({{< code src/mesh/meshblock_output.cpp MeshBlockImpl::finalize >}}) forces a last write. The single-block example `main` of
+{{< code examples/run_hydro.cpp main >}} writes an initial output only on a fresh start, and registers its kinetics with
+`set_chemistry`, so the chemistry step runs inside the block's last stage, before `check_redo`. The mesh example `main` of {{< code examples/straka.cpp main >}}
 writes an initial output unconditionally, restart included. No spatial or temporal order belongs to this control flow;
 it inherits the selected operators.
 
@@ -70,7 +71,7 @@ it inherits the selected operators.
 ```{python}
 #| label: fig-ch01-driver-flow
 #| fig-cap: "Driver loop and accepted steps. Labelled green boxes name operations or owners; black arrows show the reading sequence, not a timing measurement."
-#| fig-alt: "Sequence: caller: choose dt; all stages; kinetics (run_hydro); reject / accept; accepted outputs."
+#| fig-alt: "Sequence: caller: choose dt; all stages, chemistry in the last; reject / accept; accepted outputs."
 #| echo: false
 from snapy_report.ch01.figures.fig_driver_flow import make_fig
 make_fig()
@@ -82,14 +83,15 @@ round-off that enters is bounded in step 3.
 1. *A rejected step leaves the clock alone.* `++block->cycle` and `current_time += dt` run only after `check_redo`
    returned zero ({{< code examples/run_hydro.cpp main >}}), so a repeated or an ended step advances neither the
    cycle count nor the clock; `apply_redo` does not touch the cycle.
-2. *A redo restores the saved state.* `apply_redo` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_redo >}})
-   copies the step-start buffers back and increments `current_redo`, and the next `max_time_step` reads it.
+2. *A redo restores the saved state.* `apply_redo` ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}})
+   increments `current_redo`, rolls the flux register back and copies the step-start buffers back, and the next
+   `max_time_step` reads the count. Past `integration/max_redo` redos it returns $-1$ and the loop ends.
 3. *The halving is exact.* `max_time_step` returns $2^{-n_{\mathrm{redo}}}\,C\,\Delta t_{\mathrm{bound}}$. Multiplying
    a double by $2^{-n_{\mathrm{redo}}}$ changes only its exponent, so it is exact until underflow; the one product
    $C\,\Delta t_{\mathrm{bound}}$ is rounded once, with relative error at most
    $\delta_{\mathrm{mach}} = 2^{-53}$. The MIN reduction across ranks selects one of the operands and adds no error.
 4. *Outputs follow accepted steps only.* `make_outputs` runs after the cycle and clock increments and writes when the
-   clock has reached the output's next time ({{< code src/mesh/meshblock.cpp MeshBlockImpl::make_outputs >}}).
+   clock has reached the output's next time ({{< code src/mesh/meshblock_output.cpp MeshBlockImpl::make_outputs >}}).
 
 ### Code
 
@@ -97,24 +99,25 @@ round-off that enters is bounded in step 3.
 |---|---|---|---|
 | driver | {{< code examples/run_hydro.cpp main >}} | `check_redo` | none |
 | straka | {{< code examples/straka.cpp main >}} | `forward` | none |
-| dt | {{< code src/mesh/meshblock.cpp MeshBlockImpl::max_time_step >}} | `max_time_step` | `integration/cfl` |
-| redo | {{< code src/mesh/meshblock.cpp MeshBlockImpl::check_redo >}} | `check_redo` | none |
-| redo causes | {{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_redo >}} | `current_redo` | none |
-| output | {{< code src/mesh/meshblock.cpp MeshBlockImpl::make_outputs >}} | `make_outputs` | `outputs:` |
-| final | {{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize >}} | `finalize` | none |
+| dt | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::max_time_step >}} | `max_time_step` | `integration/cfl` |
+| redo | {{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::check_redo >}} | `check_redo` | none |
+| redo causes | {{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}} | `current_redo` | `integration/max_redo` |
+| output | {{< code src/mesh/meshblock_output.cpp MeshBlockImpl::make_outputs >}} | `make_outputs` | `outputs:` |
+| final | {{< code src/mesh/meshblock_output.cpp MeshBlockImpl::finalize >}} | `finalize` | none |
 
 : Implementation anchors for the driver loop. {#tbl-ch01-driver-code}
 
-1. Choose the step: `max_time_step` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::max_time_step >}}).
-2. Run every stage through `forward` (@sec-ch01-block-forward) and, in `run_hydro`, the kinetics step
-   ({{< code examples/run_hydro.cpp main >}}).
-3. Decide: `check_redo` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::check_redo >}}) returns positive to
-   repeat, negative to stop, zero to accept; `apply_redo` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::apply_redo >}})
+1. Choose the step: `max_time_step` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::max_time_step >}}).
+2. Run every stage through `forward` (@sec-ch01-block-forward); a chemistry step registered with `set_chemistry`
+   runs inside the last stage ({{< code examples/run_hydro.cpp main >}}).
+3. Decide: `check_redo` ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::check_redo >}}) returns positive to
+   repeat, negative to stop, zero to accept; `apply_redo` ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::apply_redo >}})
    counts the redo and restores the saved state.
-4. Write: `make_outputs` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::make_outputs >}}) after the accepted
-   cycle and clock increments; `finalize` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize >}}) at the end.
+4. Write: `make_outputs` ({{< code src/mesh/meshblock_output.cpp MeshBlockImpl::make_outputs >}}) after the accepted
+   cycle and clock increments; `finalize` ({{< code src/mesh/meshblock_output.cpp MeshBlockImpl::finalize >}}) at the end.
 
-**How to use it.** The driver reads the integration block of the card; the three snapy keys and the six
+**How to use it.** The driver reads the integration block of the card; the seven snapy keys (the implicit scheme,
+its two Courant limits, its precision and FP64 fallback, and the execution mode and its strict flag) and the six
 keys pyharp reads are the only ones accepted ({{< code src/implicit/implicit_hydro.cpp ImplicitOptionsImpl::from_yaml overload=1 >}}):
 
 <!-- reader glossary keys -->Keys in this fragment: `integration`[^rg-63ada7768d37], `tlim`[^rg-955cd175eb5b], `nlim`[^rg-9702bd7116a5], `implicit-scheme`[^rg-04fd7cd8be70].
@@ -131,8 +134,9 @@ limit. The limit depends on the integrator (@sec-ch09-rk), the reconstruction an
 together, and no test at the pin integrates a run at increasing $C$ to find where it fails. What $C$ multiplies is
 in @sec-ch09-cfl.
 
-Refused: any other key under `integration`, with its path in the error; `implicit-advection-cfl`[^rg-cb6cdb706a5c] or `shear-cfl`[^rg-be87d6fbf19d]
-without `implicit-scheme`, because they bound an implicit direction that does not exist (@sec-ch12-yaml). A
+Refused: any other key under `integration`, with its path in the error; `implicit-advection-cfl`[^rg-cb6cdb706a5c], `shear-cfl`[^rg-be87d6fbf19d],
+`implicit-precision` or `implicit-fallback-fp64` without `implicit-scheme`, because they configure an implicit
+direction that does not exist (@sec-ch12-yaml). A
 driver of your own repeats the loop of `main` ({{< code examples/run_hydro.cpp main >}}):
 
 ```cpp
@@ -145,30 +149,6 @@ driver of your own repeats the loop of `main` ({{< code examples/run_hydro.cpp m
       block->forward(vars, dt, stage);
     }
 
-    // evolve kinetics
-    auto &hydro_u = vars["hydro_u"];
-    auto &hydro_w = vars["hydro_w"];
-
-    // Kinetics needs the final dynamics state, including saturation adjustment.
-    peos->forward(hydro_u, hydro_w);
-    auto temp = peos->compute("W->T", {hydro_w});
-    auto pres = hydro_w[IPR];
-    auto xfrac = thermo_y->compute("Y->X", {hydro_w.narrow(0, ICY, ny)});
-    auto conc = thermo_x->compute("TPX->V", {temp, pres, xfrac});
-    auto cp_vol = thermo_x->compute("TV->cp", {temp, conc});
-
-    // auto conc_kinet = kinet->options.narrow_copy(conc, thermo_y->options);
-    auto conc_kinet = conc.slice(-1, 1, conc.size(-1));
-    auto [rate, rc_ddC, rc_ddT, rate_constants] =
-        kinet->forward_with_rate_constants(temp, pres, conc_kinet);
-    auto jac = kinet->jacobian(temp, conc_kinet, cp_vol, rate, rc_ddC, rc_ddT,
-                               rate_constants);
-    auto del_conc = kintera::evolve_implicit(rate, kinet->stoich, jac, dt);
-    std::vector<int64_t> vec(del_conc.dim(), 1);
-    vec[del_conc.dim() - 1] = -1;
-    auto del_rho = del_conc / thermo_y->inv_mu.narrow(0, 1, ny).view(vec);
-    hydro_u.narrow(0, ICY, ny) += del_rho.permute({3, 0, 1, 2});
-
     int err = block->check_redo(vars);
     if (err > 0) continue;  // redo this step with smaller dt
     if (err < 0) break;     // terminate simulation
@@ -180,10 +160,12 @@ driver of your own repeats the loop of `main` ({{< code examples/run_hydro.cpp m
   }
 ```
 
-The first two lines inside the loop are step 1 of the walk-through; `print_cycle_info` writes the cycle log of
-@sec-ch13 and changes no state. The `for` loop is step 2. The kinetics block is the example's own chemistry update,
-with kintera's implicit solver ({{< code examples/run_hydro.cpp main >}}). It is not part of the block API[^rg-12b6d47ad2b9]. It runs on
-the state the stages left, before `check_redo`. The `check_redo` lines are step 3 and the last three lines step 4.
+The first two lines inside the loop are step 1 of the walk-through; `print_cycle_info` writes the cycle log (the
+pre-V3 section “Cycle-line budget”, which returns with the V3 chapter 10) and changes no state. The `for` loop is step 2.
+Before the loop, `main` registers the deck's reactions with `set_chemistry`
+({{< code examples/run_hydro.cpp main >}}); the block's API[^rg-12b6d47ad2b9] then runs that chemistry step as the last op of its last
+stage, on the state the stages left and before `check_redo`, rather than in the driver. The `check_redo` lines are
+step 3 and the last three lines step 4.
 
 ### Tests
 
@@ -207,18 +189,16 @@ follow only accepted steps (time 4.05 after accepted steps of 1.8, 0.45 and 1.8,
 redo halves the step of the retry (1.8, 0.9, 0.45, 0.225). `[C3]`: a negative `check_redo` ends the loop at the time
 of the last accepted step (1.80 after three attempts, two outputs).
 
-`test_restart_cycle_limit` passes at the pin.[^ch01-driver-restart] The two-rank ctest runs on CPU[^rg-8f99acfe5206] only and has not
-been run for this report at the pin: **pending a pinned ctest run**.
+At the pin `test_restart_cycle_limit` and the two-rank `test_check_redo_parallel.release` passed on the CPU-only and on the
+CUDA build (6.0 s and 6.2 s for the restart pair).[^ch01-driver-ctest]
 
-[^ch01-driver-restart]: [sha: snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; deck: the test itself; run:
-    `ctest -R test_restart_cycle_limit
-    --output-on-failure` in a CPU Release build with `NETCDF=ON`, 1 process; scope: the `Total Test time (real)` that
-    ctest reports for the one test, 8.87 s, of which the test itself took 8.69 s; reps: 1, a single ctest run; torch
-    2.10.0, kintera 2.6.2, Python 3.11.13]. 1 of 1 passed, 8.9 s.
+[^ch01-driver-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_check_redo_parallel\.release|test_restart_cycle_limit)$'`,
+    clean CPU-only Release build, CPU, FP64, one process (two ranks under `torchrun` for `test_check_redo_parallel`); and the same command on a clean CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13]; logs `ctest-ch01-cpu.log`, `ctest-ch01-cuda.log`, `ctest-ch01-cpu-py.log` and `ctest-ch01-cuda-py.log`.
 
-[^ch01-driver-run]: [sha: snapy@c0c38593d3d3f37bebe204a590610fd7daa05a5f; deck: the check itself; run:
+[^ch01-driver-run]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the check itself; run:
     `python3 src/snapy_report/ch01/checks/driver_check.py`,
-    CPU, double, 1 process; Python 3.11.13, numpy 2.4.6; output identical to the committed file]. Output
+    CPU, double, 1 process; Python 3.12.15, numpy 2.4.6; output identical to the committed file]. Output
     `driver_check.out`, lines `[C1]` to `[C3]`.
 
 ### Limits
@@ -226,13 +206,12 @@ been run for this report at the pin: **pending a pinned ctest run**.
 ::: {.callout-warning title="Limits"}
 The restart writer saves the output counters as they stand when it runs, inside `make_outputs`; together with
 the unconditional initial output of `straka`, this is a code-level reason to check for repeated restart
-outputs, and no overwrite experiment is reported here. The kinetics step of `run_hydro` lives in the driver,
-outside the block's stage.
+outputs, and no overwrite experiment is reported here. A Mesh defers each block's chemistry and runs it over its
+blocks after the axial closure of the last stage (@sec-ch01-mesh), so where chemistry sits in the step differs
+between a bare block and a Mesh block.
 :::
 
 <!-- reader glossary notes -->
-[^rg-473f42b9b5af]: $\Delta t$ — the step
-
 [^rg-251dacab968c]: RK — Runge–Kutta
 
 [^rg-25ec79df3164]: $C$ — Courant number (named: acoustic, advective, vertical acoustic)
@@ -252,6 +231,4 @@ outside the block's stage.
 [^rg-be87d6fbf19d]: shear-cfl — Courant limit associated with shear
 
 [^rg-12b6d47ad2b9]: API — application programming interface
-
-[^rg-8f99acfe5206]: CPU — central processing unit
 <!-- end reader glossary notes -->

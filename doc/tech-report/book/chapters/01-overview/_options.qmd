@@ -1,12 +1,13 @@
 ## Build options from YAML and reject unknown keys (`from_yaml`) {#sec-ch01-options}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.11; src/add_arg.h; src/input/check_keys.cpp; src/mesh/meshblock_options.cpp; src/layout/layout.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.2; src/add_arg.h; src/input/check_keys.cpp; src/mesh/meshblock_options.cpp; src/layout/layout.cpp;
+         src/options/layout.yaml; src/hydro/balance_column.cpp;
          src/scalar/scalar_options.cpp; tests/test_yaml_keys.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -24,9 +25,10 @@ A module is an object that owns configuration, buffers and child modules and exp
 `forward`: `HydroImpl` derives from `torch::nn::Cloneable<HydroImpl>`, and `Hydro` is its `TORCH_MODULE`
 holder ({{< code src/hydro/hydro.hpp HydroImpl >}}). A functional is a function call with its inputs and
 options passed as arguments, without constructing a module object for that operation. For example,
-`conservative_refine` calls `torch::nn::functional::interpolate(x, opts_y)` with explicit interpolation
-options ({{< code src/utils/refine.cpp conservative_refine >}}). This distinction concerns the C++ API;
-it does not assert that every function is pure or that every snapy module has a matching functional.
+`snap::balance_column(w, dx1f, grav, wall_clamp, rtol, max_iter, geometry, stretched, conversion_order, eos)` takes
+the column, its widths and every option as arguments and returns the balanced column
+({{< code src/hydro/balance_column.cpp balance_column >}}; @sec-ch01-initialization). This distinction concerns the
+C++ API; it does not assert that every function is pure or that every snapy module has a matching functional.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** N/A, a code map: `ADD_ARG` fields, `check_keys`, and the root reader's delegation.
@@ -61,7 +63,10 @@ delegates the layout, hydro, scalar, integrator, outputs, coordinates, internal 
 their own readers. Two examples are `LayoutOptionsImpl::from_yaml`
 ({{< code src/layout/layout.cpp LayoutOptionsImpl::from_yaml >}}) and `ScalarOptionsImpl::from_yaml`
 ({{< code src/scalar/scalar_options.cpp ScalarOptionsImpl::from_yaml >}}). It has no whole-document whitelist of its
-own. Each reader owns its defaults (@sec-ch12-yaml). This is configuration validation, with no stencil, stage or
+own. Each reader owns its defaults (@sec-ch12-yaml). Some readers, among them the layout's and the hydro block's, are
+generated at build time from the option schema in `src/options/` (one YAML file per options block,
+{{< code src/options/layout.yaml >}}): the schema lists each field, its deck key, its default and any environment
+override, and the generated reader calls `check_keys` with a key list generated from it (@sec-ch15-options). This is configuration validation, with no stencil, stage or
 accuracy order.
 
 @fig-ch01-options-flow shows the call sequence.
@@ -151,16 +156,23 @@ The refusal helper is `expect_refused` ({{< code tests/test_yaml_keys.cpp expect
 
 The check is a port of `check_keys` on Python dictionaries.[^ch01-options-run] `[C1]`: a sequence, a scalar
 or a null node passes unchecked (4 of 4). `[C2]`: an unknown key is refused with its path, the valid keys and the
-delegated reader's keys, for example `unknown key 'integration/cfll'. Valid keys: implicit-scheme,
-implicit-advection-cfl, shear-cfl; read by pyharp: type, cfl, tlim, nlim, ncycle_out, verbose.` `[C3]`: keys of
-either reader pass.
+delegated reader's keys (the pin's two key lists, @sec-ch01-driver), for example `unknown key 'integration/cfll'.
+Valid keys: implicit-scheme, implicit-advection-cfl, shear-cfl, implicit-precision, implicit-fallback-fp64, execution,
+execution-strict; read by pyharp: type, cfl, tlim, nlim, ncycle_out, verbose.` `[C3]`: keys of either reader pass.
 
-The ctest runs on CPU, one rank; it has not been run for this report at the pin: **pending a pinned ctest run**.
+The ctest runs on CPU, one rank, and on CUDA through the same binary. At the pin `test_yaml_keys.release` passed with
+its 31 cases run on both builds.[^ch01-options-ctest]
 
-[^ch01-options-run]: [sha: snapy@ccf40f9565642c32be69f4b9ef0cfa6daff3f201; deck: the check itself; run:
+[^ch01-options-run]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the check itself; run:
     `python3 src/snapy_report/ch01/checks/options_check.py`,
-    CPU, 1 process; Python 3.14.7, numpy 2.5.1; output identical to the committed file]. Output `options_check.out`, lines
+    CPU, 1 process; Python 3.12.15, numpy 2.4.6; output written to the committed file]. Output `options_check.out`, lines
     `[C1]` to `[C3]`.
+
+[^ch01-options-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the test's own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^test_yaml_keys\.release$'`, clean CPU-only Release
+    build, CPU, FP64, one process; and the same command on a clean CUDA Release build (sm_61 code); torch
+    2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9]; logs `ctest-ch01-cpu.log` and
+    `ctest-ch01-cuda.log`.
 
 ### Limits
 

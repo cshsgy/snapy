@@ -1,5 +1,0 @@
-[C1] PASS T0 is one to one in (phi, l, beta) for 0 <= phi < 64, l < 32, and phi = -1 or 64 is refused: 27 buffer ids (0..26), 55296 tags, 55296 distinct, range 0..65530; refused 2 of 2
-[C2] PASS T = T0 + 65536 n is one to one and stays below 2^31 for n < 32768: 25 sampled (T0, n) recovered from T; largest T = 2147483647 = 2^31 - 1
-[C3] PASS l < 32 is needed and not checked: l = 32 at phi is accepted and equals l = 0 at phi + 1: make_comm_tag(32, 0, phi=0) = 1024 = make_comm_tag(0, 0, phi=1) = 1024
-[C4] PASS the hydro relay tags are no T0 at l < 16; folded, they keep their low 16 bits and stay below 2^24: relay tags hitting T0: 0; largest folded tag 16742214 = 2^24 - 35002
-[C5] PASS exchange tags stay below the gather_x1 base 2^24 while an exchange has at most 256 variables: first variable index whose tags reach 2^24: n = 256

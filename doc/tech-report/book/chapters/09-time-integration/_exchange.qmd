@@ -86,7 +86,7 @@ make_fig()
 
 The exchange itself (what is filled, in which order, and across which seams) is in @sec-ch03; the physical
 boundary fill at the end of each stage is in the boundary-conditions chapter. On CUDA the single block's `exchange`
-operation is a host segment between captured graphs (@sec-ch14); the order is the same.
+operation is a host segment between captured graphs (@sec-ch11-segments); the order is the same.
 
 ### Code
 

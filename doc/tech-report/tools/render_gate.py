@@ -1469,7 +1469,6 @@ def main(argv):
     import gen_reader_reference
     import gen_boundary_contract
     import gen_forcing_contract
-    import gen_collective_contract
     import gen_scheme_contract
     import gen_scheme_native
     import glossary_registry
@@ -1487,7 +1486,6 @@ def main(argv):
         ("N5 pinned defaults", lambda: gen_reader_reference.check_defaults(report)),
         ("N6 boundary contract", lambda: gen_boundary_contract.check(report)),
         ("N6 forcing contract", lambda: gen_forcing_contract.check(report)),
-        ("N6 collective contract", lambda: gen_collective_contract.check(report)),
         ("N6 scheme contract", lambda: gen_scheme_contract.check(report)),
         ("N6 scheme native", lambda: gen_scheme_native.check(report)),
         ("N6 species contract", lambda: gen_species_contract.check(report)),

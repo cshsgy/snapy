@@ -2,7 +2,16 @@ This chapter is the map of snapy for a reader who has never opened it. It follow
 loop, through a `MeshBlock` or a `Mesh`, into the hydro and scalar kernels, and back out to the written outputs. It
 then says where the data lives in memory, how a run is configured, how Python reaches the same objects, and which
 external packages the code leans on. Every section is a code map read at the pin of `code_pin.yml`. It names the
-function that does each thing and the test that holds the claim up. It makes no new numerical claim of its own. The
+function that does each thing and the test that holds the claim up.
+
+One step at the pin, in brief. The caller's loop asks for $\Delta t$[^rg-473f42b9b5af] and calls `forward` once per Runge–Kutta stage on
+a `MeshBlock` or a `Mesh` (@sec-ch01-driver). Each stage is a schedule of named ops built by the block's stage
+executor: the stage-entry exchange of a bare block, the hydro and scalar increments, the user forcings, the
+integrator's combine, and the end-of-stage slots for saturation, chemistry and the physical ghosts (@sec-ch01-stage).
+The executor runs the schedule eagerly, or groups the ops into segments and replays the capturable ones as CUDA[^rg-28386113293d] graphs
+(@sec-ch13-cuts, @sec-ch13-agree, @sec-ch16-capture). Every face flux goes through the block's flux register, which keeps the stage's totals and the step's
+sums (@sec-ch01-stage). A `Mesh` runs the stages of its blocks through one executor, then its global phase, then the
+exchange between its blocks (@sec-ch01-mesh, @sec-ch13). It makes no new numerical claim of its own. The
 physics of each operator belongs to its own chapter, which the map points at. The directories and modules of the repository, with the chapter
 that covers each, are listed in @sec-appj.
 
@@ -23,9 +32,9 @@ make_fig()
 | @sec-ch01-driver | `integration:` | external integrator | N/A: map | `test_check_redo_parallel.<b>` |
 | @sec-ch01-construction | `MeshBlockOptions` | caller options | N/A: map | `test_yaml_keys.<b>` |
 | @sec-ch01-initialization | `restart_file` | fresh start | N/A: map | `test_scalar.<b>` |
-| @sec-ch01-stage | `user_stage_forcings` | no callbacks | N/A: map | `test_user_output.<b>` |
+| @sec-ch01-stage | `integration/execution`, `user_stage_forcings` | eager on CPU[^rg-8f99acfe5206]; no callbacks | N/A: map | `test_stage_schedule.<b>` |
 | @sec-ch01-block-forward | `MeshBlock.forward` | exchange first | N/A: map | missing evidence |
-| @sec-ch01-mesh | `distribute.blocks_per_process` | 1 block | N/A: map | `test_mesh_multi_block.<b>` |
+| @sec-ch01-mesh | `distribute.blocks_per_process` | 1 block | N/A: map | `test_mesh_executor.<b>` |
 | @sec-ch01-hydro | `dynamics:` | per physics chapter | N/A: map | missing evidence |
 | @sec-ch01-scalar | `scalar:` | 0 scalars | N/A: map | `test_scalar.<b>` |
 | @sec-ch01-dispatch | `CUDA` | OFF / `cpu` | N/A: map | `test_weno5_cuda_line.<b>` |
@@ -36,5 +45,14 @@ make_fig()
 
 : Chapter scope; `<b>` is the build suffix (`release` by default). Operator order belongs to the physics chapters. {#tbl-ch01-overview-schemes}
 
-The ctests named here have not been run for this report at the pin. @sec-ch16-ch01 records their device and rank
-coverage and the runs that are missing; the chapter's own checks are ports that import no snapy.
+The ctests this chapter names were run by name at the pin on a clean CPU-only and a clean CUDA (sm_61) Release build;
+each section states the result and its run, and @sec-ch16-ch01 records their device and rank coverage. The chapter's
+own checks are ports that import no snapy.
+
+<!-- reader glossary notes -->
+[^rg-473f42b9b5af]: $\Delta t$ — the step
+
+[^rg-28386113293d]: CUDA — NVIDIA's parallel computing platform
+
+[^rg-8f99acfe5206]: CPU — central processing unit
+<!-- end reader glossary notes -->

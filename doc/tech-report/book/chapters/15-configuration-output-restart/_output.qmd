@@ -145,6 +145,13 @@ coordinates are written through the same cast.
 
 ### Numerical method
 
+The two hydro sets a stream can write come from the two copies of the state. The conserved variables are the rows
+of `hydro_u` that the scheme advances: the density, the three momenta, the total energy and the species densities.
+The primitive variables are the rows of `hydro_w` at the same indices: the density, the three velocities, the
+pressure and the mass fractions. `cons` writes the conserved ones as `dens`, `mom1` to `mom3` and `Etot`, and `prim`
+writes the primitive ones as `rho`, `vel1` to `vel3` and `press`; the energy and the pressure only when the hydro has
+more than four rows ({{< code src/output/load_hydro_output_data.cpp OutputType::loadHydroOutputData >}}).
+
 **One write.** `GriddedWriter::write_output_file`
 ({{< code src/output/writer_core.cpp GriddedWriter::write_output_file >}}) does nothing on the final call, then
 builds the frame in five steps:

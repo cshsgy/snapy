@@ -2,9 +2,9 @@
 
 | status | questions |
 |---|---|
-| answered | 18 |
-| partly documented | 61 |
-| undocumented | 8 |
+| answered | 17 |
+| partly documented | 60 |
+| undocumented | 10 |
 | unsupported by the code | 0 |
 | outside scope | 8 |
 | total | 95 |
@@ -35,23 +35,21 @@
 
 **Q-045.** How do thermodynamics (kintera) and radiation (pyharp) plug into the dynamics, and do I need them for my first run? See External component interfaces, @sec-appe.
 
-**Q-053.** How is precipitation and sedimentation treated: fall speed, time-step limits? Is the mass leaving at the bottom counted in the budgets? See Sedimentation of condensates, @sec-ch10-sed.
+**Q-053.** How is precipitation and sedimentation treated: fall speed, time-step limits? Is the mass leaving at the bottom counted in the budgets? See Sedimentation of condensates, @sec-ch08-sed.
 
-**Q-065.** How is output produced across processes: does each process write separately, does one gather the data, or is parallel I/O used, and what limits follow from that choice? See NetCDF output: per-block files and the combine, @sec-ch14-netcdf.
+**Q-065.** How is output produced across processes: does each process write separately, does one gather the data, or is parallel I/O used, and what limits follow from that choice? See Output writers, @sec-ch15-output.
 
-**Q-073.** How does condensation and evaporation work: saturation adjustment or kinetic rates? Where is it called, and how does the energy equation see the latent heat? See Saturation adjustment in the step, @sec-ch10-satadj.
+**Q-073.** How does condensation and evaporation work: saturation adjustment or kinetic rates? Where is it called, and how does the energy equation see the latent heat? See Saturation adjustment in the step, @sec-ch08-satadj.
 
-**Q-074.** How do I add sedimentation or precipitation for a condensate? Is it carried by the hydro flux or by a separate flux? How does it enter the time-step limit? See Sedimentation of condensates, @sec-ch10-sed.
+**Q-074.** How do I add sedimentation or precipitation for a condensate? Is it carried by the hydro flux or by a separate flux? How does it enter the time-step limit? See Sedimentation of condensates, @sec-ch08-sed.
 
 **Q-075.** What is the layout of the state vector? What is the order of density, momenta, energy, vapors, condensates and passive scalars? Are condensates stored as mass fractions, mixing ratios or densities, and in which units? See [2. State, thermodynamics and species](#sec-appa-2).
 
 **Q-076.** How do I write a new boundary condition? What interface fills the ghost zones, how do I handle each face and direction, and how is it selected from the input file? See Reserve a face or fill a solid mask, @sec-ch14-custom.
 
-**Q-082.** Are runs bitwise reproducible across CPU and GPU, thread counts and MPI ranks, and where they are not bitwise, do they agree within a stated tolerance or statistically? See Reproducibility: what is shown bit for bit and what is not, @sec-ch14-repro.
-
 ## Partly documented {.unnumbered .unlisted}
 
-**Q-001.** How do I build and run the smallest GPU case on my cluster, and confirm that the computation actually uses the GPU? See GPU execution, @sec-ch14-gpu. Not covered: a ready-made batch script and the laptop-to-cluster/GPU path.
+**Q-001.** How do I build and run the smallest GPU case on my cluster, and confirm that the computation actually uses the GPU? See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices. Not covered: a ready-made batch script and the laptop-to-cluster/GPU path.
 
 **Q-002.** How long does a small run take on a laptop, and how large is its output? See [Install and run](#sec-preface-install). Not covered: output size of the example run.
 
@@ -59,7 +57,7 @@
 
 **Q-005.** Which GPU architectures, driver and CUDA versions, numerical precisions and dependency combinations are supported, and where is the compatibility list? See External component interfaces, @sec-appe-components. Not covered: a tested driver/CUDA/precision combination.
 
-**Q-006.** How do I launch the same case across two nodes, assign processes to GPUs and verify that each process uses the intended device? See Launch environment and rendezvous, @sec-ch14-launch. Not covered: a two-node launch command (pd-run has no multi-node mode).
+**Q-006.** How do I launch the same case across two nodes, assign processes to GPUs and verify that each process uses the intended device? See Layout and communication environment, @sec-ch12-layout. Not covered: a two-node launch command (pd-run has no multi-node mode).
 
 **Q-008.** If a paper doesn't name its reconstruction, Riemann solver, limiter, CFL or implicit setting, which defaults apply? How can I tell from its input file or output what was actually used? See YAML scheme selection and setup guards, @sec-ch12-yaml. Not covered: a full key list with units; how to read the resolved configuration from output.
 
@@ -73,7 +71,7 @@
 
 **Q-014.** What lower-boundary options exist for a planet with no surface (deep bottom, imposed heat flux, free-slip, sponge)? What replaces my old Rayleigh bottom drag? See Sponge layers: Rayleigh drag near the top and bottom boundaries, @sec-ch07-sponge. Not covered: one list of lower-boundary options for a planet without a surface.
 
-**Q-015.** How do I set up condensable species (NH3, H2O, NH4SH; CH4 and H2S for ice giants), and what happens to the condensate: immediate rainout, retained, or advected? See Saturation adjustment in the step, @sec-ch10-satadj. Not covered: CH4/ice-giant setup and the species declaration.
+**Q-015.** How do I set up condensable species (NH3, H2O, NH4SH; CH4 and H2S for ice giants), and what happens to the condensate: immediate rainout, retained, or advected? See Saturation adjustment in the step, @sec-ch08-satadj. Not covered: CH4/ice-giant setup and the species declaration.
 
 **Q-016.** Should I run in float32 or float64, and what does each cost or risk? See Expose the C++ API to Python, @sec-ch01-python. Not covered: a recommendation and a cost comparison.
 
@@ -119,9 +117,7 @@
 
 **Q-047.** How do I compare my run against a published result or an analytic solution, and what counts as agreement? See 15.1 Reading verification evidence (chapters/16-verification/_metrics.qmd) has no {#sec-} label, in Verification and reproducibility, @sec-ch16. Not covered: a procedure to compare with a published or analytic result.
 
-**Q-048.** My run stopped with negative density or NaN. What do I check first, and which settings usually fix it? See Redo causes and termination status: what the log says about a rejected step and the end of a run, @sec-ch13-redo-view. Not covered: first-check order and usual fixes.
-
-**Q-050.** Is total mass conserved to round-off in a closed domain? Where is a test that shows the drift per step, and for which version? See Conservation budgets and diagnostics, @sec-ch13. Not covered: water budget with boundary fluxes; comparison with a potential-temperature GCM.
+**Q-050.** Is total mass conserved to round-off in a closed domain? Where is a test that shows the drift per step, and for which version? See Mesh, layout, exchange and multi-block runs, @sec-ch13. Not covered: water budget with boundary fluxes; comparison with a potential-temperature GCM.
 
 **Q-051.** On curvilinear grids (spherical-polar, cubed sphere), is free-stream preservation (the geometric conservation law) satisfied, and do fluxes match exactly across panel seams? Where is this tested? See Grids and geometry evidence, @sec-ch16-ch03-tests. Not covered: free-stream preservation; grid imprinting; output-coverage check.
 
@@ -131,19 +127,19 @@
 
 **Q-055.** How is a simulation divided among processes and GPUs, and how do grid shape and decomposition affect communication and load balance? See Layouts and rank maps, @sec-ch03-layouts. Not covered: effect of decomposition on communication and load balance.
 
-**Q-056.** Which parts of a time step execute on the GPU, which stay on the CPU, and when must data move between them? See GPU execution, @sec-ch14-gpu. Not covered: a module GPU how-to; timing and memory diagnostics.
+**Q-056.** Which parts of a time step execute on the GPU, which stay on the CPU, and when must data move between them? See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices. Not covered: a module GPU how-to; timing and memory diagnostics.
 
-**Q-057.** Is a GPU run deterministic from run to run (atomics, reduction order)? How large is the spread, and how does it affect the conservation and well-balancing numbers? See Reproducibility: what is shown bit for bit and what is not, @sec-ch14-repro. Not covered: measured GPU run-to-run spread.
+**Q-057.** Is a GPU run deterministic from run to run (atomics, reduction order)? How large is the spread, and how does it affect the conservation and well-balancing numbers? See CPU, CUDA and MPS reproducibility, @sec-ch16-devices. Not covered: measured GPU run-to-run spread.
 
-**Q-058.** When one rank hits NaN or crashes, does the job stop and name the rank, cell and step, or does it hang? See Collectives and global decisions, @sec-ch14-collectives. Not covered: whether the job stops naming the rank/cell/step or hangs.
+**Q-058.** When one rank hits NaN or crashes, does the job stop and name the rank, cell and step, or does it hang? See Step acceptance and redo: six causes, one collective decision, halving up to `max_redo`, @sec-ch09-redo. Not covered: whether the job stops naming the rank/cell/step or hangs.
 
-**Q-059.** Where is uninterrupted-versus-restarted agreement tested, including across multiple processes, and is the expected agreement bitwise or within a stated tolerance? See Restart files: write, bundle, read, @sec-ch14-restart. Not covered: changes of precision, GPU count or version on restart; module state.
+**Q-059.** Where is uninterrupted-versus-restarted agreement tested, including across multiple processes, and is the expected agreement bitwise or within a stated tolerance? See Restart, @sec-ch15-restart. Not covered: changes of precision, GPU count or version on restart; module state.
 
-**Q-060.** How do I arrange checkpoints around a wall-time limit and resume a job after interruption without overwriting useful output? See Restart files: write, bundle, read, @sec-ch14-restart. Not covered: a wall-time checkpoint recipe.
+**Q-060.** How do I arrange checkpoints around a wall-time limit and resume a job after interruption without overwriting useful output? See Restart, @sec-ch15-restart. Not covered: a wall-time checkpoint recipe.
 
-**Q-061.** After the first restart, how can I check that it continued the intended run without a gap or duplicated output times? See Restart files: write, bundle, read, @sec-ch14-restart. Not covered: a user-level check for gaps or duplicated output times.
+**Q-061.** After the first restart, how can I check that it continued the intended run without a gap or duplicated output times? See Restart, @sec-ch15-restart. Not covered: a user-level check for gaps or duplicated output times.
 
-**Q-063.** What output formats and file layouts are available, how are variables, units, coordinates and times recorded, and which settings control output frequency and volume? See NetCDF output: per-block files and the combine, @sec-ch14-netcdf. Not covered: pressure-level/lat-lon output; standard dynamics diagnostics.
+**Q-063.** What output formats and file layouts are available, how are variables, units, coordinates and times recorded, and which settings control output frequency and volume? See Output writers, @sec-ch15-output. Not covered: pressure-level/lat-lon output; standard dynamics diagnostics.
 
 **Q-066.** What is the minimal skeleton of a new forcing module? Which class or interface do I implement, which method returns the tendency, and how is it registered so that a key in the input file turns it on? See The forcing loop: parsing, registration and the stage increment, @sec-ch07-framework. Not covered: a native C++ forcing skeleton (N6 pilot).
 
@@ -153,9 +149,7 @@
 
 **Q-069.** Does a forcing only enter the explicit part? Can a stiff forcing (fast relaxation, drag, Newtonian cooling with a short timescale) be treated implicitly, and how do I give the implicit solver its Jacobian? See The forcing loop: parsing, registration and the stage increment, @sec-ch07-framework. Not covered: an explicit statement that forcings are explicit only, with no user Jacobian hook; stability for dt > tau.
 
-**Q-070.** Is there a harness I can reuse to show my forcing changes mass, momentum and energy only as intended, budgeted per step? See Cycle-line budget: volume integrals of the conserved state, one line per `ncycle_out` cycles, @sec-ch13-cycle. Not covered: a reusable per-forcing harness; momentum budget.
-
-**Q-071.** How do I test that a new condensate conserves total water (vapor + condensate) and moist energy through a phase change? What tolerance should I expect: round-off or truncation? See Saturation adjustment in the step, @sec-ch10-satadj. Not covered: a recipe for a new condensate.
+**Q-071.** How do I test that a new condensate conserves total water (vapor + condensate) and moist energy through a phase change? What tolerance should I expect: round-off or truncation? See Saturation adjustment in the step, @sec-ch08-satadj. Not covered: a recipe for a new condensate.
 
 **Q-072.** How do I add a new condensate species? Where do I declare its thermodynamic data (cp, latent heat, saturation curve), how does it enter the state vector, and what name and index does it get? See Ideal-moist closure and the kintera thermodynamics, @sec-ch02-ideal-moist. Not covered: an add-a-species procedure; the saturation curve.
 
@@ -165,7 +159,9 @@
 
 **Q-079.** What tests does a new module need before it is accepted: unit tests, ctest registration, a regression deck, Python tests? How is a before/after (RED/GREEN) shown? See Build options and test registration, @sec-ch12-build. Not covered: an acceptance policy and a before/after demonstration.
 
-**Q-086.** Why might adding GPUs make my run slower, and how can I distinguish insufficient work per GPU, communication, load imbalance and storage costs? See GPU execution, @sec-ch14-gpu. Not covered: a scaling measurement and a way to tell the four causes apart.
+**Q-082.** Are runs bitwise reproducible across CPU and GPU, thread counts and MPI ranks, and where they are not bitwise, do they agree within a stated tolerance or statistically? See The bitwise gates, @sec-ch16-gates. Not covered: a bitwise comparison across process counts and decompositions (the pre-V3 reproducibility section was retired).
+
+**Q-086.** Why might adding GPUs make my run slower, and how can I distinguish insufficient work per GPU, communication, load imbalance and storage costs? See The device: driver choice, long lines, the CUDA test gate and host read-backs, @sec-ch11-devices. Not covered: a scaling measurement and a way to tell the four causes apart.
 
 **Q-088.** Which vertical coordinate does snapy use (height, pressure or hybrid), and how do I translate my old level structure, model top and model bottom into it? See Conventions at a glance, @sec-appa-conventions. Not covered: a translation of another model’s levels and boundaries; the no-pressure-coordinate statement is delivered at the linked section.
 
@@ -177,9 +173,13 @@
 
 **Q-010.** Starting from an example, how do I set up a simple problem of my own, such as a warm bubble in an atmosphere I choose? Not provided: a problem-design tutorial is not provided; the initial-state contract is delivered in @sec-ch01-initialization.
 
-**Q-062.** What evidence shows that interrupted writes cannot be mistaken for complete checkpoints or output, and how do I identify the latest usable checkpoint after a node or storage failure? Not provided: an interrupted-write completeness guarantee and recovery procedure are not established; the output contracts are delivered in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart.
+**Q-048.** My run stopped with negative density or NaN. What do I check first, and which settings usually fix it? Not provided: its answering section (“Redo causes and termination status”, in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
 
-**Q-080.** Does the output record the code version, commit and the fully resolved configuration? What does a paper need to record: dependency versions, precision, hardware, rank layout and communication backend? Not provided: a publication-record checklist is not provided; the delivered output/restart contracts describe recorded data in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart.
+**Q-062.** What evidence shows that interrupted writes cannot be mistaken for complete checkpoints or output, and how do I identify the latest usable checkpoint after a node or storage failure? Not provided: an interrupted-write completeness guarantee and recovery procedure are not established; the output contracts are delivered in @sec-ch15-output and @sec-ch15-restart.
+
+**Q-070.** Is there a harness I can reuse to show my forcing changes mass, momentum and energy only as intended, budgeted per step? Not provided: its answering section (“Cycle-line budget”, in the pre-V3 diagnostics chapter) was removed when the V3 chapter 13 took that number; the material returns with the V3 chapter 10.
+
+**Q-080.** Does the output record the code version, commit and the fully resolved configuration? What does a paper need to record: dependency versions, precision, hardware, rank layout and communication backend? Not provided: a publication-record checklist is not provided; the delivered output/restart contracts describe recorded data in @sec-ch15-output and @sec-ch15-restart.
 
 **Q-081.** Are the thermodynamic constants (latent heats, saturation vapour pressures, heat capacities) documented with sources, so that I can compare them against my old model's values? Not provided: neither @sec-ch02-ideal-moist nor @sec-ch02-moist-mixture covers saturation vapour pressures; deck values are cited only to the deck lines that set them, and the reason for choosing cv_R=2.5 is unsourced in @sec-ch02-ideal-moist; a complete cross-model thermodynamic-constant comparison is not provided.
 
@@ -197,7 +197,7 @@
 
 **Q-049.** How do I tell whether a feature in my result is physics or a numerical artifact, and which simple test should I run first? Not provided: telling physics from numerical artifacts is a tutorial/science-study question, outside scope by the scope test.
 
-**Q-064.** How do I open the output, plot one variable at one time, and make a simple animation? Not provided: a plotting/animation tutorial is outside scope; the delivered output contracts describe the formats in @sec-ch14-netcdf, @sec-ch14-pnetcdf and @sec-ch14-restart.
+**Q-064.** How do I open the output, plot one variable at one time, and make a simple animation? Not provided: a plotting/animation tutorial is outside scope; the delivered output contracts describe the formats in @sec-ch15-output and @sec-ch15-restart.
 
 **Q-090.** Which standard test (Held–Suarez-like, a dry Jupiter jet case, convective adjustment) can I run in both models to validate the port before production, and what reference results exist? Not provided: cross-model benchmarks are a science study, outside scope (agreed out).
 

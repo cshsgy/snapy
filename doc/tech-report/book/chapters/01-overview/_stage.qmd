@@ -1,34 +1,41 @@
 ## Accumulate and combine one stage (`user_stage_forcings`) {#sec-ch01-stage}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.4; src/mesh/meshblock.cpp; src/hydro/hydro_forward.cpp; src/implicit/implicit_dispatch.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/meshblock_advance.cpp; src/mesh/stage_executor.cpp; src/mesh/segment.cpp;
+         src/hydro/flux_register.cpp; src/implicit/implicit_dispatch.cpp;
          src/implicit/implicit_dispatch.cu; tests/test_user_output.cpp; tests/test_jit_user_forcing.py;
+         tests/test_stage_schedule.cpp; tests/test_mesh_executor.cpp;
          tests/test_tracer_dry_convention.py; tests/test_scalar_upper_bound_donor.py
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
 
-One Runge-Kutta stage of a block is a fixed sequence. The hydro operator returns an increment, the scalar operator
-returns its own, and user callbacks may add theirs. The integrator then combines the increments with the step-start
-state. This section follows that sequence inside `advance_local` and writes out the three small identities the
-combination and the tracer transfer rest on, because later chapters cite them.
+One Runge-Kutta stage of a block is a fixed schedule of named ops, built once per block by its stage executor
+({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}): the stage-entry ghost exchange (a bare block
+only), `advance` (the hydro and scalar increments), `forcing`[^rg-72eb2816da59] (the user callbacks), `combine` (the integrator's average
+with the step-start state), and the end-of-stage slots `saturation`, `chemistry` and `boundaries`. The executor runs
+the schedule eagerly, or groups the ops into segments and replays each capturable segment as a CUDA graph
+({{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}}); either way the ops are the same. This section
+follows that schedule and writes out the three small identities the combination and the tracer transfer rest on,
+because later chapters cite them. Capture, the segments and the refusal list are @sec-ch13-cuts and @sec-ch13-agree; the capture sweep is
+@sec-ch16-capture.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Combine a stage (@eq-ch01-stage-combine, @eq-ch01-stage-weight); carry tracers (@eq-ch01-stage-dry).
 
 **Data.** In: `hydro_u`, `scalar_s`, the stage weights, any user increments. Out: the combined interior state.
 
-**Placement.** Once per RK stage, inside the block's advance, between the exchange and the physical fills.
+**Placement.** Once per RK stage: the schedule's ops `advance`, `forcing` and combine (`stage_combine`), between the exchange and `boundaries`.
 
 **Activation.** User increments only with callbacks installed (`user_stage_forcings`); the stages are pyharp's.
 
 **Guarantee / limits.** The combine is an affine recurrence in the weights, exact in arithmetic; no spatial order.
 
-**Evidence.** `test_user_output.<b>` (rtol = atol = $10^{-12}$), `test_jit_user_forcing_python`; see the Tests layer.
+**Evidence.** @tbl-ch01-stage-tests; `test_stage_schedule.<b>`, `test_mesh_executor.<b>`, `test_user_output.<b>`, `stage_check.py` `[C1]`-`[C4]`.
 :::
 Local symbols: $J^{\mathrm{d}}_{i+1/2}$ is the already time-integrated implicit dry-air transfer through a face
 [$\mathrm{kg}$], positive toward increasing $x_1$; $J^{\mathrm{tr}}_{n,i+1/2}$ is its upwind passive-tracer
@@ -49,9 +56,10 @@ $$
 \mathbf U \leftarrow w_0^{(s)}\mathbf U^n + w_1^{(s)}\mathbf U + w_2^{(s)}\Delta\mathbf U.
 $$ {#eq-ch01-stage-combine}
 
-@eq-ch01-stage-combine is the recurrence stated in the comment beside `cw` in
-{{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}. The increment here includes whichever explicit and
-implicit operations were selected, not only the explicit increment $\Delta\mathbf U^{(0)}$[^rg-e6248a941ab9] of appendix A.
+@eq-ch01-stage-combine is the call `pintg->forward(stage, u0, u, du, u)` of the combine op (`stage_combine`)
+({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}); the weights are the integrator's
+(pyharp's) stage weights. The increment here includes whichever explicit and implicit operations were selected, not
+only the explicit increment $\Delta\mathbf U^{(0)}$[^rg-e6248a941ab9] of appendix A.
 
 Consider a fixed supplied increment in stage $s$, holding the later increments fixed. It enters the combination
 with the coefficient $w_2^{(s)}$. The next combine multiplies this contribution by $w_1^{(s+1)}$, and the saved
@@ -62,15 +70,15 @@ $$
 w_2^{(s)}\prod_{s'>s}w_1^{(s')}.
 $$ {#eq-ch01-stage-weight}
 
-@eq-ch01-stage-weight is the coefficient `cw` that {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}
-accumulates for the gravity-work bookkeeping of @sec-ch06-fixer; the product runs over the remaining stages and
-an empty product is one. The identity is exact for the bookkeeping of supplied increments; it is not a
-linearization of their state dependence. The combine itself is the call `pintg->forward` in
-{{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}; the weights are pyharp's, so this chapter does
-not assert their values from a snapy call site. Check `[C1]` expands a generic three-stage affine recurrence
+@eq-ch01-stage-weight is the weight with which the flux register's step sum holds a stage's face fluxes: the
+register applies the same recurrence to its sums, $S \leftarrow w_1^{(s)} S + w_2^{(s)}\Delta t\,T^{(s)}$ for the
+stage's flux total $T^{(s)}$ ({{< code src/hydro/flux_register.cpp FluxRegister::end_stage >}}), so after the last stage
+$T^{(s)}$ enters $S$ with @eq-ch01-stage-weight times $\Delta t$. The product runs over the remaining stages and an empty
+product is one. The identity is exact for the bookkeeping of supplied increments; it is not a linearization of their
+state dependence. The weights are pyharp's, so this chapter does not assert their values from a snapy call site. Check `[C1]` expands a generic three-stage affine recurrence
 symbolically [check `src/snapy_report/ch01/checks/stage_check.py`, output `stage_check.out`].
 
-The tracer transfer and its dry-source complement are derived in @sec-ch10-tracer; this section keeps the call
+The tracer transfer and its dry-source complement are derived in @sec-ch08-drycarry; this section keeps the call
 interface, the three identities the code evaluates and the donor cap. Before the cap, the transfer of tracer $n$
 through an $x_1$ face is the clamped dry transfer $J^{\mathrm{d}}$ of the implicit mass-correction buffer times the
 ratio of the donor cell,
@@ -83,7 +91,7 @@ r_{n,i+1}, & J^{\mathrm{d}}_{i+1/2}\le 0,
 \end{cases}
 $$ {#eq-ch01-stage-upwind}
 
-the upwind tensor `P` of {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}. Each transfer is then
+the upwind tensor `P` of {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}. Each transfer is then
 capped by what its donor holds, the `donor_cap` sweep ({{< code src/implicit/implicit_dispatch.cpp donor_cap_cpu >}},
 {{< code src/implicit/implicit_dispatch.cu donor_cap_cuda >}}). Let $H_{n,i}$ [kg] be the tracer mass cell $i$ holds
 after the stage's explicit update, $V_i(\rho_{\mathrm d}r_n)_i$ with a negative value counted as zero. Up one column, from
@@ -102,7 +110,7 @@ the lowest interior cell $i_l$:
    $r_n$ times a dry bound the dry transfer already meets, and the cap does not bind (the `through` test measures it).
 
 The CPU first tests every face against $H_{n,i}$ plus the unclamped inflow and runs the sweep only if one binds,
-which gives the same result; CUDA[^rg-28386113293d] runs the sweep in one thread per column with no host read. Check `[C4]` ports the
+which gives the same result; CUDA runs the sweep in one thread per column with no host read. Check `[C4]` ports the
 sweep. The increment of a cell is the net capped transfer over its volume $V_i$[^rg-902e93eb3066] [$\mathrm{m^3}$],
 
 $$
@@ -116,32 +124,42 @@ $$
 \Delta\rho^{\mathrm{source}}_n = r^{\mathrm{carry}}_n\,\Delta\rho^{\mathrm{source}}_{\mathrm{d}},
 $$ {#eq-ch01-stage-dry}
 
-the closure `carry_dry_source` of {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}. Checks
+`carry_dry_source` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::carry_dry_source >}}). Checks
 `[C2]` and `[C3]` exercise the two identities on a port, with the committed output `stage_check.out`; they
 import no snapy.
 
 ### Numerical method
 
-`MeshBlockImpl::advance_local` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}) first publishes the
-stage to the hydro module, and on stage zero saves the step-start state and, when the gravity-work fixer is on,
-resets its bookkeeping. With `implicit_radial`[^rg-4ddc775769de] diffusion on the cubed sphere it first takes a radial conduction
-half step and refills the ghosts, and takes the second half step after the last stage's average
-(@sec-ch07-csdiffusion). The
-hydro call (@sec-ch01-hydro) returns a time-integrated increment; the scalar call (@sec-ch01-scalar) then uses the
-hydro dry-mass flux and the implicit dry transfer. Native dry sources carry the tracers before the callbacks; user dry
-sources carry them after all callbacks, from the saved pre-callback scalar increment. A callback result may contain
-only `hydro_du` and `scalar_ds`, with matching shapes. The integrator combines the stage, the solid cells are refilled
-(@sec-ch14-solids). The last stage runs the saturation adjustment on the interior cells when a thermodynamics module
-and a nonempty reaction list exist (@sec-ch10-satadj). The gravity-work fixer runs on the last stage when it is on and
-not deferred to the mesh (@sec-ch06-fixer). The physical ghosts are filled last (@sec-ch14-timing). This map asserts
-algebraic identities, not an observed convergence order.
+The `advance` op, `stage_advance` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}), first
+publishes the stage to the hydro module. On stage zero it starts the flux register's step, runs the step-start half of
+every split source and refills and exchanges the ghosts if one exists, and saves the step-start state (`u0`, `s0` in the
+state store); the split source at the pin is the radial conduction of `implicit_radial`[^rg-4ddc775769de] diffusion on the cubed
+sphere (@sec-ch07-csdiffusion). It then opens the register's stage and takes the hydro increment (@sec-ch01-hydro),
+time-integrated, and the scalar increment (@sec-ch01-scalar), which uses the hydro dry-mass flux and the implicit dry
+transfer; native dry sources carry the tracers after the transfer. The `forcing` op,
+`stage_forcing` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_forcing >}}), applies the user callbacks
+in list order; user dry sources carry the tracers after all callbacks, from the saved pre-callback scalar increment, and
+a callback result may contain only `hydro_du` and `scalar_ds`, with matching shapes. The combine op,
+`stage_combine` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}), closes the register's stage,
+averages with the integrator, runs the second half of every split source after the last stage's average, applies the
+conserved limiter and refills the solid cells (@sec-ch14-solids). On the last stage `saturation` runs the saturation
+adjustment on the interior cells when a thermodynamics module and a nonempty reaction list exist (@sec-ch08-satadj), and
+`chemistry` runs a registered chemistry step of a bare block (a Mesh defers it, @sec-ch01-mesh). `boundaries` fills the
+physical ghosts last (@sec-ch14-timing). The tendencies are block storage, so `forcing` and the combine op read them across a
+segment boundary. This map asserts algebraic identities, not an observed convergence order.
+
+The schedule groups consecutive ops of the same kind and capturability into segments; the stage-entry exchange is a
+segment of its own, and an op that cannot be captured runs eagerly with its reason recorded
+({{< code src/mesh/segment.cpp StageSchedule::add >}}). At the pin three ops can turn eager: `forcing` when a user
+TorchScript forcing is set, `chemistry` when a chemistry step is registered, and `boundaries` when an outflow face is
+set ({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}}).
 
 @fig-ch01-stage-flow shows the call sequence.
 
 ```{python}
 #| label: fig-ch01-stage-flow
 #| fig-cap: "Accumulate and combine one stage. Labelled green boxes name operations or owners; black arrows show the reading sequence, not a timing measurement."
-#| fig-alt: "Sequence: publish stage / save; hydro increment; scalar / dry carry; user increments; RK / limiter / solids; last-stage adjustment / BC."
+#| fig-alt: "Sequence: exchange (bare block); publish stage / save; hydro increment; scalar / dry carry; user increments; RK / limiter / solids; last-stage saturation, chemistry / BC."
 #| echo: false
 from snapy_report.ch01.figures.fig_stage_flow import make_fig
 make_fig()
@@ -153,7 +171,7 @@ with relative error at most $\delta_{\mathrm{mach}} = 2^{-53}$. Dropping product
 value differs from the exact one by at most
 $5\,\delta_{\mathrm{mach}}\,(|w_0\mathbf U^n| + |w_1\mathbf U| + |w_2\Delta\mathbf U|)$; the recurrence of
 @eq-ch01-stage-weight inherits one such bound per stage. The transfer update of @eq-ch01-stage-transfer is three
-operations per cell ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}). They are the product $r_n M$
+operations per cell ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}). They are the product $r_n M$
 that forms each face transfer `P`, the subtraction `P - P_above`, and the division by the cell volume. Each product
 rounds once, so the two transfers carry an absolute error of at most
 $\delta_{\mathrm{mach}}(|J^{\mathrm{tr}}_{n,i-1/2}| + |J^{\mathrm{tr}}_{n,i+1/2}|)$ into the difference. The
@@ -167,25 +185,36 @@ are exact.
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| stage | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `advance_local` | none |
-| dry carry | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `carry_dry_source` | none |
-| transfer | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `mass_corr` | `implicit-scheme` |
+| schedule | {{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}} | `build_schedule` | `integration/execution` |
+| segments | {{< code src/mesh/segment.cpp StageSchedule::add >}} | `add` | none |
+| run a stage | {{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}} | `run_stage` | `integration/execution` |
+| advance | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}} | `stage_advance` | none |
+| dry carry | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::carry_dry_source >}} | `carry_dry_source` | none |
+| transfer | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}} | `mass_corr` | `implicit-scheme` |
 | donor cap, CPU | {{< code src/implicit/implicit_dispatch.cpp donor_cap_cpu >}} | `donor_cap` | `implicit-scheme` with scalars |
 | donor cap, CUDA | {{< code src/implicit/implicit_dispatch.cu donor_cap_cuda >}} | `donor_cap` | as above |
-| user | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `user_stage_forcings` | callbacks installed |
-| combine | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `pintg` | `integration:` |
-| last stage | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `pthermo` | the reaction list |
-| weights | {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}} | `cw` | none |
+| user | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_forcing >}} | `user_stage_forcings` | callbacks installed |
+| combine | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}} | `pintg` | `integration:` |
+| last stage | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}} | `pthermo` | the reaction list |
+| chemistry | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_chemistry >}} | `_chemistry` | `set_chemistry` |
+| ghosts | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}} | `apply_boundaries` | none |
+| weights | {{< code src/hydro/flux_register.cpp FluxRegister::end_stage >}} | `end_stage` | none |
 
 : Implementation anchors for one stage. {#tbl-ch01-stage-code}
 
-1. Publish the stage and save the step-start state: `advance_local`
-   ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
-2. Take the hydro and scalar increments, carry the tracers with the dry transfer (`mass_corr`) and the dry
-   sources (`carry_dry_source`), apply the user callbacks ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
-3. Combine with `pintg`, refill solids, adjust saturation and run the fixer on the last stage, fill the
-   physical ghosts ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
-4. The weight of a stage's increment in the step, `cw` ({{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}).
+1. Build the schedule and run it: `build_schedule` and `run_stage`
+   ({{< code src/mesh/stage_executor.cpp StageExecutor::build_schedule >}},
+   {{< code src/mesh/stage_executor.cpp StageExecutor::run_stage >}}).
+2. Publish the stage, save the step-start state, take the hydro and scalar increments, carry the tracers with the dry
+   transfer (`mass_corr`) and the native dry sources: `stage_advance`
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}).
+3. Apply the user callbacks: `stage_forcing` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_forcing >}}).
+4. Close the register's stage, combine with `pintg`, refill solids: `stage_combine`
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_combine >}}); on the last stage adjust saturation and run a
+   bare block's chemistry; fill the physical ghosts
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_boundaries >}}).
+5. The weight of a stage's increment in the step sum: `end_stage`
+   ({{< code src/hydro/flux_register.cpp FluxRegister::end_stage >}}).
 
 **How to use it.** User increments are installed as scripted modules, one file per callback, in list order:
 
@@ -195,28 +224,29 @@ mesh->set_user_stage_forcings({"heating.pt", "drag.pt"});
 
 Each module receives the stage inputs, $\Delta t$ and the stage index, and returns a dictionary. It may contain
 only `hydro_du` and `scalar_ds`, with the shapes of `hydro_u` and `scalar_s`. Any other key or shape is
-refused ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}). The weight of a stage's increment in
-the step, @eq-ch01-stage-weight, is accumulated in these lines of `HydroImpl::forward`
-({{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}):
+refused ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_forcing >}}). The recurrence behind
+@eq-ch01-stage-weight is these lines of `FluxRegister::end_stage`
+({{< code src/hydro/flux_register.cpp FluxRegister::end_stage >}}):
 
 ```cpp
-// weight of this stage's du in the step's update u0 -> u1 (stage s:
-// u <- w0 u0 + w1 u + w2 du): w2_s * prod_{t > s} w1_t (rk3: 1/6 1/6 2/3)
-double cw = 1.;
-auto const& st = pmb->pintg->stages;
-if (rk_stage >= 0 && rk_stage < static_cast<int>(st.size())) {
-  cw = st[rk_stage].wght2();
-  for (int t = rk_stage + 1; t < static_cast<int>(st.size()); ++t)
-    cw *= st[t].wght1();
-}
+auto w2dt = dt.scaled(_w2);  // V3 D: on the device in a captured stage
+for (int d = 0; d < 3; ++d) {
+  if (!_step[d].defined()) continue;
+  // in FP64 (FP32 on MPS), whatever the flux dtype: S <- w1 S + w2 dt T
+  if (!_direct[d].defined()) {
+    axpy_(_step[d].mul_(_w1), _total[d].to(_step[d].scalar_type()), w2dt);
+    continue;
+  }
 ```
 
-The comment is @eq-ch01-stage-combine, the two assignments are the two factors of @eq-ch01-stage-weight.
+Each stage multiplies the sum by $w_1$ and adds $w_2\Delta t$ times the stage's total, so unrolling over the remaining stages gives the two factors of @eq-ch01-stage-weight.
 
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
+| `tests/test_stage_schedule.cpp` (`test_stage_schedule.<b>`) | consecutive capturable ops form one segment; a change of capturability or kind cuts a segment; host-exchange and global ops are eager and alone; an op without a run or a reason is refused; a host-$\Delta t$ op marks only its segment | exact (pass/fail) | the schedule is structure, not a value |
+| `tests/test_mesh_executor.cpp` (`test_mesh_executor.<b>`) | a Mesh's blocks stepped through the executor equal the pre-executor sequence | bitwise (`torch::equal`) | the executor changes who runs the stage, not what runs |
 | `test_user_output.<b>` | scripted callbacks add their hydro and scalar increments in list order | `allclose`, rtol = atol = $10^{-12}$ | test constants |
 | `test_user_output.<b>` | one scripted module is shared by parallel blocks; an unsupported key throws | `allclose` defaults; expected exception | the API contract |
 | `test_jit_user_forcing_python` | a nested scripted module adds its increment | `assert_close` defaults | library defaults |
@@ -239,23 +269,26 @@ $1.4\times10^{-14}$. `[C3]`: the dry-source carry matches @eq-ch01-stage-dry on 
 $4.34\times10^{-16}$ relative, the CPU pre-test gives the sweep's result exactly, and a uniform ratio through a dry
 transfer that obeys the same cap moves by at most $3.13\times10^{-16}$ relative.
 
-The ctests run on CPU, one rank; `test_user_output.<b>` also runs the parallel-block case in one process. The two
-donor-cap tests passed at the pin.[^ch01-stage-cap] `donor` printed a minimum tracer density of $0$ and a total
-change of $2.22\times10^{-16}$; `through` a ratio change of $5.55\times10^{-16}$ with $1.433$ cell masses moved through a
-cell; the upper-bound case a minimum of $0$. The callback tests have not been run for this report at the pin:
-**pending a pinned ctest run**.
+The ctests run on CPU, one rank; `test_user_output.<b>` also runs the parallel-block case in one process. At the pin
+all of them passed on both builds:[^ch01-stage-ctest] `test_stage_schedule.release` and `test_user_output.release`
+with all cases run (5 and 29), `test_mesh_executor.release` with 4 of 8 cases on CPU (the CUDA cases skip there) and
+all 8 on CUDA, and the Python callback and donor-cap tests. `donor` printed a minimum tracer density of $0$ and a total
+change of $0$; `through` a ratio change of $6.66\times10^{-16}$ with $1.433$ cell masses moved through a cell; the
+upper-bound case a minimum of $0$; the two builds printed the same numbers.
 
-[^ch01-stage-run]: [sha: snapy@68f4e066974ede87e4379285c4fba895b970b7f1; deck: the check itself; run:
+[^ch01-stage-run]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the check itself; run:
     `python3 src/snapy_report/ch01/checks/stage_check.py`,
-    CPU, double, 1 process; Python 3.11.13, numpy 2.4.6, sympy 1.14.0; output identical to the committed file].
+    CPU, double, 1 process; Python 3.12.15, numpy 2.4.6, sympy 1.14.0; output identical to the committed file].
     Output `stage_check.out`, lines `[C1]` to `[C4]`.
 
-[^ch01-stage-cap]: [sha: snapy@68f4e066974ede87e4379285c4fba895b970b7f1; deck: `tests/test_tracer_dry_convention.yaml` as
-    each arm modifies it; run: `env CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=1 ctest -j1 -V -R
-    '^(test_tracer_dry_convention_python|test_scalar_upper_bound_donor_python)$'` in `build/tests` of a Release source
-    build of the pin (`cmake -B build -DCMAKE_BUILD_TYPE=Release -DNETCDF=ON`, GCC 13.3.1, CMake 3.26.5), snapy
-    installed from that build with `pip install --no-build-isolation --no-deps --target <site>` and passed as
-    `-DSNAPY_TEST_PYTHONPATH=<site>`; CPU, double, 1 process; Python 3.11.13, torch 2.10.0, kintera 2.6.6]: 2 of 2 passed.
+[^ch01-stage-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own (`tests/test_tracer_dry_convention.yaml` as each arm modifies it);
+    run: `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R
+    '^(test_stage_schedule\.release|test_mesh_executor\.release|test_user_output\.release|test_jit_user_forcing_python|test_tracer_dry_convention_python|test_scalar_upper_bound_donor_python)$'`,
+    clean CPU-only Release build, CPU, FP64, one process; and the same command on a clean CUDA Release build (sm_61
+    code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13];
+    logs `ctest-ch01-cpu.log`, `ctest-ch01-cuda.log`, `ctest-ch01-cpu-py.log` and `ctest-ch01-cuda-py.log`. Output
+    lines `donor   : min s=0.000e+00  |total tracer change|=0.000e+00`, `through : max|r/r0-1|=6.661e-16  max implicit
+    transfer / cell mass=1.433e+00` and `upper-bound donor: min s 0.0`.
 
 ### Limits
 
@@ -263,18 +296,18 @@ cell; the upper-bound case a minimum of $0$. The callback tests have not been ru
 The stage algebra proves neither positivity after arbitrary user increments nor accuracy after nonlinear
 limiting or phase adjustment. The donor cap keeps the implicit tracer transfer from overdrawing a donor; where it
 binds, the tracer no longer moves with the ratio of the dry transfer, so a non-uniform ratio is changed there
-(first order, donor-limited). Switch combinations remain subject to @sec-ch12-matrix; no new CPU, CUDA or
-multi-rank snapy run is claimed.
+(first order, donor-limited). Switch combinations remain subject to @sec-ch12-matrix; the runs above are one CPU
+build and one CUDA device, one rank each.
 :::
 
 <!-- reader glossary notes -->
+[^rg-72eb2816da59]: forcing — forcing options block: a map with one sub-block per forcing component
+
 [^rg-879841a906d0]: $\mathbf U$ — conserved state vector $(\rho_d, m_1, m_2, m_3, E, \rho_1..\rho_{N_y})$
 
 [^rg-e6248a941ab9]: $\Delta\mathbf U^{(0)}$ — the explicit stage increment handed to the implicit solve
 
 [^rg-828441330efe]: VIC — vertically implicit correction
-
-[^rg-28386113293d]: CUDA — NVIDIA's parallel computing platform
 
 [^rg-902e93eb3066]: $V_i$ — cell volume
 

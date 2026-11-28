@@ -1,3 +1,0 @@
-[C1] PASS a saved time more than one interval ahead is clamped to t_r + dt; others are kept: saved t_r+600 -> t_r+60; saved 1e300 -> t_r+60; saved t_r+30 -> t_r+30; dt = 0 keeps 1e+300
-[C2] PASS a new output starts on the multiple of dt at or below t_r and fires at the first output check: 20000 (t_r, dt): next <= t_r True, t_r - next < dt True, max |next/dt - round| = 1.8e-12
-[C3] PASS after the clamp the output writes every dt from t_r + dt, not first at the old saved time: writes in (t_r, t_r + 600]: 10, first at t_r + 60

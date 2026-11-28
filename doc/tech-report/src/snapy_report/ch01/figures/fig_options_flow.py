@@ -1,4 +1,4 @@
-"""Build options from YAML and reject unknown keys; snapy@6fbb39750f62b83df096058a4746e77d0a634bc5; no measured data."""
+"""Build options from YAML and reject unknown keys; snapy@73c45a7c8c991209924e1137992352c335575062; no measured data."""
 from ..flow import make_flow
 
 

@@ -1,12 +1,12 @@
 ## Locate dependencies outside snapy (`find_package`) {#sec-ch01-dependencies}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.13; CMakeLists.txt; pyproject.toml; python/__init__.py; src/mesh/meshblock.cpp; src/output/restart.cpp;
-         src/input/read_restart_file.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.2; CMakeLists.txt; pyproject.toml; python/__init__.py; src/mesh/meshblock.cpp;
+         src/mesh/meshblock_advance.cpp; src/output/restart.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -23,7 +23,7 @@ snapy hands control to those packages, so a reader knows which chapter or which 
 
 **Placement.** At block construction, at the last stage of a step, and at restart write and read.
 
-**Activation.** `find_package` at configure time; kintera at version 2.6.3 or later, harp and disort unversioned.
+**Activation.** `find_package` at configure time; kintera at version 2.6.13 or later, harp and disort unversioned.
 
 **Guarantee / limits.** A map; the stage weights are the integrator's and are not asserted from a snapy line.
 
@@ -37,16 +37,18 @@ in their owning chapters.
 
 ### Numerical method
 
-The top-level {{< code CMakeLists.txt >}} requires kintera 2.6.3 or later and finds harp and disort without a version.
+The top-level {{< code CMakeLists.txt >}} requires kintera 2.6.13 or later and finds harp and disort without a version.
 The package file {{< code pyproject.toml >}} pins the same kintera minimum for the package build and the run time. The
 initializer {{< code python/__init__.py >}} imports pydisort, pyharp and kintera before the extension; those imports
 are not a radiation operator inside the hydro call map. The dependency boundary is visible at three call sites:
 `MeshBlockImpl::reset` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}) creates the harp integrator `pintg`.
-`MeshBlockImpl::advance_local` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}) calls the kintera
-thermodynamics module `pthermo` for the saturation adjustment on the last stage. The restart writer
-`RestartOutput::write_output_file` ({{< code src/output/restart.cpp RestartOutput::write_output_file >}}) and the
-loader `load_restart` ({{< code src/input/read_restart_file.cpp load_restart >}}) serialize the variable map with
-kintera's `save_tensors` and `load_tensors`. The report derives how supplied stage weights propagate
+The `saturation` op, `MeshBlockImpl::stage_saturation`
+({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}}), calls the kintera thermodynamics module
+`pthermo` for the saturation adjustment on the last stage. The restart writer `RestartOutput::write_output_file`
+({{< code src/output/restart.cpp RestartOutput::write_output_file >}}) writes each block's variable map with kintera's
+`save_tensors`; with `combine` on it packs the blocks' files into a snapy restart bundle, and the loader `load_restart`
+({{< code src/output/restart.cpp load_restart >}}) unpacks a bundle or hands any other file to kintera's
+`load_tensors`. The report derives how supplied stage weights propagate
 (@sec-ch01-stage); their values and the stop predicate are the integrator's. @sec-appe owns the external components'
 equations and the version analysis.
 
@@ -66,10 +68,11 @@ make_fig()
 1. The integrator is created by `reset` and never re-read, so the stage weights are fixed for the life of the
    block ({{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}).
 2. The thermodynamics module is called once per step, on the last stage, after the RK combination, so the
-   saturation adjustment sees the combined state ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
-3. The restart file is kintera's tensor bundle, so a restart written by one build is read by another with the
-   same kintera version ({{< code src/output/restart.cpp RestartOutput::write_output_file >}},
-   {{< code src/input/read_restart_file.cpp load_restart >}}).
+   saturation adjustment sees the combined state ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}}).
+3. A block's restart file is a kintera tensor file, and a combined restart is a snapy bundle of those files, so a
+   restart written by one build is read by another with the same kintera version
+   ({{< code src/output/restart.cpp RestartOutput::write_output_file >}},
+   {{< code src/output/restart.cpp load_restart >}}).
 
 ### Code
 
@@ -79,17 +82,17 @@ make_fig()
 | packaging | {{< code pyproject.toml >}} | `dependencies` | none |
 | imports | {{< code python/__init__.py >}} | `pyharp` | none |
 | integrator | {{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}} | `pintg` | `integration:` |
-| thermodynamics | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `pthermo` | the reaction list |
+| thermodynamics | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}} | `pthermo` | the reaction list |
 | save | {{< code src/output/restart.cpp RestartOutput::write_output_file >}} | `save_tensors` | `outputs:` |
-| load | {{< code src/input/read_restart_file.cpp load_restart >}} | `load_tensors` | `restart_file` |
+| load | {{< code src/output/restart.cpp load_restart >}} | `load_tensors` | `restart_file` |
 
 : Implementation anchors for the external dependencies. {#tbl-ch01-dependencies-code}
 
 1. Find the packages: {{< code CMakeLists.txt >}}; declare them for the Python build: {{< code pyproject.toml >}}.
 2. Create the integrator and call the thermodynamics: `reset` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::reset >}}),
-   `advance_local` ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
+   `stage_saturation` ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_saturation >}}).
 3. Serialize the restart: `write_output_file` ({{< code src/output/restart.cpp RestartOutput::write_output_file >}}),
-   `load_restart` ({{< code src/input/read_restart_file.cpp load_restart >}}).
+   `load_restart` ({{< code src/output/restart.cpp load_restart >}}).
 
 **How to use it.** Configure with the packages on the CMake path; the required lines are these
 ({{< code CMakeLists.txt >}}):
@@ -98,10 +101,10 @@ make_fig()
 find_package(Torch REQUIRED)
 find_package(Disort REQUIRED)
 find_package(Harp REQUIRED)
-find_package(Kintera 2.6.3 REQUIRED)
+find_package(Kintera 2.6.13 REQUIRED)
 ```
 
-Refused: a kintera older than 2.6.3, and a missing harp or disort. For the Python package, `pip install .` reads
+Refused: a kintera older than 2.6.13, and a missing harp or disort. For the Python package, `pip install .` reads
 the same minimum from {{< code pyproject.toml >}}, with torch pinned to one version for the build.
 
 ### Tests
@@ -113,13 +116,13 @@ the same minimum from {{< code pyproject.toml >}}, with torch pinned to one vers
 : Source assertions for the external dependencies. {#tbl-ch01-dependencies-tests}
 
 No ctest and no report check isolate the dependency boundary: **missing evidence**. The thermodynamics and
-restart paths are tested in @sec-ch02 and @sec-ch14.
+restart paths are tested in @sec-ch02 and @sec-ch15.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 No dependency integration run is supplied here. The harp stage coefficients cannot be justified by a snapy
-line alone. Radiation functionality in the dependencies is outside this chapter and outside the seven-section
+line alone. Radiation functionality in the dependencies is outside this chapter and outside the eight-section
 hydro call map.
 :::
 

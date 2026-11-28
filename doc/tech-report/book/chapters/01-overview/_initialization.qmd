@@ -1,13 +1,14 @@
 ## Initialize primitives, ghosts and conserved states (`restart_file`) {#sec-ch01-initialization}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.3; src/mesh/meshblock.cpp; src/mesh/mesh.cpp; src/output/restart.cpp; tests/test_scalar.cpp;
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1; src/mesh/meshblock.cpp; src/mesh/meshblock_restart.cpp; src/mesh/mesh.cpp;
+         src/output/restart.cpp; src/eos/moist_base.cpp; src/hydro/balance_column.cpp; docs/derivations/lane-c-notes.md; tests/test_scalar.cpp;
          tests/test_mesh_multi_block.cpp; examples/run_hydro.cpp, examples/bryan.cpp,
          examples/jupiter_evap_precip_1d.cpp and tests/test_example_ic_stretched.py at the pin
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -24,9 +25,9 @@ conditions, such as `examples/straka.cpp` with `examples/straka.yaml` ({{< code 
 {{< code examples/straka.yaml >}}). **Not provided:** a separate formal case object or case-file schema;
 the example accepts a configuration filename and an optional restart filename, not a third case-file input.
 A restart file is a saved simulation state from which a run resumes, not a configuration deck. The loader
-requires `hydro_u`, `last_time`, `last_cycle`, `file_number` and `next_time`, and restores the saved cycle
-and time ({{< code src/mesh/meshblock.cpp MeshBlockImpl::_init_from_restart >}}); the format and output
-schedule are in @sec-ch14-restart.
+requires `hydro_u`, `last_time`, `last_cycle`, `file_number` and `next_time`, checks the saved metadata against the block (`check_restart_metadata`, {{< code src/output/restart.cpp check_restart_metadata >}}),
+and restores the saved cycle and time ({{< code src/mesh/meshblock_restart.cpp MeshBlockImpl::_init_from_restart >}});
+the format and output schedule are in @sec-ch15-restart.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** N/A, a code map: check shapes, fill and exchange primitive ghosts, convert to conserved rows.
@@ -35,7 +36,7 @@ schedule are in @sec-ch14-restart.
 
 **Placement.** Once, after construction and before the first step.
 
-**Activation.** `restart_file` absent: from primitives; present: load the restart (@sec-ch14-restart).
+**Activation.** `restart_file` absent: from primitives; present: load the restart (@sec-ch15-restart).
 
 **Guarantee / limits.** A map; no convergence order.
 
@@ -58,12 +59,15 @@ loader when a file is given and otherwise runs three steps. `initialize_local`
 scalars exist) has the block's full shape, ghosts included. It saves the outflow background when a radiating face
 exists (@sec-ch14-outflow), and fills the physical ghosts of the primitives. The block then exchanges the primitives
 and the scalar ratios with its neighbours with interpolation on. `finalize_initialization`
-({{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize_initialization >}}) converts to `hydro_u` with the EOS[^rg-3c222a9e6ef8], seeds
-`scalar_s` as the ratio times the conserved dry density. It records the solid fill states with the velocity rows
+({{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize_initialization >}}) converts to `hydro_u` with the EOS, seeds
+`scalar_s` as the ratio times the conserved dry density. With `dynamics/anomaly` on (default off) it first builds
+the static reference at rest from that state, and `hydro_u` then holds its `IDN` and `IPR` rows as anomalies
+about it; under the FP32 policy it stores `hydro_u` and `scalar_s` in the policy's storage dtype. It records the solid fill states with the velocity rows
 zeroed when a mask is present (@sec-ch14-solids), and fills the conserved ghosts. Because the exchange precedes the
 conversion, the conserved ghosts reflect exchanged primitives. `MeshImpl::initialize`
 ({{< code src/mesh/mesh.cpp MeshImpl::initialize >}}) runs the fresh path for every local block through the worker
-pool and the restart path in a plain loop on the caller's thread. Initialization introduces no accuracy order;
+pool and the restart path in a plain loop on the caller's thread; either way it ends with the Mesh-agree step that
+lets the blocks' capture decisions see the whole Mesh (@sec-ch13-agree). Initialization introduces no accuracy order;
 interpolation and boundary accuracy belong to @sec-ch03 and @sec-ch14b.
 
 @fig-ch01-initialization-flow shows the call sequence.
@@ -84,8 +88,9 @@ make_fig()
    ({{< code src/mesh/meshblock.cpp MeshBlockImpl::finalize_initialization >}}).
 2. The outflow background is captured before the first physical fill, because the fill overwrites the ghost values the
    background must keep ({{< code src/mesh/meshblock.cpp MeshBlockImpl::initialize_local >}}).
-3. The scalar density is seeded as ratio times the conserved dry density. The ratio the solver later recovers by
-   division is then the one the caller gave, up to one rounding per entry. A product and a quotient each round once,
+3. The scalar density is seeded as ratio times the conserved dry density. In FP64, with anomaly storage off (the
+   default), the ratio the solver later recovers by division is then the one the caller gave, up to one rounding per
+   entry. A product and a quotient each round once,
    so $|r_n^{\mathrm{back}} - r_n| \le 2\,\delta_{\mathrm{mach}}\,|r_n|$ with $\delta_{\mathrm{mach}} = 2^{-53}$.
 
 ### Code
@@ -121,14 +126,14 @@ vars, t0 = block.initialize({"hydro_w": w, "scalar_r": r})   # fresh start, t0 =
 
 | # | requirement | detail | source | tag |
 |---|---|---|---|---|
-| 1 | a `hydro_w` entry is required | Without it: "initialize: hydro_w is required for hydro model." | [meshblock.cpp#L427-L428](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L427-L428) | S |
-| 2 | shape | Exactly (nvar, nc3, nc2, nc1): **the full block, ghost cells included**. Otherwise: "hydro_w has incorrect shape. Expected [...]". | [meshblock.cpp#L431-L435](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L431-L435) | S |
-| 3 | an easy way to get the shape right (Python) | Clone the block’s `hydro.D` buffer and zero it, as in the Python example below. `hydro.D` is allocated (nvar, nc3, nc2, nc1) in float64. | [test: L26–35](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/tests/test_check_redo_floor.py#L26-L35); [allocation: L209–210](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/hydro.cpp#L213-L214) | S |
-| 4 | rows and meanings | `IDN` total density [$\mathrm{kg\,m^{-3}}$]; `IVX,IVY,IVZ` velocity along $x_1,x_2,x_3$ [$\mathrm{m\,s^{-1}}$] (contravariant on the cubed sphere); `IPR` pressure [Pa]; `ICY…` mass fractions of the total mass [-]. See @sec-appa-conventions, rows 2, 8–12 and 17. | [snap.h#L34-L41](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/snap.h#L34-L41); [ideal_moist.cpp#L140-L146](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/eos/ideal_moist.cpp#L140-L146) | S |
-| 5 | passive scalars | When the card declares scalars, `scalar_r` (mixing ratios) is also required, with shape (nscalar, nc3, nc2, nc1). | [meshblock.cpp#L437-L443](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L437-L443) | S |
-| 6 | dtype and device | **Not checked** by `initialize_local`, which tests only presence and shape. The examples build float64 tensors on the mesh's device. | [meshblock.cpp#L419-L450](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L419-L450); [straka.cpp#L82-L84](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/examples/straka.cpp#L82-L84) | S |
-| 8 | positivity | **Not checked** at initialization. The floors act only when `equation-of-state/limiter: true`, and it defaults to false. Give $\rho>0$, $p>0$ and $0\le y_n$, $\sum y_n<1$ yourself. | [meshblock.cpp#L419-L450](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L419-L450); [equation_of_state.hpp#L49-L52](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/eos/equation_of_state.hpp#L49-L52); [equation_of_state.cpp#L197](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/eos/equation_of_state.cpp#L197) | S |
-| 9 | why $\sum y_n<1$ matters | The conserved dry density is $\rho(1-\sum y_n)$, which is negative when $\sum y_n>1$. | [ideal_moist.cpp#L140-L142](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/eos/ideal_moist.cpp#L140-L142) | S |
+| 1 | a `hydro_w` entry is required | Without it: "initialize: hydro_w is required for hydro model." | [meshblock.cpp#L314-L315](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L314-L315) | S |
+| 2 | shape | Exactly (nvar, nc3, nc2, nc1): **the full block, ghost cells included**. Otherwise: "hydro_w has incorrect shape. Expected [...]". | [meshblock.cpp#L320-L324](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L320-L324) | S |
+| 3 | an easy way to get the shape right (Python) | Clone the block’s `hydro.D` buffer and zero it, as in the Python example below. `hydro.D` is allocated (nvar, nc3, nc2, nc1) in float64. | [test: L26–35](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/tests/test_check_redo_floor.py#L26-L35); [allocation: L256–257](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/hydro.cpp#L256-L257) | S |
+| 4 | rows and meanings | `IDN` total density [$\mathrm{kg\,m^{-3}}$]; `IVX,IVY,IVZ` velocity along $x_1,x_2,x_3$ [$\mathrm{m\,s^{-1}}$] (contravariant on the cubed sphere); `IPR` pressure [Pa]; `ICY…` mass fractions of the total mass [-]. See @sec-appa-conventions, rows 2, 8–12 and 17. | [snap.h#L34-L41](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/snap.h#L34-L41); [moist_base.cpp#L78-L87](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/moist_base.cpp#L78-L87) | S |
+| 5 | passive scalars | When the card declares scalars, `scalar_r` (mixing ratios) is also required, with shape (nscalar, nc3, nc2, nc1). | [meshblock.cpp#L326-L332](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L326-L332) | S |
+| 6 | dtype and device | **Not checked** by `initialize_local`, which tests presence and shape. Under the FP32 policy it casts `hydro_w` to the policy's primitive dtype before the shape check; otherwise the tensor is used as given. The examples build float64 tensors on the mesh's device. | [meshblock.cpp#L306-L339](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L306-L339); [straka.cpp#L82-L84](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/straka.cpp#L82-L84) | S |
+| 8 | positivity | **Not checked** at initialization. The limiter clamps to the floors only when `equation-of-state/limiter: true`, which defaults to false; the outflow boundary and `check_redo` read the floors with the limiter off too. Give $\rho>0$, $p>0$ and $0\le y_n$, $\sum y_n<1$ yourself. | [meshblock.cpp#L306-L339](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L306-L339); [equation_of_state.hpp#L51-L57](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/equation_of_state.hpp#L51-L57); [equation_of_state.cpp#L311](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/equation_of_state.cpp#L311) | S |
+| 9 | why $\sum y_n<1$ matters | The conserved dry density is $\rho(1-\sum y_n)$, which is negative when $\sum y_n>1$. | [moist_base.cpp#L78-L83](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/eos/moist_base.cpp#L78-L83) | S |
 
 : Initialization contract, table 1. {#tbl-ch01-initialization-contract-1}
 
@@ -136,11 +141,11 @@ vars, t0 = block.initialize({"hydro_w": w, "scalar_r": r})   # fresh start, t0 =
 
 | # | step | detail | source | tag |
 |---|---|---|---|---|
-| 11 | your ghost values at physical faces are overwritten | `initialize_local` fills the physical ghosts with `apply_boundaries`. Only the interior values you give matter there. | [meshblock.cpp#L449](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L449) | S |
-| 12 | ghosts between blocks come from the neighbours | Under a mesh the primitives are exchanged (with interpolation) after the local fill. | [meshblock.cpp#L452-L459](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L452-L459) | S |
-| 13 | radiating (outflow) faces keep a copy | With a radiating boundary, your `hydro_w` (ghosts included) is cloned as the outflow background **before** the fill. There your ghost values do matter. | [meshblock.cpp#L444-L448](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L444-L448) | S |
-| 14 | then the conversion | `hydro_u` = EOS `W->U` of the filled `hydro_w`. | [meshblock.cpp#L486](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/mesh/meshblock.cpp#L486) | S |
-| 15 | hydrostatic balance | **Not required, but you should provide it.** The well-balanced scheme rebuilds a discrete reference from the state on every call. A column marched from the continuum hydrostatic equation is balanced only to $O(\Delta z^2)$, and the remainder is a standing force on an atmosphere meant to be at rest. `balance_column` removes it (@tbl-ch01-initialization-contract-3). | [balance_column.hpp#L15-L19](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L15-L19) | S |
+| 11 | your ghost values at physical faces are overwritten | `initialize_local` fills the physical ghosts with `apply_boundaries`. Only the interior values you give matter there. | [meshblock.cpp#L338](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L338) | S |
+| 12 | ghosts between blocks come from the neighbours | Under a mesh the primitives are exchanged (with interpolation) after the local fill. | [meshblock.cpp#L341-L345](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L341-L345) | S |
+| 13 | radiating (outflow) faces keep a copy | With a radiating boundary, your `hydro_w` (ghosts included) is cloned as the outflow background **before** the fill. There your ghost values do matter. | [meshblock.cpp#L333-L337](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L333-L337) | S |
+| 14 | then the conversion | `hydro_u` = EOS `W->U` of the filled `hydro_w`. | [meshblock.cpp#L376](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/mesh/meshblock.cpp#L376) | S |
+| 15 | hydrostatic balance | **Not required, but you should provide it.** The well-balanced scheme rebuilds a discrete reference from the state on every call. A column marched from the continuum hydrostatic equation is balanced only to $O(\Delta z^2)$, and the remainder is a standing force on an atmosphere meant to be at rest. `balance_column` removes it (@tbl-ch01-initialization-contract-3). | [lane-c-notes.md#L12-L16](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L12-L16) | S |
 
 : Initialization contract, table 2. {#tbl-ch01-initialization-contract-2}
 
@@ -148,28 +153,28 @@ vars, t0 = block.initialize({"hydro_w": w, "scalar_r": r})   # fresh start, t0 =
 
 This summarizes the initial-state projection; @sec-ch05-balcol gives the full treatment.
 
-Call from C++ `snap::balance_column`, or from Python `snapy.balance_column(w, dx1f, grav, wall_clamp=True, rtol=1e-10, max_iter=120, geometry="", stretched=False)`, bound as `balance_column` ([pyhydro.cpp#L50-L68](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/python/csrc/pyhydro.cpp#L50-L68), S).
+Call from C++ `snap::balance_column`, or from Python `snapy.balance_column(w, dx1f, grav, wall_clamp=True, rtol=1e-10, max_iter=120, geometry="", stretched=False, conversion_order=2, eos=None)`, bound as `balance_column` ([pyhydro.cpp#L46-L67](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/python/csrc/pyhydro.cpp#L46-L67), S).
 
 | # | item | detail | source | tag |
 |---|---|---|---|---|
-| 16 | `w` | (nvar, nc3, nc2, nx1) primitives of the **whole column with no ghosts**. It is not modified, and rows other than `IDN`, `IPR` pass through. | [balance_column.hpp#L31-L35](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L31-L35) | S |
-| 17 | `dx1f` | (nx1,) cell widths, same dtype and device as `w`; refused otherwise. | [balance_column.cpp#L21-L25](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L21-L25) | S |
-| 18 | `grav` | A **positive** downward magnitude, e.g. 9.8, not `grav1`[^rg-76103610383a]; refused if not > 0. | [balance_column.cpp#L18](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L18) | S |
-| 19 | `wall_clamp` | Must be true and must match `dynamics/wb-wall-clamp` in the card that runs the result. | [balance_column.cpp#L30-L33](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L30-L33); [balance_column.hpp#L43-L48](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L43-L48) | S |
-| 20 | other refusals | Fewer than 5 cells; $p\le0$ or $\rho\le0$ anywhere; under `SNAP_X1_CENTROID_EXACT`, any geometry other than `"cartesian"`. | [balance_column.cpp#L35-L40](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L35-L40), [#L47-L48](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L47-L48), [#L53-L54](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L53-L54) | S |
-| 21 | what it does | Iterates $p_i \leftarrow p_{\mathrm{ref},i}(p) + C$, $\rho_i \leftarrow p_i/(p_i/\rho_i)_0$. **It holds $p/\rho$ fixed per cell**, so it holds the temperature fixed for `ideal-gas`, and for `ideal-moist` at fixed mass fractions. | [balance_column.hpp#L20-L29](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L20-L29) | S |
-| 22 | what it returns | (balanced w, residual, sweeps). The residual is $\max\lvert p'-C\rvert/(\rho g\Delta z)$, the leftover acceleration in units of $g$; `sweeps` is 0 for a column already balanced. | [balance_column.hpp#L52-L60](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L52-L60) | S |
-| 23 | failure | It throws if `rtol` is not reached in `max_iter` sweeps, or if the column diverges. | [balance_column.cpp#L94-L102](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.cpp#L94-L102) | S |
-| 24 | **limit: the column moves** | $C$ is a free constant read at the top cell. The surface pressure, column mass and any anchor level you chose do **not** survive. The source quotes 2.5e-4 of $p$ on a Neptune-like column and 1.2e-2 on a 300 km giant-planet one. Re-pin what you need against the balanced column, inside your own loop. | [balance_column.hpp#L83-L89](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L83-L89) | S |
-| 25 | limit: what you must guarantee | Physical (not periodic) $x_1$ boundaries; at least 5 $x_1$ cells in every block the column is later split into; the same uniform-or-stretched classification as every block; and, if moist, re-saturate and iterate. | [balance_column.hpp#L66-L81](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/src/hydro/balance_column.hpp#L66-L81) | S |
-| 26 | limit: moist columns | Saturation adjustment moves the column off the balance again. `examples/bryan.cpp` alternates saturation and projection until neither moves the state. | [bryan.cpp#L218-L262](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/examples/bryan.cpp#L218-L262) | S |
+| 16 | `w` | (nvar, nc3, nc2, nx1) primitives of the **whole column with no ghosts**. It is not modified, and rows other than `IDN`, `IPR` pass through. | [lane-c-notes.md#L28-L32](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L28-L32) | S |
+| 17 | `dx1f` | (nx1,) cell widths, same dtype and device as `w`; refused otherwise. | [balance_column.cpp#L28-L32](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L28-L32) | S |
+| 18 | `grav` | A **positive** downward magnitude, e.g. 9.8, not `grav1`[^rg-76103610383a]; refused if not > 0. | [balance_column.cpp#L25](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L25) | S |
+| 19 | `wall_clamp` | Must be true and must match `dynamics/wb-wall-clamp` in the card that runs the result. | [balance_column.cpp#L37-L40](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L37-L40); [lane-c-notes.md#L40-L45](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L40-L45) | S |
+| 20 | other refusals | Fewer than 5 cells; $p\le0$ or $\rho\le0$ anywhere; under `SNAP_X1_CENTROID_EXACT`, any geometry other than `"cartesian"`. | [balance_column.cpp#L42-L47](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L42-L47), [#L54-L55](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L54-L55), [#L56-L57](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L56-L57) | S |
+| 21 | what it does | Iterates $p_i \leftarrow p_{\mathrm{ref},i}(p) + C$, $\rho_i \leftarrow p_i/(p_i/\rho_i)_0$. **It holds $p/\rho$ fixed per cell**, so it holds the temperature fixed for `ideal-gas`, and for `ideal-moist` at fixed mass fractions. | [lane-c-notes.md#L17-L26](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L17-L26) | S |
+| 22 | what it returns | (balanced w, residual, sweeps). The residual is $\max\lvert p'-C\rvert/(\rho g\Delta z)$, the leftover acceleration in units of $g$; `sweeps` is 0 for a column already balanced. | [lane-c-notes.md#L52-L60](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L52-L60) | S |
+| 23 | failure | It throws if `rtol` is not reached in `max_iter` sweeps, or if the column diverges. | [balance_column.cpp#L134-L142](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/src/hydro/balance_column.cpp#L134-L142) | S |
+| 24 | **limit: the column moves** | $C$ is a free constant read at the top cell. The surface pressure, column mass and any anchor level you chose do **not** survive. The source quotes 2.5e-4 of $p$ on a Neptune-like column and 1.2e-2 on a 300 km giant-planet one. Re-pin what you need against the balanced column, inside your own loop. | [lane-c-notes.md#L83-L89](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L83-L89) | S |
+| 25 | limit: what you must guarantee | Physical (not periodic) $x_1$ boundaries; at least 5 $x_1$ cells in every block the column is later split into; the same uniform-or-stretched classification as every block; and, if moist, re-saturate and iterate. | [lane-c-notes.md#L66-L81](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/docs/derivations/lane-c-notes.md#L66-L81) | S |
+| 26 | limit: moist columns | Saturation adjustment moves the column off the balance again. `examples/bryan.cpp` alternates saturation and projection until neither moves the state. | [bryan.cpp#L218-L262](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.cpp#L218-L262) | S |
 
 : Initialization contract, table 3. {#tbl-ch01-initialization-contract-3}
 
 #### Minimal correct examples at the pin
 
-1. **Dry, C++ (the preface's Straka deck).** `initialize_block` builds a float64 `(nvar, nc3, nc2, nc1)` tensor on the device ([straka.cpp#L82-L84](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/examples/straka.cpp#L82-L84)). It takes $g$ = `-grav1` (#L62) and $R_d$ = `Rgas/weight` (#L69). It sets an adiabatic $T(x_1)$, then $p$, then adds the cold bubble to $T$[^rg-1c45304f6b95] and sets $\rho = p/(R_dT)$. Velocity stays 0. It hands over `vars["hydro_w"]` (#L86-L93) and, with scalars, a `scalar_r` with the same spatial shape (#L95-L102): [straka.cpp#L53-L104](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/examples/straka.cpp#L53-L104) [S]. It fills every cell from the cell centres, ghosts included; the fill then overwrites the physical ghosts (row 11) [S]. It does not call `balance_column`.
-2. **Python, smallest.** Excerpt (lines 26 and 31–35; lines 27–30 move the block to a device and read the EOS floor) of [test: L26–35](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/tests/test_check_redo_floor.py#L26-L35) [S]:
+1. **Dry, C++ (the preface's Straka deck).** `initialize_block` builds a float64 `(nvar, nc3, nc2, nc1)` tensor on the device ([straka.cpp#L82-L84](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/straka.cpp#L82-L84)). It takes $g$ = `-grav1` (#L62) and $R_d$ = `Rgas/weight` (#L69). It sets an adiabatic $T(x_1)$, then $p$, then adds the cold bubble to $T$[^rg-1c45304f6b95] and sets $\rho = p/(R_dT)$. Velocity stays 0. It hands over `vars["hydro_w"]` (#L86-L93) and, with scalars, a `scalar_r` with the same spatial shape (#L95-L102): [straka.cpp#L53-L104](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/straka.cpp#L53-L104) [S]. It fills every cell from the cell centres, ghosts included; the fill then overwrites the physical ghosts (row 11) [S]. It does not call `balance_column`.
+2. **Python, smallest.** Excerpt (lines 26 and 31–35; lines 27–30 move the block to a device and read the EOS floor) of [test: L26–35](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/tests/test_check_redo_floor.py#L26-L35) [S]:
 
    ```python
    block = MeshBlock(MeshBlockOptions.from_yaml(yaml_file))
@@ -181,7 +186,7 @@ Call from C++ `snap::balance_column`, or from Python `snapy.balance_column(w, dx
    block_vars, _ = block.initialize({"hydro_w": w})
    ```
    This test state is uniform and has no gravity balance. It is a shape-and-call example, not an atmosphere at rest [I, from the four lines].
-3. **With `balance_column` (moist, C++).** `examples/bryan.cpp` `project` passes the interior x1 column, its `dx1f`, `wall_clamp=true` and the grid's `stretched_x1()` ([bryan.cpp#L204-L217](https://github.com/chengcli/snapy/blob/919936da07d80a310b98ab11da184972a3203274/examples/bryan.cpp#L204-L217)). `balance_ic` requires the whole x1 column in one block and the clamp on (#L222-L228). It is switched on by `problem/balance-ic: true` (#L372-L375) [S].
+3. **With `balance_column` (moist, C++).** `examples/bryan.cpp` `project` passes the interior x1 column, its `dx1f`, `wall_clamp=true` and the grid's `stretched_x1()` ([bryan.cpp#L204-L217](https://github.com/chengcli/snapy/blob/73c45a7c8c991209924e1137992352c335575062/examples/bryan.cpp#L204-L217)). `balance_ic` requires the whole x1 column in one block and the clamp on (#L222-L228). It is switched on by `problem/balance-ic: true` (#L372-L375) [S].
 4. **A column built by marching, and which spacing it steps by (C++).** The three moist example drivers do not
    fill the column from a closed form: they put the surface state half a cell above the bottom face and then step
    an adiabat from one cell centre to the next, writing each centre as they pass it
@@ -198,8 +203,9 @@ Call from C++ `snap::balance_column`, or from Python `snapy.balance_column(w, dx
    $g=22$ $\mathrm{m\,s^{-2}}$, uniform and then with `cells/x1rat` $1/1.058$ and $1.058$, and compares the
    initial pressure at every centre with the analytic dry adiabat: the stretched error must stay within six times
    the uniform error of the same driver ({{< code tests/test_example_ic_stretched.py >}}). Its header records
-   that stepping by the cell width instead left the pressure at the top of that column off by about 35 %. The
-   ctest was not run for this report: **pending a pinned ctest run**.
+   that stepping by the cell width instead left the pressure at the top of that column off by about 35 %. At the
+   pin it passed on both builds: the uniform column's largest pressure error was $1.143\times10^{-2}$ and the two
+   stretched columns' were 1.86 and 4.73 times that (`x1rat`[^rg-eccaaf88b8a5] $1/1.058$ and $1.058$).[^ch01-init-ic]
 
    Write your own builder the same way: march the centres with `dx1v`, and reserve `dx1f` for what the cell
    contains rather than for how far the next centre is.
@@ -236,8 +242,17 @@ The assertions are in {{< code tests/test_scalar.cpp DeviceTest.initialize_and_t
 `side_is_uniform` ({{< code tests/test_mesh_multi_block.cpp side_is_uniform >}}), in
 {{< code tests/test_mesh_multi_block.cpp Mesh.multi_block_exchange >}}.
 
-Both ctests run on CPU; `test_mesh_multi_block.<b>` runs on two ranks. Neither has been run for this report
-at the pin: **pending a pinned ctest run**. No report check exists for this section.
+Both ctests run on CPU and CUDA; `test_mesh_multi_block.<b>` runs on two ranks. At the pin both passed on both
+builds; `test_scalar.release` ran 4 of its 8 cases on CPU (the CUDA cases skip there) and all 8 on
+CUDA.[^ch01-init-ctest] No report check exists for this section.
+
+[^ch01-init-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_scalar\.release|test_mesh_multi_block\.release)$'`,
+    clean CPU-only Release build, CPU, FP64, one process (two ranks under `torchrun` for `test_mesh_multi_block`); and the same command on a clean CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13]; logs `ctest-ch01-cpu.log` and `ctest-ch01-cuda.log`.
+
+[^ch01-init-ic]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^test_example_ic_stretched_python$'`,
+    clean CPU-only Release build, CPU, FP64, one process; and the same command on a clean CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13]; logs `ctest-ch01-cpu-py.log` and `ctest-ch01-cuda-py.log`. Output lines `uniform N=64: max |p/p_adiabat - 1| = 1.143e-02`, `x1rat 0.945180 N=64: ... = 2.127e-02 (1.86x uniform)` and `x1rat 1.058000 N=64: ... = 5.406e-02 (4.73x uniform)`.
 
 ### Limits
 
@@ -255,13 +270,13 @@ fresh-versus-restart ghost equivalence is measured here.
 
 [^rg-d6e8655ff198]: $y_n$ — mass fraction of species $n$ **per unit total mass**, $\rho_n = \rho y_n$, dimensionless [-]; this is snapy's composition variable and the only one the state vector carries
 
-[^rg-d926607a7bda]: $r_n$ — mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch10-tracer). Never written $r$ without its species subscript, because $r$ alone is the radius (§1)
-
-[^rg-3c222a9e6ef8]: EOS — equation of state
+[^rg-d926607a7bda]: $r_n$ — mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch08-drycarry). Never written $r$ without its species subscript, because $r$ alone is the radius (§1)
 
 [^rg-76103610383a]: grav1 — gravity component along the first coordinate
 
 [^rg-1c45304f6b95]: $T$ — temperature [K]
 
 [^rg-3f39479eeb50]: $i, j, k$ — cell indices in $x_1, x_2, x_3$
+
+[^rg-eccaaf88b8a5]: x1rat — ratio of adjacent $x_1$ cell widths of a geometric stretched $x_1$ (in `geometry/cells`)
 <!-- end reader glossary notes -->

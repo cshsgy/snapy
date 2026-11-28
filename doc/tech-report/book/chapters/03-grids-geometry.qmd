@@ -14,7 +14,9 @@ quantities the finite-volume update uses: face areas, cell volumes, centroids, w
 the local frames of the Riemann problems. It also covers the curved-grid helpers that the face-flux corrections of
 @sec-ch04 read, how the one global grid is cut into blocks and ranks, and what each kind of ghost contains at a
 physical face, an internal face, a cubed-sphere panel edge and an $x_1$[^rg-65581851d3d4] seam between blocks. How ghost values are
-carried (buffers, tags, backends) is the subject of @sec-ch14; here only what they are is described. All code is
+carried is elsewhere: the buffers and the in-memory hand-over are @sec-ch13-ghost, and the process-group
+backend is chosen as in @sec-ch12-layout; the message tags and the backends themselves have no V3 section yet.
+Here only what the ghosts are is described. All code is
 cited at the pin of `code_pin.yml`. The schemes are listed in @tbl-ch03-schemes; their switch couplings are in the switch coverage matrix, @sec-ch12-matrix.
 
 Which grid to choose for a domain, with each grid's requirements, added work per stage and limits, is answered at

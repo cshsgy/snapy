@@ -13,14 +13,14 @@ reviewer: jihenghu
 A ghost exchange is the fill of a block's ghost cells from the interior cells of its neighbours; a halo exchange is
 the same operation under another name. Every ghost that is not at a physical face (@sec-ch03-physfaces) is filled
 by an exchange. A sync packs, for each direction with a neighbour, the interior slab next to that face into a send
-buffer, moves the buffers (between processes through the communication backend, @sec-ch14-backends, with the
-message matching and in-process copies of @sec-ch14-msgmatch), and unpacks each received buffer into the ghost slab
+buffer, moves the buffers (between processes through the process group of @sec-ch12-layout, within one process by the
+in-memory hand-over of @sec-ch13-ghost), and unpacks each received buffer into the ghost slab
 of the same direction. On the `slab` and `cubed` layouts the four $x_2$-$x_3$ ghost corners come from the diagonal
 neighbour when there is one; where there is none, and everywhere on the cubed sphere, they are synthesised from the
 two edge strips. The per-stage sync exchanges the conserved variables of the hydro and, when there are scalars, of
 the scalar; @sec-ch03-synctype lists the other syncs. On the cubed sphere the same steps run with interpolation
 across panel edges (@sec-ch03-csinterp). This section states what a ghost holds; how the transfer is carried, and
-how an in-stage exchange becomes a cut of a captured segment, is the subject of @sec-ch14.
+how an in-stage exchange becomes a cut of a captured segment, is the subject of @sec-ch13-cuts.
 
 `MeshBlockImpl::exchange` orchestrates the block sync through its layout; `LayoutImpl` owns the
 packing, the remote exchange and the finalisation, including `LayoutImpl::exchange_remote`
@@ -131,7 +131,7 @@ In step order (@tbl-ch03-exchange-code):
    ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::_exchange_once >}}). That runs the three phases in turn:
    `begin_exchange` ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::begin_exchange >}}), `launch_exchange`
    ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::launch_exchange >}}), whose host step is an exchange cut
-   of a captured segment (@sec-ch14), and `finalize_exchange`
+   of a captured segment (@sec-ch13-cuts), and `finalize_exchange`
    ({{< code src/mesh/meshblock_exchange.cpp MeshBlockImpl::finalize_exchange >}}).
 3. `serialize` copies each interior slab into the cached send buffer of its `get_buffer_id`
    ({{< code src/layout/layout.cpp LayoutImpl::serialize >}}).

@@ -110,7 +110,7 @@ any other word is refused with a message that names the three values).
    block admits `x1-inner`[^rg-0e5e2673a49c] ... `x3-outer`[^rg-d42c6e4726b6], each defaulting to `reflecting`; a dimension with one cell that lies
    below an active one keeps two empty slots, so the face index is the same for every deck; `periodic` marks
    the layout; the name with its side appended (`reflecting_inner`, ...) must be a registered boundary function,
-   else the run stops. Which function does what is @sec-ch14.
+   else the run stops. Which function does what is @sec-ch14b.
 
 The hydro reader, `HydroOptionsImpl::from_yaml` ({{< code src/hydro/hydro_options.cpp HydroOptionsImpl::from_yaml >}}),
 reads, in order, the equation of state, the vertical and horizontal reconstruction, the Riemann solver, the
@@ -330,7 +330,7 @@ chapter, among them `test_options_table.release`, `test_options_defaults.release
 
 [^rg-c07a7b10dcd1]: tlim — simulation end time
 
-[^rg-afb2348f9eea]: dt — time-step duration
+[^rg-afb2348f9eea]: dt — output interval
 
 [^rg-96965ca8c480]: double_precision — whether an output stream writes NetCDF variables as `NC_DOUBLE` instead of `NC_FLOAT` (default false)
 

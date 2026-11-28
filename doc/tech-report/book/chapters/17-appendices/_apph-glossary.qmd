@@ -23,8 +23,8 @@
 - **MC**: monotonised-central limiter. Defined in [PLM, the van Leer harmonic-mean slope (`type: plm`)](#sec-ch04-plm).
 - **MPI**: Message Passing Interface. Not defined here; used in [Environment parsing and process lifetime (`SNAP_*`)](#sec-ch12-environment).
 - **MPS**: Metal Performance Shaders. Not defined here; used in [Dispatch tensor kernels by device (`CUDA`)](#sec-ch01-dispatch).
-- **NCCL**: NVIDIA Collective Communications Library; {{< code external/gloo/README.md >}}. Not defined here; used in [Communication backends: Gloo, UCX through commux, an external group (`BACKEND`)](#sec-ch14-backends).
-- **NCO**: NetCDF Operators. Not defined here; used in [Combine and inspect tools (`pd-combine`, `pd-inspect`)](#sec-ch14-tools).
+- **NCCL**: NVIDIA Collective Communications Library; {{< code external/gloo/README.md >}}. Not defined here; used in [Restricted applicability](#sec-ch17-restricted).
+- **NCO**: NetCDF Operators. Not defined here; used in [Combine and inspect tools (`pd-combine`, `pd-inspect`)](#sec-ch15-tools).
 - **PDE**: partial differential equation; notation only; see @sec-appa. Defined in [The notation index](#sec-appa-index).
 - **PE**: potential energy. Not defined here; used in [Gnomonic equiangular cubed sphere (`gnomonic-equiangle`)](#sec-ch03-gnomonic).
 - **PLM**: piecewise-linear method. Defined in [PLM, the van Leer harmonic-mean slope (`type: plm`)](#sec-ch04-plm).
@@ -61,24 +61,24 @@
 - `cfl`: Courant-number limit for the time step. Not defined here; used in [Driver loop and accepted steps (`integration:`)](#sec-ch01-driver).
 - `composition`: elemental composition of a species. Not defined here; used in [Temperature-dependent moist thermodynamics (`moist-mixture`)](#sec-ch02-moist-mixture).
 - `const-gravity`: constant-gravity forcing component. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
-- `const-vsed`: prescribed sedimentation velocities indexed by species. Not defined here; used in [Sedimentation of condensates (`sedimentation`)](#sec-ch10-sed).
+- `const-vsed`: prescribed sedimentation velocities indexed by species. Not defined here; used in [Sedimentation of condensates (`sedimentation`)](#sec-ch08-sed).
 - `conversion-order`: order of the $x_1$ cell-average to point conversion of the primitives: 2 (default) or 4. Defined in [The fourth-order $x_1$ conversion between cell averages and point values (`dynamics/conversion-order`)](#sec-ch04-conv4).
 - `coriolis`: Coriolis-force options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - `cv_R`: reference heat capacity divided by the species gas constant. Not defined here; used in [Ideal-moist closure and the kintera thermodynamics (`ideal-moist`)](#sec-ch02-ideal-moist).
 - `density`: particle material densities indexed by species. Defined in [The well-balanced face positivity fallback](#sec-ch08-wbface).
 - `density-floor`: minimum admissible density. Not defined here; used in [EOS interface and dispatch (`type`)](#sec-ch02-interface).
 - `depth`: number of cells over which boundary heating or cooling is distributed. Not defined here; used in [Locate tensor rows, faces and ghost slabs (`NMASS` / `PartOptions`)](#sec-ch01-layout).
-- `diameter`: particle diameter used by the reaction-rate model. Not defined here; used in [Precipitation and evaporation kinetics in the example drivers (driver-level coupling)](#sec-ch10-kinetics).
-- `diff_c`: reference diffusivity in the reaction-rate model. Not defined here; used in [Precipitation and evaporation kinetics in the example drivers (driver-level coupling)](#sec-ch10-kinetics).
-- `diff_P`: pressure exponent of the diffusivity. Not defined here; used in [Precipitation and evaporation kinetics in the example drivers (driver-level coupling)](#sec-ch10-kinetics).
-- `diff_T`: temperature exponent of the diffusivity. Not defined here; used in [Precipitation and evaporation kinetics in the example drivers (driver-level coupling)](#sec-ch10-kinetics).
+- `diameter`: particle diameter used by the reaction-rate model. Not defined here; used in [Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`)](#sec-ch10-kinetics).
+- `diff_c`: reference diffusivity in the reaction-rate model. Not defined here; used in [Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`)](#sec-ch10-kinetics).
+- `diff_P`: pressure exponent of the diffusivity. Not defined here; used in [Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`)](#sec-ch10-kinetics).
+- `diff_T`: temperature exponent of the diffusivity. Not defined here; used in [Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`)](#sec-ch10-kinetics).
 - `diffusion`: viscosity and heat-diffusion options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - `dir`: direction selector for solvers that use it. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `disable-flux-x1`: whether the first-coordinate flux is disabled. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `disable-flux-x2`: whether the second-coordinate flux is disabled. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `disable-flux-x3`: whether the third-coordinate flux is disabled. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `distribute`: domain-distribution options. Not defined here; used in [Advance several blocks in one process (`distribute.blocks_per_process`)](#sec-ch01-mesh).
-- `double_precision`: whether an output stream writes NetCDF variables as `NC_DOUBLE` instead of `NC_FLOAT` (default false). Not defined here; used in [NetCDF output: per-block files and the combine (`outputs: type: netcdf`)](#sec-ch14-netcdf).
+- `double_precision`: whether an output stream writes NetCDF variables as `NC_DOUBLE` instead of `NC_FLOAT` (default false). Not defined here; used in [Options schema and YAML keys (the deck file)](#sec-ch15-options).
 - `dt`: time-step duration. Not defined here; used in [VIC block-tridiagonal assembly: the Roe-linearised flux divergence along a column (`vic_assemble_impl`)](#sec-ch09-vic-assembly).
 - `dTdt`: prescribed temperature tendency. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - `dynamic`: whether viscosity and heat transport use dynamic coefficients. Not defined here; used in [Isotropic viscosity and heat conduction (`forcing/diffusion`)](#sec-ch07-viscosity).
@@ -116,7 +116,7 @@
 - `nb1`: number of blocks along the first coordinate direction. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `nb2`: number of blocks along the second coordinate direction. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `nb3`: number of blocks along the third coordinate direction. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
-- `ncycle_out`: number of cycles between printed cycle lines; 0 turns the line off. Not defined here; used in [Step rejection for moist causes (`max_redo`)](#sec-ch10-redo).
+- `ncycle_out`: number of cycles between printed cycle lines; 0 turns the line off. Not defined here; used in [Install and run](#sec-preface-install).
 - `nghost`: number of ghost cells at each boundary. Defined in [The reconstruction framework (`dynamics/reconstruct`)](#sec-ch04-framework).
 - `nlim`: maximum number of integration cycles. Not defined here; used in [Driver loop and accepted steps (`integration:`)](#sec-ch01-driver).
 - `non-hydrostatic`: fraction of the vertical body force retained by the non-hydrostatic treatment. Defined in [Constant gravity and the cell form of the gravity work (`gravity-work: cell`)](#sec-ch06-cell).
@@ -136,15 +136,15 @@
 - `radius`: particle radii indexed by species. Not defined here; used in [Gnomonic equiangular cubed sphere (`gnomonic-equiangle`)](#sec-ch03-gnomonic).
 - `rate-constant`: reaction-rate model options. Not defined here; used in [Fixed-volume fixed-energy phase equilibrium (`uv-solver`)](#sec-ch02-saturation).
 - `reactions`: reaction definitions. Not defined here; used in [Fixed-volume fixed-energy phase equilibrium (`uv-solver`)](#sec-ch02-saturation).
-- `reconstruct`: reconstruction options. Not defined here; used in [Follow the hydro increment through seven sections (`dynamics:`)](#sec-ch01-hydro).
+- `reconstruct`: reconstruction options. Not defined here; used in [Follow the hydro increment through eight sections (`dynamics:`)](#sec-ch01-hydro).
 - `reference-state`: thermodynamic reference-state options. Not defined here; used in [EOS interface and dispatch (`type`)](#sec-ch02-interface).
 - `relax-bot-comp`: bottom composition-relaxation options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - `relax-bot-temp`: bottom temperature-relaxation options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - `relax-bot-velo`: bottom velocity-relaxation options. Not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
-- `riemann-solver`: Riemann-solver options within the enclosing dynamics or scalar block. Not defined here; used in [Follow the hydro increment through seven sections (`dynamics:`)](#sec-ch01-hydro).
+- `riemann-solver`: Riemann-solver options within the enclosing dynamics or scalar block. Not defined here; used in [Follow the hydro increment through eight sections (`dynamics:`)](#sec-ch01-hydro).
 - `scalar`: passive-scalar options. Not defined here; used in [Transport passive scalars with dry mass (`scalar:`)](#sec-ch01-scalar).
 - `scale`: scaling in the enclosing component: a reconstruction switch or values of a thermal-transport profile. Defined in [Donor cell (`type: dc`)](#sec-ch04-dc).
-- `sedimentation`: sedimentation-model options. Not defined here; used in [Sedimentation of condensates (`sedimentation`)](#sec-ch10-sed).
+- `sedimentation`: sedimentation-model options. Not defined here; used in [Sedimentation of condensates (`sedimentation`)](#sec-ch08-sed).
 - `shear-cfl`: Courant limit associated with shear. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `shock`: whether reconstruction uses its shock handling. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `solid-density`: density assigned to internal solid cells. Not defined here; used in [Rectify a mask and close fluid faces against solids (`boundary-condition/internal/*; vars["solid"]`)](#sec-ch14-solids).
@@ -163,10 +163,10 @@
 - `type`: implementation selector for the enclosing options block. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `u0_R`: reference internal energy in the species gas-constant normalisation. Not defined here; used in [Ideal-moist closure and the kintera thermodynamics (`ideal-moist`)](#sec-ch02-ideal-moist).
 - `upper-bound`: upper bound for the scalar ratio; a negative value disables the bound. Not defined here; used in [Transport passive scalars with dry mass (`scalar:`)](#sec-ch01-scalar).
-- `uv-solver`: solver used for fixed-energy saturation adjustment. Defined in [Saturation adjustment in the step (top-level `reactions`)](#sec-ch10-satadj).
+- `uv-solver`: solver used for fixed-energy saturation adjustment. Defined in [Saturation adjustment in the step (top-level `reactions`)](#sec-ch08-satadj).
 - `variables`: variables requested by an output stream. Defined in [Output writers (`outputs: - type: netcdf` or `pnetcdf`)](#sec-ch15-output).
 - `vertical`: options for the vertical reconstruction. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
-- `vm`: molar volume used by the reaction-rate model. Not defined here; used in [Precipitation and evaporation kinetics in the example drivers (driver-level coupling)](#sec-ch10-kinetics).
+- `vm`: molar volume used by the reaction-rate model. Not defined here; used in [Pointer: the chemistry step at the pin (`MeshBlockImpl::set_chemistry`)](#sec-ch10-kinetics).
 - `wall_velocity`: viscous condition at the radial walls on the cubed sphere: stress-free (default) or no-slip. Defined in [Viscosity and heat conduction on the cubed sphere (`diffusion` keys on `gnomonic-equiangle`)](#sec-ch07-csdiffusion).
 - `wb-wall-clamp`: whether to clamp the well-balanced wall continuation. Defined in [YAML scheme selection and setup guards (`YAML keys`)](#sec-ch12-yaml).
 - `weight`: molar mass of the gas. Not defined here; used in [EOS interface and dispatch (`type`)](#sec-ch02-interface).
@@ -194,7 +194,7 @@
 ## Named concepts {.unnumbered .unlisted}
 
 - **case**: defined in [Initialize primitives, ghosts and conserved states (`restart_file`)](#sec-ch01-initialization).
-- **conserved variables**: defined in [NetCDF output: per-block files and the combine (`outputs: type: netcdf`)](#sec-ch14-netcdf).
+- **conserved variables**: defined in [Output writers (`outputs: - type: netcdf` or `pnetcdf`)](#sec-ch15-output).
 - **Coriolis force**: not defined here; used in [The forcing loop: parsing, registration and the stage increment (`forcing:`)](#sec-ch07-framework).
 - **Courant number**: not defined here; used in [Driver loop and accepted steps (`integration:`)](#sec-ch01-driver).
 - **deck**: defined in [Install and run](#sec-preface-install).
@@ -205,17 +205,17 @@
 - **grid type**: defined in [Choosing a grid: Cartesian, spherical-polar or cubed sphere (`geometry.type`)](#sec-ch03-choosing).
 - **halo exchange**: defined in [Generic ghost exchange (`SyncOptions`)](#sec-ch03-exchange).
 - **hydrostatic primitive-equation core**: defined in [How snapy differs from a hydrostatic primitive-equation core (`none`)](#sec-ch02-pecore).
-- **latent heat**: defined in [Saturation adjustment in the step (top-level `reactions`)](#sec-ch10-satadj).
+- **latent heat**: defined in [Saturation adjustment in the step (top-level `reactions`)](#sec-ch08-satadj).
 - **Lax–Friedrichs flux**: not defined here; used in [Roe, with a Lax–Friedrichs positivity fallback (`type: roe`)](#sec-ch04-roe).
 - **MeshBlock**: defined in [Construct a MeshBlock and its modules (`MeshBlockOptions`)](#sec-ch01-construction).
-- **mixing ratio**: defined in [Passive tracers per dry air, with an optional upper bound (`scalar`)](#sec-ch10-tracer).
+- **mixing ratio**: defined in [The tracer flux positivity limiter (`equation-of-state/limiter`)](#sec-ch08-theta).
 - **module**: defined in [Build options from YAML and reject unknown keys (`from_yaml`)](#sec-ch01-options).
 - **Newton step**: not defined here; used in [Temperature-dependent moist thermodynamics (`moist-mixture`)](#sec-ch02-moist-mixture).
 - **options object**: defined in [Build options from YAML and reject unknown keys (`from_yaml`)](#sec-ch01-options).
-- **primitive variables**: defined in [NetCDF output: per-block files and the combine (`outputs: type: netcdf`)](#sec-ch14-netcdf).
+- **primitive variables**: defined in [Output writers (`outputs: - type: netcdf` or `pnetcdf`)](#sec-ch15-output).
 - **Python bindings**: defined in [Expose the C++ API to Python (`import snapy`)](#sec-ch01-python).
 - **Rayleigh drag**: not defined here; used in [Sponge layers: Rayleigh drag near the top and bottom boundaries (`top-sponge-lyr`, `bot-sponge-lyr`)](#sec-ch07-sponge).
-- **restart file**: defined in [Restart files: write, bundle, read (`outputs: type: restart`, `-r`)](#sec-ch14-restart).
+- **restart file**: defined in [Restart (`outputs: - type: restart`, `-r` or `--restart`)](#sec-ch15-restart).
 - **Riemann problem**: not defined here; used in [Gnomonic equiangular cubed sphere (`gnomonic-equiangle`)](#sec-ch03-gnomonic).
 - **Riemann solver**: not defined here; used in [Transport passive scalars with dry mass (`scalar:`)](#sec-ch01-scalar).
 - **Riemann step**: not defined here; used in [LMARS (`type: lmars`)](#sec-ch04-lmars).
@@ -343,7 +343,7 @@
 - $\rho_n$: partial density of species $n$, $\rho y_n$ [kg m$^{-3}$]. Defined in [2. State, thermodynamics and species](#sec-appa-2).
 - $\rho' = \rho - \rho_{\mathrm{ref}}$: the perturbation the reconstruction acts on; the prime means "minus the reference", never a derivative; {{< code src/hydro/hydro_forward.cpp HydroImpl::forward >}}. Defined in [6. Hydrostatic reference state](#sec-appa-6).
 - $R_{\mathrm{d}}$, $R_n$: specific gas constants of dry air and species $n$ [J kg$^{-1}$ K$^{-1}$]; {{< code src/eos/ideal_moist.cpp IdealMoistImpl::reset >}}. Defined in [2. State, thermodynamics and species](#sec-appa-2).
-- $r_n$: mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch10-tracer). Never written $r$ without its species subscript, because $r$ alone is the radius (§1). Defined in [2. State, thermodynamics and species](#sec-appa-2).
+- $r_n$: mass mixing ratio of species $n$ **per unit dry mass**, $r_n = \rho_n/\rho_{\mathrm{d}}$, dimensionless [-]; used only where the code is per dry air (passive tracers, @sec-ch08-drycarry). Never written $r$ without its species subscript, because $r$ alone is the radius (§1). Defined in [2. State, thermodynamics and species](#sec-appa-2).
 - $R_n = \mathcal R/\mu_n$: specific gas constant of species $n$ [J kg$^{-1}$ K$^{-1}$]; defined for gases only — a condensate has no $R_n$ and contributes no pressure; {{< code src/eos/ideal_moist.cpp IdealMoistImpl::reset >}}. Defined in [2a. Species thermodynamics, phase change and reactions](#sec-appa-2a).
 - $\sigma_i^2$: variance of $x_1$ about the centroid over cell $i$ on its own measure, $\langle (x_1-x_{1,i})^2\rangle_{V_i}$. Defined in [1. Coordinates and grids](#sec-appa-1).
 - $\sigma_{\mathrm{SB}}$: Stefan-Boltzmann constant; never bare $\sigma$, which is the cell variance (§1); notation only; see @sec-appa. Defined in [8a. Radiation and the radiating boundary](#sec-appa-8a).

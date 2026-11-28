@@ -1,8 +1,4 @@
 {
- "eq-ch14-launch-rank": "Global block rank from process rank and local block index, and back.",
- "eq-ch14-msgmatch-tag": "Exchange message tag from the sync id, local block, buffer and variable index; it is one to one.",
- "eq-ch14-restart-next": "On resume, an output's next time is clamped to one interval ahead; a new output joins the grid at or below the restored time.",
- "eq-ch14-schedule-moments": "Time-weighted running mean and deviation of output statistics (weighted Welford recurrence).",
  "eq-ch14-reflecting-parity": "Reflecting wall ghosts: even components mirrored, normal velocity mirrored with a sign change.",
  "eq-ch14-periodic-copy": "Periodic ghosts copy the matching owned cells from the other end, an exact permutation.",
  "eq-ch14-extrapolation-copy": "Extrapolation ghosts repeat the nearest owned cell.",

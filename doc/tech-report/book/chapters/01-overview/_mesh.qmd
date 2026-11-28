@@ -1,36 +1,38 @@
 ## Advance several blocks in one process (`distribute.blocks_per_process`) {#sec-ch01-mesh}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.6; src/mesh/mesh.cpp; src/layout/layout.cpp; tests/test_mesh_multi_block.cpp; tests/test_mesh_exchange.py
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.1; src/mesh/mesh.cpp; src/mesh/meshblock_redo.cpp; src/layout/layout.cpp;
+         src/options/layout.yaml; tests/test_mesh_multi_block.cpp; tests/test_mesh_exchange.py; tests/test_mesh_executor.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
 
 A `Mesh` holds several blocks in one process. It clones the block options for each, gives each block its own piece of
-the grid, and advances them through a small worker pool. On a CUDA device every worker has its own stream. The mesh
-also does once per step what each block would otherwise do alone: the time-step reduction, the redo decision and the
-gravity-work fixer.
+the grid, and runs their stages through one stage executor shared by all the blocks and a small worker pool. On a
+CUDA device every worker has its own stream. The mesh also does once what each block would otherwise do alone: the
+time-step reduction, the redo decision and the stage's global phase (the axial-momentum closure and, on the last
+stage, the chemistry step).
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** N/A, a code map: clone and repartition the options, advance the local blocks, then exchange.
+**Purpose.** N/A, a code map: clone and repartition the options, run the blocks' stages, the global phase, then exchange.
 
 **Data.** In: one options tree and `blocks_per_process`[^rg-8de7fd51747b]. Out: the local blocks, each with its own variable map.
 
-**Placement.** The mesh advances all local blocks, then exchanges, once per stage.
+**Placement.** Once per stage: the blocks' stages, the global phase, then the exchange.
 
 **Activation.** YAML `distribute.blocks_per_process` (default 1); the pool serves more than one block.
 
 **Guarantee / limits.** A map; no convergence order. An $x_1$ anchor wait fails after five minutes.
 
-**Evidence.** `test_mesh_multi_block.<b>` (two ranks, `allclose`), `test_mesh_exchange_python` (exact); see Tests.
+**Evidence.** @tbl-ch01-mesh-tests; `test_mesh_executor.<b>` (bitwise), `test_mesh_multi_block.<b>`, `test_mesh_exchange_python`.
 :::
 
 Local symbols: $n_b$ is the number of local blocks of a rank, $n_p$ the number of ranks and $n_{\mathrm{cell}}$ the
-interior cells of a block. $a_{kj}$ is the contribution of cell $j$ to block term $b_k$ of the fixer sum.
+interior cells of a block. $a_{kj}$ is the contribution of cell $j$ to block term $b_k$ of a closure moment.
 $\delta_{\mathrm{mach}} = 2^{-53}$ is the unit round-off in double precision.
 
 ### Derivation
@@ -40,20 +42,25 @@ in their owning chapters.
 
 ### Numerical method
 
-`MeshOptionsImpl::from_yaml` ({{< code src/mesh/mesh.cpp MeshOptionsImpl::from_yaml >}}) reads
-`distribute.blocks_per_process` with the default 1. `MeshImpl::reset` ({{< code src/mesh/mesh.cpp MeshImpl::reset >}})
-requires it positive, clones the block options once per local block and repartitions each clone's coordinates through
-its layout. The worker pool `BlockWorkerPool` ({{< code src/mesh/mesh.cpp MeshImpl::BlockWorkerPool >}}) runs one
-thread per block. On a CUDA device it takes one stream per block from the pool. It records the caller's stream in an
+`MeshOptionsImpl::from_yaml` ({{< code src/mesh/mesh.cpp MeshOptionsImpl::from_yaml >}}) reads the block options;
+the block count is the layout's option `distribute.blocks_per_process`, default 1 ({{< code src/options/layout.yaml >}}).
+`MeshImpl::reset` ({{< code src/mesh/mesh.cpp MeshImpl::reset >}}) requires it positive, gives the Mesh a new identity
+for the same-process exchange (@sec-ch13-ghost), clones the block options once per local block and repartitions each
+clone's coordinates through its layout, and builds one stage executor that all the blocks use. The worker pool `BlockWorkerPool` ({{< code src/mesh/mesh.cpp MeshImpl::BlockWorkerPool >}}) runs one
+thread per block. On a CUDA device it creates one stream of its own per block (`OwnedStream`). It records the caller's stream in an
 event every worker waits on, and records a done event per worker that the caller's stream waits on. The blocks'
 kernels thus run on their own streams. `MeshImpl::max_time_step`
 ({{< code src/mesh/mesh.cpp MeshImpl::max_time_step >}}) takes the minimum of the local bounds, then one MIN over the
 process group, then the Courant factor and the redo halving. `MeshImpl::forward`
-({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) advances every local block with the fixer deferred. On the last
-stage it sums the fixer terms of the local blocks, reduces them once with SUM, applies the common correction and
-refills the physical boundaries. It then exchanges the ghosts of every block. `MeshImpl::check_redo`
+({{< code src/mesh/mesh.cpp MeshImpl::forward >}}) first lets the blocks agree on how they run (Mesh-agree,
+@sec-ch13-agree), refuses a strict block that cannot capture, defers each block's chemistry and aligns their captures
+(@sec-ch13-cuts). It runs every block's stage schedule through the pool. With the axial-momentum closure on, it sums
+the closure moments of the local blocks, reduces them once over the process group, applies each block's increment and
+refills its physical boundaries (@sec-ch07-axial). On the last stage it runs each block's chemistry step, one block
+after another, and refills the physical boundaries. It then exchanges the ghosts of every block. `MeshImpl::check_redo`
 ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}) combines the blocks' local flags on the device (one
-device-to-host read when they share a device) before the one reduction. Stream assignment is an execution policy, not
+device-to-host read when they share a device) before the one reduction
+({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::decide_retry >}}). Stream assignment is an execution policy, not
 evidence of numerical equivalence between decompositions.
 
 @fig-ch01-mesh-flow shows the call sequence.
@@ -61,7 +68,7 @@ evidence of numerical equivalence between decompositions.
 ```{python}
 #| label: fig-ch01-mesh-flow
 #| fig-cap: "Advance several blocks in one process. Labelled green boxes name operations or owners; black arrows show the reading sequence, not a timing measurement."
-#| fig-alt: "Sequence: caller event; per-block workers; advance / local budgets; global fixer; exchange / joined events."
+#| fig-alt: "Sequence: agree and align; per-block workers run the stages; global phase: closure, chemistry; exchange."
 #| echo: false
 from snapy_report.ch01.figures.fig_mesh_flow import make_fig
 make_fig()
@@ -72,33 +79,34 @@ make_fig()
 1. The time step is the minimum of the local bounds, then one MIN over the process group
    ({{< code src/mesh/mesh.cpp MeshImpl::max_time_step >}}); a minimum selects an operand and adds no round-off.
 2. The redo decision combines the blocks' flags on the device and crosses the process group once
-   ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}); a flag is 0 or 1, so the combination is exact.
-3. The gravity-work fixer sums five terms per block over the $n_b$ local blocks, then once over the $n_p$ ranks
-   with SUM ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}). Each block term $b_k$ is itself a sum of
-   $n_{\mathrm{cell}}$ cell contributions $a_{kj}$ (@sec-ch06-fixer). A sum of $n$ doubles accumulated in sequence
+   ({{< code src/mesh/meshblock_redo.cpp MeshBlockImpl::decide_retry >}}); a flag is 0 or 1, so the combination is exact.
+3. The axial-momentum closure sums each block's closure moments over the $n_b$ local blocks, then once over the $n_p$
+   ranks ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}). Each block term $b_k$ is itself a sum of
+   $n_{\mathrm{cell}}$ cell contributions $a_{kj}$ (@sec-ch07-axial). A sum of $n$ doubles accumulated in sequence
    has an error of at most $(n-1)\,\delta_{\mathrm{mach}}$ times the sum of the terms' magnitudes. The per-block
    sums therefore contribute at most $(n_{\mathrm{cell}}-1)\,\delta_{\mathrm{mach}}\sum_{k,j}|a_{kj}|$, and the
    combination of the $n_b n_p$ block terms at most $(n_b n_p - 1)\,\delta_{\mathrm{mach}}\sum_k|b_k|$. A different
-   block count therefore changes the common correction by round-off only.
+   block count therefore changes the common increment by round-off only.
 
 ### Code
 
 | what | code link | symbol | switch |
 |---|---|---|---|
 | pool | {{< code src/mesh/mesh.cpp MeshImpl::BlockWorkerPool >}} | `BlockWorkerPool` | none |
-| options | {{< code src/mesh/mesh.cpp MeshOptionsImpl::from_yaml >}} | `blocks_per_process` | `distribute.blocks_per_process` |
+| options | {{< code src/options/layout.yaml >}} | `blocks_per_process` | `distribute.blocks_per_process` |
 | clones | {{< code src/mesh/mesh.cpp clone_block_options >}} | `clone_block_options` | `distribute.blocks_per_process` |
 | dt | {{< code src/mesh/mesh.cpp MeshImpl::max_time_step >}} | `max_time_step` | `integration/cfl` |
 | forward | {{< code src/mesh/mesh.cpp MeshImpl::forward >}} | `forward` | none |
+| executor | {{< code src/mesh/mesh.cpp MeshImpl::reset >}} | `executor_` | `integration/execution` |
 | redo | {{< code src/mesh/mesh.cpp MeshImpl::check_redo >}} | `check_redo` | none |
 | tags | {{< code src/layout/layout.cpp LayoutImpl::send_to_block >}} | `send_to_block` | none |
 | wait | {{< code src/layout/layout.cpp LayoutImpl::take_x1_anchor >}} | `take_x1_anchor` | none |
 
 : Implementation anchors for the mesh. {#tbl-ch01-mesh-code}
 
-1. Read the block count and build the clones: `from_yaml` ({{< code src/mesh/mesh.cpp MeshOptionsImpl::from_yaml >}}),
-   `reset` ({{< code src/mesh/mesh.cpp MeshImpl::reset >}}).
-2. Advance the blocks through the pool and reduce once: `forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}),
+1. Read the options and build the clones and the executor: `from_yaml`
+   ({{< code src/mesh/mesh.cpp MeshOptionsImpl::from_yaml >}}), `reset` ({{< code src/mesh/mesh.cpp MeshImpl::reset >}}).
+2. Run the blocks' stages through the pool and reduce once: `forward` ({{< code src/mesh/mesh.cpp MeshImpl::forward >}}),
    `max_time_step` ({{< code src/mesh/mesh.cpp MeshImpl::max_time_step >}}),
    `check_redo` ({{< code src/mesh/mesh.cpp MeshImpl::check_redo >}}).
 3. Message tags and the $x_1$ anchor wait: `send_to_block` ({{< code src/layout/layout.cpp LayoutImpl::send_to_block >}}),
@@ -119,28 +127,35 @@ distribute:
 Refused: a key other than `layout`, `nb1`, `nb2`, `nb3`, `verbose`, `blocks_per_process` and `backend`, and a
 non-positive `blocks_per_process`; `backend` is accepted and ignored, the environment `BACKEND` wins
 (@sec-ch12-layout). The mesh order of a stage is these lines of `MeshImpl::forward`
-({{< code src/mesh/mesh.cpp MeshImpl::forward >}}):
+({{< code src/mesh/mesh.cpp MeshImpl::forward >}}), with the global phase elided:
 
 ```cpp
-if (blocks.size() == 1) {
-  blocks[0]->advance_local(vars[0], dt, stage);
-  blocks[0]->exchange_ghost_zones(vars[0]);
-  return;
-}
-for (auto& b : blocks) b->defer_gravity_work_fixer = true;
-run_block_jobs(
-    [&](size_t i) { blocks[i]->advance_local(vars[i], dt, stage); });
-// ... last stage: sum the fixer terms, one SUM, apply, refill the physical boundaries ...
-run_block_jobs([&](size_t i) { blocks[i]->exchange_ghost_zones(vars[i]); });
+  executor_->agree(vars);
+  for (int i = 0; i < static_cast<int>(blocks.size()); ++i)
+    executor_->check_strict(i, vars[i], stage);
+  if (stage == 0)
+    for (auto& b : blocks) b->step_dt = dt;
+
+  for (auto& b : blocks) b->defer_chemistry = true;
+  // B3: a segment one block must (re)capture is captured by all of them (its
+  // exchanges meet at the same-process rendezvous)
+  executor_->align_captures(vars, dt, stage);
+  run_block_jobs(
+      [&](size_t i) { executor_->run_stage(i, vars[i], dt, stage); });
+// ... the global phase: the axial closure over the blocks; on the last stage, each block's chemistry ...
+  run_block_jobs([&](size_t i) { blocks[i]->exchange_ghost_zones(vars[i]); });
 ```
 
-The first block is the one-block fast path; the deferral line and the two `run_block_jobs` calls are steps 2
-and 3 of the walk-through.
+`agree`, `check_strict` and `align_captures` decide, for all the blocks together, whether the stages capture
+(@sec-ch13-agree, @sec-ch13-cuts); the deferral line moves the chemistry step out of each block's schedule into the
+global phase; the two `run_block_jobs` calls are steps 2 and 3 of the walk-through. A one-block Mesh runs its job on
+the caller's thread ({{< code src/mesh/mesh.cpp MeshImpl::run_block_jobs >}}).
 
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
+| `tests/test_mesh_executor.cpp` (`test_mesh_executor.<b>`) | two blocks stepped by `Mesh::forward` through the shared executor equal the pre-executor sequence (each block's local stage, then the exchange); a bare block and a clone own their executors | bitwise (`torch::equal`) | the executor changes who runs the stage, not what runs |
 | `test_mesh_multi_block.<b>` (two ranks) | the ghost strips of local and remote neighbours hold the neighbour's value, and both kinds were seen | `allclose` defaults | library defaults |
 | `test_mesh_exchange_python` | after a scalar exchange on four blocks, each ghost strip holds its neighbour's rank | exact equality | an integer rank field is copied |
 
@@ -150,8 +165,13 @@ The assertions are {{< code tests/test_mesh_multi_block.cpp Mesh.multi_block_exc
 `side_is_uniform` ({{< code tests/test_mesh_multi_block.cpp side_is_uniform >}}), and the top-level `assert`
 of {{< code tests/test_mesh_exchange.py >}}.
 
-Both ctests have been registered for CPU; `test_mesh_multi_block.<b>` on two ranks. Neither has been run
-for this report at the pin: **pending a pinned ctest run**. No report check exists for this section.
+At the pin all three passed on both builds; `test_mesh_executor.release` ran 4 of its 8 cases on CPU (the CUDA
+cases skip there) and all 8 on CUDA, and `test_mesh_multi_block.release` ran on two ranks.[^ch01-mesh-ctest] No report
+check exists for this section.
+
+[^ch01-mesh-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_mesh_executor\.release|test_mesh_multi_block\.release|test_mesh_exchange_python)$'`,
+    clean CPU-only Release build, CPU, FP64, one process (two ranks under `torchrun` for `test_mesh_multi_block`); and the same command on a clean CUDA Release build (sm_61 code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13]; logs `ctest-ch01-cpu.log`, `ctest-ch01-cuda.log`, `ctest-ch01-cpu-py.log` and `ctest-ch01-cuda-py.log`.
 
 ### Limits
 

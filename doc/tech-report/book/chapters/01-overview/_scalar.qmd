@@ -1,11 +1,12 @@
 ## Transport passive scalars with dry mass (`scalar:`) {#sec-ch01-scalar}
 
 <!-- PROVENANCE
-pin: snapy@919936da07d80a310b98ab11da184972a3203274 (chengcli/snapy, code_pin.yml)
-sources: OUTLINE.md entry 1.8; src/scalar/scalar.cpp; src/scalar/scalar_options.cpp; src/mesh/meshblock.cpp; tests/test_scalar.cpp
+pin: snapy@73c45a7c8c991209924e1137992352c335575062 (UCzhangxi/snapy v3/final)
+sources: STRUCTURE.md section 6, chapter 1.2; src/scalar/scalar.cpp; src/scalar/scalar_options.cpp; src/hydro/flux_positivity.cpp;
+         src/mesh/meshblock_advance.cpp; tests/test_scalar.cpp
 status: draft
 author: Jiheng Hu
-reviewer:
+reviewer: JiachenLiu-Atmos
 -->
 
 ### Summary
@@ -68,11 +69,12 @@ ratio of @eq-ch01-scalar-face from the reconstructed scalar and dry densities. I
 interpolant (a stretched $x_1$, or `weno5`/`cp5` on a spherical-polar or gnomonic $x_1$), and which is the same module
 as the lateral `precon` otherwise ({{< code src/scalar/scalar.cpp ScalarImpl::reset >}},
 {{< code src/coord/coordinate.cpp CoordinateImpl::x1_row_faces >}}). It feeds the face pair to the Riemann solver
-together with the hydro's $x_1$ dry-mass flux. The lateral directions form the same face ratio and exchange the
+together with the hydro register's limited $x_1$ dry-mass flux (`mass.dry.limited`). The lateral directions form the same face ratio and exchange the
 cross-panel face states with interpolation off. They take the hydro's lateral mass fluxes, with the
 scalar's own covariance row when the face-flux covariance is on (@sec-ch12-flux-covariance). The donor factor of the
-positivity limiter is exchanged raw and passed through the physical boundary functions in the `sync_theta` closure
-before the fluxes are scaled (@sec-ch08). The parent block combines the stage and carries the implicit dry transfer
+positivity limiter is exchanged raw and passed through the physical boundary functions by
+`flux_positivity_sync_theta_` ({{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}}) before the fluxes
+are scaled (@sec-ch08). The parent block combines the stage and carries the implicit dry transfer
 and the dry sources (@sec-ch01-stage). `ScalarOptionsImpl::from_yaml`
 ({{< code src/scalar/scalar_options.cpp ScalarOptionsImpl::from_yaml >}}) reads `nvar` (default 0), lets a `names`[^rg-5f6c85feb7ba]
 list set the count, reads `upper-bound` (default $-1$), and reads an optional `reconstruct` block. When that block is
@@ -94,7 +96,7 @@ make_fig()
 **Why the ratio, and what it costs.** Two facts of the code and one bound.
 
 1. The scalar is advected as a ratio so that it rides on the hydro's dry-mass flux exactly. The Riemann call for the
-   scalar receives the hydro's $x_1$ flux of `IDN` as the mass flux
+   scalar receives the hydro register's kept limited dry-mass flux, row `IDN` of the hydro total, as the mass flux
    ({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}). A uniform ratio is thus transported as a uniform ratio
    (Derivation, step 1).
 2. The face ratio costs two reconstructions and one division per face instead of one reconstruction of a ratio
@@ -107,13 +109,13 @@ make_fig()
 | what | code link | symbol | switch |
 |---|---|---|---|
 | scalar | {{< code src/scalar/scalar.cpp ScalarImpl::forward >}} | `forward` | `scalar:` |
-| limiter sync | {{< code src/scalar/scalar.cpp ScalarImpl::forward >}} | `sync_theta` | EOS limiter or covariance on |
+| limiter sync | {{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}} | `flux_positivity_sync_theta_` | EOS limiter or covariance on |
 | face ratio | {{< code src/scalar/scalar.cpp ScalarImpl::forward >}} | `face_r` | none |
 | interpolants | {{< code src/scalar/scalar.cpp ScalarImpl::reset >}} | `precon1` | `scalar/reconstruct` |
 | per-face $x_1$ rows | {{< code src/coord/coordinate.cpp CoordinateImpl::x1_row_faces >}} | `x1_row_faces` | `geometry`, `scalar/reconstruct/type` |
 | options | {{< code src/scalar/scalar_options.cpp ScalarOptionsImpl::from_yaml >}} | `from_yaml` | `scalar/*` |
 | inherit | {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}} | `recon23` | `scalar/reconstruct` |
-| transfer | {{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}} | `mass_corr` | `implicit-scheme` |
+| transfer | {{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}} | `mass_corr` | `implicit-scheme` |
 
 : Implementation anchors for the scalar transport. {#tbl-ch01-scalar-code}
 
@@ -121,12 +123,13 @@ make_fig()
    `reset` ({{< code src/scalar/scalar.cpp ScalarImpl::reset >}}).
 2. Reconstruct the scalar and dry densities, form the face ratio, upwind with the dry-mass fluxes: `forward`
    ({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}).
-3. Exchange and bound the donor factor: `sync_theta` ({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}).
+3. Exchange and bound the donor factor: `flux_positivity_sync_theta_`
+   ({{< code src/hydro/flux_positivity.cpp flux_positivity_sync_theta_ >}}), called from `forward`.
 4. Read the count, bound and reconstruction: `from_yaml`
    ({{< code src/scalar/scalar_options.cpp ScalarOptionsImpl::from_yaml >}}); the inherited reconstruction is
    set in {{< code src/mesh/meshblock_options.cpp MeshBlockOptionsImpl::from_yaml >}}.
 5. Carry the implicit dry transfer in the parent: `mass_corr`
-   ({{< code src/mesh/meshblock.cpp MeshBlockImpl::advance_local >}}).
+   ({{< code src/mesh/meshblock_advance.cpp MeshBlockImpl::stage_advance >}}).
 
 **How to use it.** Name the scalars, or give their count; the bound is off unless set
 ({{< code src/scalar/scalar_options.cpp ScalarOptionsImpl::from_yaml >}}):
@@ -149,23 +152,38 @@ with `scale` on whatever the card says. Also refused: a Riemann solver other tha
 lines of `ScalarImpl::forward` ({{< code src/scalar/scalar.cpp ScalarImpl::forward >}}):
 
 ```cpp
-auto rho = other.at("hydro_u")[IDN].unsqueeze(0);
-auto face_r = [&](int dim) {
-  auto recon = dim == DIM1 ? precon1 : precon;
-  auto rf = recon->forward(rho, dim), r = u / rho;  // donor r if rf <= 0
-  return torch::where(rf > 0., recon->forward(u, dim) / rf,
-                      torch::stack({r.roll(1, dim), r}));
-};
-if (_flux1.defined()) {
-  auto rlr = face_r(DIM1);
-  _flux1.set_(
-      priemann->forward(rlr[ILT], rlr[IRT], DIM1, pmb->phydro->flux1()[IDN]));
+  // the TOTAL dry density (anomaly storage adds the reference)
+  auto rho = ph->dry_density(other.at("hydro_u")).to(u.options()).unsqueeze(0);
+  // r = q_face / rho_face; q / rho of cell averages is second order (S177)
+  auto face_r = [&](int dim) {
+    auto recon = dim == DIM1 ? precon1 : precon;
+    auto rf = recon->forward(rho, dim), r = u / rho;  // donor r if rf <= 0
+    return torch::where(rf > 0., recon->forward(u, dim) / rf,
+                        torch::stack({r.roll(1, dim), r}));
+  };
+  // the fluxes, by direction, and the hydro dry-mass rows they ride on: the
+  // hydro register's mass.dry.limited@d, row IDN of its total as limit ends
+  // (R-5; R.rst 4.2 EF c), not the total after the hydro forward
+  torch::Tensor* flux[3] = {&_flux1, &_flux2, &_flux3};
+  auto const& hreg = ph->flux_register();
+  auto row = [&](int d) {
+    if (!hreg.total(d).defined()) return torch::Tensor();
+    TORCH_CHECK(hreg.keeps(d, "mass.dry.limited"), "[Scalar] the hydro ",
+                "register keeps no mass.dry.limited@", d);
+    return hreg.kept(d, "mass.dry.limited")[IDN];
+  };
+  torch::Tensor rlr[3], mass[3] = {row(1), row(2), row(3)};
+  if (_flux1.defined()) {
+    rlr[0] = face_r(DIM1);
+    put(_flux1, priemann->forward(rlr[0][ILT], rlr[0][IRT], DIM1, mass[0]));
+  }
 ```
 
-`rho` is the conserved dry density, `rf` its face pair, and `face_r` returns the pair of
-@eq-ch01-scalar-face: the quotient where `rf` is positive, else the cell ratio `r` of the side the state comes from
-(`r.roll(1, dim)` for the left state, `r` for the right). The last call upwinds the pair with the hydro's dry-mass
-flux.
+`rho` is the total conserved dry density (with anomaly storage on, the anomaly plus the reference), `rf` its face
+pair, and `face_r` returns the pair of @eq-ch01-scalar-face: the quotient where `rf` is positive, else the cell ratio
+`r` of the side the state comes from (`r.roll(1, dim)` for the left state, `r` for the right). The last call upwinds
+the pair with the hydro register's limited dry-mass flux, `mass.dry.limited`, row `IDN` of the hydro total as the
+limiter leaves it.
 
 ### Tests
 
@@ -182,22 +200,24 @@ The assertions are {{< code tests/test_scalar.cpp DeviceTest.initialize_and_tran
 {{< code tests/test_scalar.cpp DeviceTest.scalar_upper_bound_holds_both_sides >}}.
 
 The C++ ctest runs on CPU and, through the shared device list, on CUDA when the build has it. At the pin all four
-pass on CPU; `test_scalar_stratified_python` fits orders 4.99 and 5.00 (`cp5`, $n_1$ 40 to 80 and 80 to 160) and
-5.09 and 4.99 (`weno5`), and no non-finite face ratio at either contact.[^sca-run68] The CUDA cases were not run. No
+pass on CPU and on CUDA; `test_scalar.release` ran 4 of its 8 cases on CPU (the CUDA cases skip there) and all 8 on
+CUDA. `test_scalar_stratified_python` fits orders 4.98 and 4.99 (`cp5`, $n_1$ 40 to 80 and 80 to 160) and 5.08 and
+4.99 (`weno5`), with no non-finite face ratio at either contact, identically on both builds.[^ch01-scalar-ctest] No
 report check exists for this section.
 
-[^sca-run68]: [sha: snapy@68f4e066974ede87e4379285c4fba895b970b7f1; deck: the tests' own cards; run:
-    `env CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=1 PYTHONPATH="$SITE" ctest -V -R '^test_scalar'` in a CPU Release
-    source build at the pin, with `$SITE` the snapy Python package built from the same checkout against that build,
-    CPU, double, 1 process; Python 3.11.13, torch 2.10.0, kintera 2.6.6, GCC 11.5.0]. Output line `order cp5, weno5:
-    [4.988962983537853, 5.000130558829113, 5.090603911650287, 4.993282686908261] non-finite at 10:1, 100:1 contact:
-    [False, False]`.
+[^ch01-scalar-ctest]: [sha: 73c45a7c8c991209924e1137992352c335575062; deck: the tests' own cards; run:
+    `ctest --test-dir build/tests -j 1 -V --timeout 1200 -R '^(test_scalar\.release|test_scalar_stratified_python|test_scalar_flux_covariance_python|test_scalar_cov_x1_split_python)$'`,
+    clean CPU-only Release build, CPU, FP64, one process; and the same command on a clean CUDA Release build (sm_61
+    code), one CUDA device; torch 2.10.0+cu126, kintera 2.6.13, pyharp 2.8.1, gcc 13.3.1, nvcc 12.9, Python 3.11.13];
+    logs `ctest-ch01-cpu.log`, `ctest-ch01-cuda.log`, `ctest-ch01-cpu-py.log` and `ctest-ch01-cuda-py.log`. Output line
+    `order cp5, weno5: [4.97833352517945, 4.9918702576812395, 5.083793307221071, 4.9856698824211785] non-finite at
+    10:1, 100:1 contact: [False, False]`.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 The forward routine divides by the conserved dry density; its behaviour for a zero dry-density field is not
-established by the cited tests. The upper-bound and positivity mechanisms are documented by @sec-ch10 and
+established by the cited tests. The upper-bound and positivity mechanisms are documented by
 @sec-ch08; combinations remain in @sec-ch12-matrix.
 :::
 
