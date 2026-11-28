@@ -405,13 +405,20 @@ cover the callback's acceptance and refusal, not a new field
 
 : Tests of the output writers and the tolerance each uses. {#tbl-ch15-output-tests}
 
-Every ctest entry of this table passed at the pin on a serial CPU run with NetCDF and PnetCDF built in: 16 of
+`test_user_output.release` passes at the pin on a serial CPU run of a build without NetCDF, which is the build
+that compiles and runs the `netcdf_output_without_netcdf_warns_once` case.[^ch15-output-run-pin] Every ctest entry of
+this table passed at the previous pin on a serial CPU run with NetCDF and PnetCDF built in: 16 of
 the 16 tests selected for this chapter, among them `test_user_output.release`, `test_combine_parts.release`,
 `test_netcdf_axis_attrs` (both writers) and `test_netcdf_cubed_lonlat_python`.[^ch15-output-run] The
-`netcdf_output_without_netcdf_warns_once` case is compiled only without NetCDF and so did not run in
+without-NetCDF case is compiled only without NetCDF and so did not run in
 that build. The termination test ran at the pin on the same kind of build: `test_uranus_cycle1_abort.release`
 passed, with `test_user_output.release` beside it, in a serial run of the two entries (`ctest -j 1`, one run,
 one host).
+
+[^ch15-output-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own decks; run: `ctest -j 1 --timeout 1800
+    --output-on-failure -R '^(test_input_report\.release|test_options_table\.release|test_user_output\.release)$'` in the
+    build directory of a CPU Release build at the pin (`-DCUDA=OFF -DNETCDF=OFF -DPNETCDF=OFF -DUCX=ON`); Linux x86-64, Python 3.12.6, torch 2.10.0+cu128 on CPU, numpy 2.5.5, kintera 2.6.14, pyharp 2.7.17, pydisort 1.8.13, commux 0.2.1, g++ 11.4.0, CMake 3.26.2].
+    3 of 3 ctests passed (one run, one host).
 
 [^ch15-output-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own decks; run: `ctest -j 1 --timeout 1800 -R 'test_options_table|test_options_defaults|test_yaml_keys|test_user_output|test_combine_parts|test_restart_bundle|test_netcdf_cubed_lonlat|test_fp32_restart|test_restart_resume_schedule|test_restart_|test_netcdf_axis_attrs'` from the build directory of a CPU build (`-DCUDA=OFF -DNETCDF=ON -DPNETCDF=ON -DBUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Release`), one process, the driver tests through `torchrun`; torch 2.10.0+cu128, kintera 2.6.13, pyharp 2.7.17, snapy 2.14.4] All 16 passed. The statistics recurrence @eq-ch15-output-stats has no committed independent check at the pin; adding one
 (the two-pass weighted mean and deviation against the recurrence over unequal steps) is a to-do of this section.

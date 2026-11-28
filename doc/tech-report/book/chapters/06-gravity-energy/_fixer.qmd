@@ -102,8 +102,12 @@ There is no defect for it to repair.
 
 : Tests of the refused fixer. {#tbl-ch06-fixer-tests}
 
-The two tests of the previous pin passed there;[^ch06-fixer-run] at the pin `test_const_gravity_options_python`
-replaces them.
+`test_const_gravity_options_python` passes at the pin,[^ch06-fixer-run-pin] where it replaces the two tests of the
+previous pin, whose run is kept for the record.[^ch06-fixer-run]
+
+[^ch06-fixer-run-pin]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the tests' own inputs; run: `ctest -j 1 --timeout 1800
+    --output-on-failure -R '^test_const_gravity_options_python$'` in the build directory of a CPU Release build at the
+    pin (`-DCUDA=OFF -DNETCDF=OFF -DPNETCDF=OFF -DUCX=ON`); Linux x86-64, Python 3.12.6, torch 2.10.0+cu128 on CPU, numpy 2.5.5, kintera 2.6.14, pyharp 2.7.17, pydisort 1.8.13, commux 0.2.1, g++ 11.4.0, CMake 3.26.2]. 1 of 1 ctest passed (one run, one host).
 
 [^ch06-fixer-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the tests' own inputs; run: `ctest -j1
     --output-on-failure -R <pattern>` with one anchored pattern over the 19 gravity-work and implicit ctests this
