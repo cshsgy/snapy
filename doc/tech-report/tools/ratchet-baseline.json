@@ -20,7 +20,7 @@
   },
   "appd": {
    "history": 0,
-   "offpin": 1,
+   "offpin": 0,
    "status": 0,
    "xref": 0
   },
@@ -146,7 +146,7 @@
   },
   "ch15": {
    "history": 0,
-   "offpin": 6,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },

@@ -1,7 +1,7 @@
 ## Combine and inspect tools (`pd-combine`, `pd-inspect`) {#sec-ch15-tools}
 
 <!-- PROVENANCE
-pin: snapy@73c45a7c8c991209924e1137992352c335575062 (chengcli/snapy)
+pin: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959 (chengcli/snapy)
 sources: pyproject.toml, python/api/pd_combine.py, python/api/pd_inspect.py, tests/run_shallow_xy_decomp.py, all read at
          the pin; the retired parallelism chapter's text of the same section at the same pin is the source of this move
 status: draft
@@ -146,13 +146,14 @@ entry sets no `SKIP_RETURN_CODE` (the `ucx_cuda` entry of the same wrapper sets 
   {{< code python/api/pd_combine.py CombineFields >}}).
 :::
 
-[^ch15-tools-run]: [sha: snapy@73c45a7c8c991209924e1137992352c335575062; deck: the `ch15-tools` card, a copy of
+[^ch15-tools-run]: [sha: snapy@0d5caacbd8e365c87a30af6ce043c39ab30c0959; deck: the `ch15-tools` card, a copy of
     `examples/straka_proc2.yaml` with the three outputs above at `dt: 2.0` and `nlim: 20`; run: `torchrun --no-python
     --nproc-per-node=2 --master-port=29617 straka.release card.yaml`, then `pd-inspect card.00002.restart`, on a CPU
-    Release build of the pin with NetCDF, 2 ranks; Python 3.12, torch 2.10.0, kintera 2.6.13; scope: each command
-    whole, wall time; reps: 1]. The run exited 0 in 4.15 s and left `card.00000`-`card.00002.restart`,
+    Release build of the pin with NetCDF and PnetCDF, 2 ranks; Python 3.12.6, torch 2.10.0+cu128, kintera 2.6.14,
+    pyharp 2.7.17, snapy 3.0.5.dev1+g0d5caacb; scope: each command whole, wall time; reps: 1]. The run exited 0 in
+    4.30 s and left `card.00000`-`card.00002.restart`,
     `card.final.restart` and the frames `card.out1.0000{0,1,2}.nc`, `card.out2.0000{0,1,2}.nc`; `pd-inspect`
-    exited 0 in 2.31 s and listed the two parts of the bundle, `card.block0.00002.part` and
+    exited 0 in 2.22 s and listed the two parts of the bundle, `card.block0.00002.part` and
     `card.block1.00002.part`, seven tensors each. `pd-combine` was not run: NCO is not installed on the measuring
     host, so its combine step has no measurement here.
 
